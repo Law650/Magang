@@ -46,19 +46,19 @@
             <form wire:submit="authenticate" class="space-y-5">
 
                 {{-- Global Error Alert --}}
-                @if ($errors->has('email') && !$errors->has('password'))
+                @if ($errors->has('login') && !$errors->has('password'))
                     <div class="flex items-start gap-3 p-3.5 rounded-xl bg-red-500/10 border border-red-500/20">
                         <svg class="w-5 h-5 text-red-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
                         </svg>
-                        <p class="text-sm text-red-300">{{ $errors->first('email') }}</p>
+                        <p class="text-sm text-red-300">{{ $errors->first('login') }}</p>
                     </div>
                 @endif
 
-                {{-- Email Input --}}
+                {{-- Login Input --}}
                 <div>
-                    <label for="email" class="block text-sm font-medium text-slate-300 mb-2">
-                        Email
+                    <label for="login" class="block text-sm font-medium text-slate-300 mb-2">
+                        Email / Username
                     </label>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
@@ -67,17 +67,17 @@
                             </svg>
                         </div>
                         <input
-                            wire:model="email"
-                            type="email"
-                            id="email"
-                            placeholder="nama@pdam.go.id"
-                            autocomplete="email"
+                            wire:model="login"
+                            type="text"
+                            id="login"
+                            placeholder="nama@pdam.go.id atau username"
+                            autocomplete="username"
                             autofocus
                             class="w-full pl-11 pr-4 py-3 bg-slate-800/60 border border-slate-700/60 rounded-xl text-white placeholder-slate-500 text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 hover:border-slate-600"
                         >
                     </div>
-                    @error('email')
-                        {{-- Show inline only for format errors, not auth errors --}}
+                    @error('login')
+                        <p class="mt-1.5 text-xs text-red-400">{{ $message }}</p>
                     @enderror
                 </div>
 

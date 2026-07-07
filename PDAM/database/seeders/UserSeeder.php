@@ -6,13 +6,7 @@ use App\Models\User;
 use Illuminate\Database\Seeder;
 
 /**
- * Seeder akun pengguna demo PDAM Monitor.
- *
- * Akun-akun ini dirancang agar bisa digunakan untuk:
- * - Login Web Dashboard (Fase 1)
- * - Login Mobile App Teknisi (Fase 2) — kredensial yang sama
- *
- * Password default: "password" (di-hash Bcrypt otomatis via cast 'hashed')
+ * Seeder akun pengguna PDAM Monitor.
  */
 class UserSeeder extends Seeder
 {
@@ -25,6 +19,7 @@ class UserSeeder extends Seeder
             // ── Admin ──────────────────────────────────────────
             [
                 'name' => 'Administrator PDAM',
+                'username' => 'admin',
                 'email' => 'admin@pdam.go.id',
                 'password' => 'password',
                 'role' => User::ROLE_ADMIN,
@@ -35,24 +30,19 @@ class UserSeeder extends Seeder
             // ── Manajemen ──────────────────────────────────────
             [
                 'name' => 'Kepala Bagian Distribusi',
+                'username' => 'kbd',
                 'email' => 'manajemen@pdam.go.id',
                 'password' => 'password',
                 'role' => User::ROLE_MANAJEMEN,
                 'phone' => '081200000002',
                 'is_active' => true,
             ],
-            [
-                'name' => 'Kepala Bagian Teknik',
-                'email' => 'teknik@pdam.go.id',
-                'password' => 'password',
-                'role' => User::ROLE_MANAJEMEN,
-                'phone' => '081200000003',
-                'is_active' => true,
-            ],
+
 
             // ── Teknisi ────────────────────────────────────────
             [
                 'name' => 'B',
+                'username' => 'b',
                 'email' => 'b.teknisi@pdam.go.id',
                 'password' => 'password',
                 'role' => User::ROLE_TEKNISI,
@@ -61,6 +51,7 @@ class UserSeeder extends Seeder
             ],
             [
                 'name' => 'A',
+                'username' => 'a',
                 'email' => 'a.teknisi@pdam.go.id',
                 'password' => 'password',
                 'role' => User::ROLE_TEKNISI,
@@ -69,6 +60,7 @@ class UserSeeder extends Seeder
             ],
             [
                 'name' => 'C',
+                'username' => 'c',
                 'email' => 'C.teknisi@pdam.go.id',
                 'password' => 'password',
                 'role' => User::ROLE_TEKNISI,
