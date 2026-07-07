@@ -50,7 +50,7 @@
 <body class="h-full bg-slate-950 text-slate-200 font-sans antialiased" style="font-family: 'Inter', system-ui, sans-serif;">
 
     {{-- Mobile menu overlay --}}
-    <div x-data="{ sidebarOpen: false }" class="flex h-full">
+    <div x-data="{ sidebarOpen: false, userMenuOpen: false }" class="flex h-full">
 
         {{-- Sidebar --}}
         <aside
@@ -115,10 +115,17 @@
                 </a>
             </nav>
 
-            {{-- Footer --}}
-            <div class="px-6 py-4 border-t border-slate-800/50">
-                <p class="text-xs text-slate-500">PDAM Monitor v1.0</p>
-                <p class="text-xs text-slate-600 mt-0.5">TALL Stack Dashboard</p>
+            {{-- Sidebar User Info --}}
+            <div class="px-4 py-4 border-t border-slate-800/50">
+                <div class="flex items-center gap-3 px-2">
+                    <div class="flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 text-white text-xs font-bold shadow-lg shadow-cyan-500/20 shrink-0">
+                        {{ Auth::user()->initials() }}
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-sm font-medium text-white truncate">{{ Auth::user()->name }}</p>
+                        <p class="text-xs text-slate-400 truncate">{{ Auth::user()->role_label }}</p>
+                    </div>
+                </div>
             </div>
         </aside>
 
@@ -163,9 +170,57 @@
                         <span class="text-xs font-medium text-emerald-400">Sistem Aktif</span>
                     </div>
 
-                    {{-- User avatar --}}
-                    <div class="flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 text-white text-sm font-bold shadow-lg shadow-cyan-500/20">
-                        AD
+                    {{-- User dropdown --}}
+                    <div class="relative" x-data="{ open: false }">
+                        <button @click="open = !open"
+                                class="flex items-center gap-2 p-1.5 rounded-xl hover:bg-slate-800/60 transition-colors duration-200">
+                            <div class="flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 text-white text-sm font-bold shadow-lg shadow-cyan-500/20">
+                                {{ Auth::user()->initials() }}
+                            </div>
+                            <svg class="w-4 h-4 text-slate-400 hidden sm:block transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+
+                        {{-- Dropdown Menu --}}
+                        <div x-show="open"
+                             x-cloak
+                             @click.outside="open = false"
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 scale-95 -translate-y-1"
+                             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-150"
+                             x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                             x-transition:leave-end="opacity-0 scale-95 -translate-y-1"
+                             class="absolute right-0 mt-2 w-64 bg-slate-900/95 backdrop-blur-xl border border-slate-700/60 rounded-xl shadow-2xl shadow-black/40 overflow-hidden z-50">
+
+                            {{-- User info --}}
+                            <div class="px-4 py-3 border-b border-slate-800/60">
+                                <p class="text-sm font-semibold text-white truncate">{{ Auth::user()->name }}</p>
+                                <p class="text-xs text-slate-400 truncate mt-0.5">{{ Auth::user()->email }}</p>
+                                <span class="inline-flex items-center mt-2 px-2 py-0.5 rounded-md text-xs font-medium
+                                    {{ Auth::user()->isAdmin() ? 'bg-violet-500/15 text-violet-400 border border-violet-500/20' : '' }}
+                                    {{ Auth::user()->isManajemen() ? 'bg-amber-500/15 text-amber-400 border border-amber-500/20' : '' }}
+                                    {{ Auth::user()->isTeknisi() ? 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/20' : '' }}
+                                ">
+                                    {{ Auth::user()->role_label }}
+                                </span>
+                            </div>
+
+                            {{-- Logout --}}
+                            <div class="p-1.5">
+                                <form method="POST" action="{{ route('logout') }}">
+                                    @csrf
+                                    <button type="submit"
+                                            class="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-red-400 hover:bg-red-500/10 transition-colors duration-200">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                                        </svg>
+                                        Keluar dari Sistem
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </header>
