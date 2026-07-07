@@ -4,14 +4,12 @@ namespace Database\Seeders;
 
 use App\Models\AsetValve;
 use App\Models\Lokasi;
-use App\Models\LogTekanan;
-use App\Models\LogValve;
 use Illuminate\Database\Seeder;
 
 class PdamSeeder extends Seeder
 {
     /**
-     * Seed data demo realistis PDAM — Kabupaten Pemalang.
+     * Seed data PDAM Pemalang.
      */
     public function run(): void
     {
@@ -65,66 +63,6 @@ class PdamSeeder extends Seeder
                     'nama_aset' => $spec['nama'] . ' - ' . str_replace('Kecamatan ', '', $lokasi->nama_lokasi),
                     'kapasitas_full_putaran' => $spec['kapasitas'],
                     'total_tutupan_saat_ini' => $tutupan,
-                ]);
-            }
-        }
-
-        // Log Valve (riwayat aktivitas)
-        $teknisiNames = [
-            'A',
-            'B',
-            'C',
-            'D',
-            'E',
-            'F',
-        ];
-
-        foreach ($asets as $aset) {
-            $logCount = rand(3, 8);
-            for ($i = 0; $i < $logCount; $i++) {
-                $aksi = rand(0, 1) ? 'buka' : 'tutup';
-                $putaran = round(rand(100, 2000) / 100, 2);
-                $waktu = now()->subDays(rand(0, 60))->subHours(rand(0, 23))->subMinutes(rand(0, 59));
-
-                // Simulate snapshot values
-                $snapshotTutupan = round(rand(0, (int) ($aset->kapasitas_full_putaran * 100)) / 100, 2);
-                $snapshotBukaan = round((float) $aset->kapasitas_full_putaran - $snapshotTutupan, 2);
-
-                LogValve::create([
-                    'aset_valve_id' => $aset->id,
-                    'nama_teknisi' => $teknisiNames[array_rand($teknisiNames)],
-                    'waktu_kegiatan' => $waktu,
-                    'aksi_kerja' => $aksi,
-                    'jumlah_putaran' => $putaran,
-                    'keterangan' => rand(0, 2) === 0 ? 'Pemeliharaan rutin' : (rand(0, 1) ? 'Penyesuaian debit air' : null),
-                    'snapshot_sisa_bukaan' => $snapshotBukaan,
-                    'snapshot_total_tutupan' => $snapshotTutupan,
-                ]);
-            }
-        }
-
-        // Log Tekanan
-        foreach ($lokasis as $lokasi) {
-            $logCount = rand(5, 15);
-            for ($i = 0; $i < $logCount; $i++) {
-                // Varied pressure values: mostly normal, some low, few critical
-                $rand = rand(1, 100);
-                if ($rand <= 65) {
-                    $tekanan = round(rand(100, 250) / 100, 2); // Normal: 1.0 - 2.5
-                } elseif ($rand <= 90) {
-                    $tekanan = round(rand(50, 99) / 100, 2); // Rendah: 0.5 - 0.99
-                } else {
-                    $tekanan = round(rand(0, 49) / 100, 2); // Kritis: 0 - 0.49
-                }
-
-                $status = LogTekanan::klasifikasiStatus($tekanan);
-                $waktu = now()->subDays(rand(0, 30))->subHours(rand(0, 23));
-
-                LogTekanan::create([
-                    'lokasi_id' => $lokasi->id,
-                    'nilai_tekanan' => $tekanan,
-                    'status' => $status,
-                    'waktu_pengecekan' => $waktu,
                 ]);
             }
         }
