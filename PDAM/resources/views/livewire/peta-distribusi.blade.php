@@ -4,7 +4,7 @@
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
             <h1 class="text-2xl font-bold text-white">Peta Distribusi Aset</h1>
-            <p class="text-sm text-slate-400 mt-1">Monitoring lokasi Gate Valve dan status tekanan per kecamatan — Kabupaten Pemalang</p>
+            <p class="text-sm text-slate-400 mt-1">Monitoring lokasi Gate Valve dan status tekanan Kabupaten Pemalang</p>
         </div>
         <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/60 border border-slate-700/50">
             <svg class="w-4 h-4 text-cyan-400 animate-spin-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24">

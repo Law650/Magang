@@ -16,7 +16,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             UserSeeder::class,
-            PdamSeeder::class,
+            MasterAsetSeeder::class,
             LogValveSeeder::class,
             LogTekananSeeder::class,
         ]);
