@@ -86,6 +86,7 @@ class ApiLogTekananController extends Controller
                     'status' => $latestLog->status,
                     'waktu_pengecekan' => $latestLog->waktu_pengecekan,
                     'nama_teknisi' => $latestLog->nama_teknisi,
+                    'foto_eviden' => $latestLog->foto_eviden ? asset('storage/' . $latestLog->foto_eviden) : null,
                 ] : null,
             ];
         });
