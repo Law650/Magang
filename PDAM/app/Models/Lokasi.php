@@ -51,4 +51,14 @@ class Lokasi extends Model
     {
         return $this->hasMany(LogTekanan::class);
     }
+
+    /**
+     * Log tekanan terbaru di lokasi ini.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function latestLogTekanan()
+    {
+        return $this->hasOne(LogTekanan::class)->latestOfMany('waktu_pengecekan');
+    }
 }

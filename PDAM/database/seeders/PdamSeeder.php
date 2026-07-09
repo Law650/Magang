@@ -56,13 +56,12 @@ class PdamSeeder extends Seeder
             $valveCount = ($index % 3 === 0) ? 3 : 2;
             for ($i = 0; $i < $valveCount; $i++) {
                 $spec = $valveSpecs[($index + $i) % count($valveSpecs)];
-                $tutupan = round(rand(0, (int) ($spec['kapasitas'] * 100)) / 100, 2);
-
+                // Set total_tutupan_saat_ini ke 0 dulu, nanti di-update setelah log di-generate
                 $asets[] = AsetValve::create([
                     'lokasi_id' => $lokasi->id,
                     'nama_aset' => $spec['nama'] . ' - ' . str_replace('Kecamatan ', '', $lokasi->nama_lokasi),
                     'kapasitas_full_putaran' => $spec['kapasitas'],
-                    'total_tutupan_saat_ini' => $tutupan,
+                    'total_tutupan_saat_ini' => 0, 
                 ]);
             }
         }

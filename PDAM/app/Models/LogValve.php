@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * @property int $id
  * @property int $aset_valve_id
+ * @property int|null $user_id
  * @property string $nama_teknisi
  * @property \Illuminate\Support\Carbon $waktu_kegiatan
  * @property string $aksi_kerja
@@ -15,6 +16,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $keterangan
  * @property float $snapshot_sisa_bukaan
  * @property float $snapshot_total_tutupan
+ * @property float|null $latitude
+ * @property float|null $longitude
+ * @property string|null $foto_eviden
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  */
@@ -22,6 +26,7 @@ class LogValve extends Model
 {
     protected $fillable = [
         'aset_valve_id',
+        'user_id',
         'nama_teknisi',
         'waktu_kegiatan',
         'aksi_kerja',
@@ -29,6 +34,9 @@ class LogValve extends Model
         'keterangan',
         'snapshot_sisa_bukaan',
         'snapshot_total_tutupan',
+        'latitude',
+        'longitude',
+        'foto_eviden',
     ];
 
     /**
@@ -43,6 +51,8 @@ class LogValve extends Model
             'jumlah_putaran' => 'decimal:2',
             'snapshot_sisa_bukaan' => 'decimal:2',
             'snapshot_total_tutupan' => 'decimal:2',
+            'latitude' => 'decimal:6',
+            'longitude' => 'decimal:6',
         ];
     }
 
@@ -57,6 +67,18 @@ class LogValve extends Model
         return $this->belongsTo(AsetValve::class)->withDefault([
             'nama_aset' => 'Aset Tidak Ditemukan',
             'kapasitas_full_putaran' => 0,
+        ]);
+    }
+
+    /**
+     * User/teknisi yang mencatat log ini.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class)->withDefault([
+            'name' => 'Teknisi Tidak Diketahui',
         ]);
     }
 }

@@ -8,9 +8,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * @property int $id
  * @property int $lokasi_id
+ * @property int|null $user_id
+ * @property string|null $nama_teknisi
  * @property float $nilai_tekanan
  * @property string $status
  * @property \Illuminate\Support\Carbon $waktu_pengecekan
+ * @property float|null $latitude
+ * @property float|null $longitude
+ * @property string|null $foto_eviden
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  */
@@ -18,9 +23,14 @@ class LogTekanan extends Model
 {
     protected $fillable = [
         'lokasi_id',
+        'user_id',
+        'nama_teknisi',
         'nilai_tekanan',
         'status',
         'waktu_pengecekan',
+        'latitude',
+        'longitude',
+        'foto_eviden',
     ];
 
     /**
@@ -33,6 +43,8 @@ class LogTekanan extends Model
         return [
             'waktu_pengecekan' => 'datetime',
             'nilai_tekanan' => 'decimal:2',
+            'latitude' => 'decimal:6',
+            'longitude' => 'decimal:6',
         ];
     }
 
@@ -61,5 +73,17 @@ class LogTekanan extends Model
     public function lokasi(): BelongsTo
     {
         return $this->belongsTo(Lokasi::class);
+    }
+
+    /**
+     * User/teknisi yang mencatat log ini.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class)->withDefault([
+            'name' => 'Teknisi Tidak Diketahui',
+        ]);
     }
 }
