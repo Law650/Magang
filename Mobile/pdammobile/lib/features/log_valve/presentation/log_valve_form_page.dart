@@ -201,6 +201,7 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
     try {
       final idempotencyKey = const Uuid().v4();
       final payloadFields = <String, dynamic>{
+        'lokasi_id': _selectedLokasi?.id,
         'aset_id': _selectedAset!.id,
         'nama_aset': _selectedAset!.namaAset,
         'nama_lokasi': _selectedAset!.namaLokasi,

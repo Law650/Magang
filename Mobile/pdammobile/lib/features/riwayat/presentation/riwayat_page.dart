@@ -37,7 +37,15 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
     // Filter berdasarkan lokasi jika dipilih
     final filteredByLokasi = _selectedLokasi == null 
         ? allLogs 
-        : allLogs.where((log) => log.payloadFields['lokasi_id'] == _selectedLokasi!.id).toList();
+        : allLogs.where((log) {
+            final pid = log.payloadFields['lokasi_id'];
+            if (pid != null && pid == _selectedLokasi!.id) return true;
+            
+            final pNama = log.payloadFields['nama_lokasi'];
+            if (pNama != null && pNama == _selectedLokasi!.namaLokasi) return true;
+            
+            return false;
+          }).toList();
 
     // Filter berdasarkan aset jika dipilih (untuk list tabel riwayat)
     final filteredLogs = _selectedAset == null 
