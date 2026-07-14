@@ -64,7 +64,7 @@ class Login extends Component
 
         $this->ensureIsNotRateLimited();
 
-        $fieldType = filter_var($this->login, FILTER_VALIDATE_EMAIL) ? 'email' : 'name';
+        $fieldType = filter_var($this->login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
 
         if (! Auth::attempt(
             [$fieldType => $this->login, 'password' => $this->password],

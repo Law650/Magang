@@ -118,7 +118,7 @@
                             callbacks: {
                                 label: function(context) {
                                     const val = context.parsed.y;
-                                    let status = val >= 1.0 ? '🟢 Normal' : (val >= 0.5 ? '🟡 Rendah' : '🔴 Kritis');
+                                    let status = val >= 0.7 ? '🟢 Normal' : (val > 0 ? '🟡 Rendah' : '🔴 Kritis');
                                     return `${val} Bar — ${status}`;
                                 }
                             }
@@ -142,7 +142,7 @@
                             const chart = this;
                             const yScale = chart.scales.y;
                             const ctx = chart.ctx;
-                            const y = yScale.getPixelForValue(1.0);
+                            const y = yScale.getPixelForValue(0.7);
 
                             ctx.save();
                             ctx.beginPath();
@@ -155,7 +155,7 @@
 
                             ctx.fillStyle = 'rgba(34, 197, 94, 0.8)';
                             ctx.font = '11px Inter, sans-serif';
-                            ctx.fillText('Batas Normal (1.0 Bar)', chart.chartArea.left + 5, y - 6);
+                            ctx.fillText('Batas Normal (0.7 Bar)', chart.chartArea.left + 5, y - 6);
                             ctx.restore();
                         }
                     }
@@ -185,7 +185,7 @@
             <input
                 type="text"
                 wire:model.live.debounce.300ms="search"
-                placeholder="Cari lokasi..."
+                placeholder="Cari nama daerah..."
                 class="w-full pl-10 pr-4 py-2.5 bg-slate-900/50 border border-slate-700/50 rounded-xl text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-500/40 transition"
             >
         </div>
@@ -217,9 +217,11 @@
                 <thead>
                     <tr class="border-b border-slate-800/50">
                         <th class="px-5 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Waktu</th>
-                        <th class="px-5 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Lokasi</th>
+                        <th class="px-5 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Nama Daerah</th>
                         <th class="px-5 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">Tekanan (Bar)</th>
+                        <th class="px-5 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">Aliran</th>
                         <th class="px-5 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</th>
+                        <th class="px-5 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">Foto</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-800/30">
@@ -234,6 +236,15 @@
                                 <span class="font-medium text-white">{{ $log->lokasi->nama_lokasi ?? '-' }}</span>
                             </td>
                             <td class="px-5 py-4 text-center font-mono text-slate-300 font-semibold">{{ $log->nilai_tekanan }}</td>
+                            <td class="px-5 py-4 text-center">
+                                @if($log->status_aliran === 'mengalir')
+                                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 text-xs font-semibold text-cyan-400 border border-cyan-500/20">Mengalir</span>
+                                @elseif($log->status_aliran === 'tidak_mengalir')
+                                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/10 text-xs font-semibold text-red-400 border border-red-500/20">Tidak Mengalir</span>
+                                @else
+                                    <span class="text-slate-500">-</span>
+                                @endif
+                            </td>
                             <td class="px-5 py-4 text-center">
                                 @switch($log->status)
                                     @case('normal')
@@ -255,6 +266,17 @@
                                         </span>
                                         @break
                                 @endswitch
+                            </td>
+                            <td class="px-5 py-4 text-center">
+                                @if($log->foto_eviden)
+                                    <a href="{{ Storage::url($log->foto_eviden) }}" target="_blank" class="inline-flex items-center justify-center p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors" title="Lihat Foto">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                        </svg>
+                                    </a>
+                                @else
+                                    <span class="text-xs text-slate-600">-</span>
+                                @endif
                             </td>
                         </tr>
                     @empty

@@ -1,5 +1,5 @@
 <?php
-
+/*
 namespace Database\Seeders;
 
 use App\Models\AsetValve;
@@ -8,7 +8,7 @@ use Illuminate\Database\Seeder;
 
 class MasterAsetSeeder extends Seeder
 {
-    /**
+   
      * Seed master data aset GV.
      *
      * CARA PENGISIAN:
@@ -18,17 +18,17 @@ class MasterAsetSeeder extends Seeder
      *    dan nama desa tempat GV tersebut berada.
      * 3. Pastikan nama desa di $daftarAset sesuai persis dengan key di $daftarLokasi.
      */
-    public function run(): void
-    {
+    // public function run(): void
+    // {
         // ============================================================
         // 1. DAFTAR LOKASI (DESA) & KOORDINAT
         //    Kelompokkan per kecamatan menggunakan komentar.
         //    Key = nama desa (harus sama persis dengan field 'lokasi' di $daftarAset)
         // ============================================================
-        $daftarLokasi = [
+        // $daftarLokasi = [
 
             // --- KECAMATAN PEMALANG ---
-            'Paduraksa'     => ['lat' => -6.942547, 'lng' => 109.390231],
+            //'Paduraksa'     => ['lat' => -6.942547, 'lng' => 109.390231],
             // 'Mulyoharjo'  => ['lat' => -0.000000, 'lng' => 0.000000],
             // 'Kebondalem'  => ['lat' => -0.000000, 'lng' => 0.000000],
             // TODO: Tambahkan desa lainnya di Kec. Pemalang...
@@ -46,19 +46,19 @@ class MasterAsetSeeder extends Seeder
             // TEMPLATE: Copy baris di bawah untuk menambahkan desa baru
             // ===========================================================
             // 'Nama Desa'   => ['lat' => -0.000000, 'lng' => 0.000000],
-        ];
+        // ];
 
         // ============================================================
         // 2. DAFTAR ASET GV
         //    Setiap baris = 1 GV.
         //    'lokasi' = nama desa (harus sesuai key di $daftarLokasi di atas)
         // ============================================================
-        $daftarAset = [
+        // $daftarAset = [
 
             // --- GV di Desa Paduraksa (Kec. Pemalang) ---
-            ['nama' => 'GV 14"',  'lokasi' => 'Paduraksa',  'kapasitas' => 58.50, 'tutupan' => 0.00],
-            ['nama' => 'GV 12"',  'lokasi' => 'Paduraksa',  'kapasitas' => 32.00, 'tutupan' => 0.00],
-            ['nama' => 'GV 16"',  'lokasi' => 'Paduraksa',  'kapasitas' => 20.00, 'tutupan' => 0.00],
+            // ['nama' => 'GV 14"',  'lokasi' => 'Paduraksa',  'kapasitas' => 58.50, 'tutupan' => 0.00],
+            // ['nama' => 'GV 12"',  'lokasi' => 'Paduraksa',  'kapasitas' => 32.00, 'tutupan' => 0.00],
+            // ['nama' => 'GV 16"',  'lokasi' => 'Paduraksa',  'kapasitas' => 20.00, 'tutupan' => 0.00],
 
             // --- GV di Desa ... (Kec. Taman) ---
             // ['nama' => 'GV 6"',  'lokasi' => 'Asemdoyong',  'kapasitas' => 58.50, 'tutupan' => 0.00],
@@ -70,11 +70,13 @@ class MasterAsetSeeder extends Seeder
             // TEMPLATE: Copy baris di bawah untuk menambahkan GV baru
             // ===========================================================
             // ['nama' => 'GV X"', 'lokasi' => 'Nama Desa', 'kapasitas' => 0.00, 'tutupan' => 0.00],
-        ];
+        // ];
 
         // ============================================================
         // PROSES INSERT (tidak perlu diubah)
         // ============================================================
+        
+        /*
         $lokasiCache = [];
         $countPerLokasi = [];
 
@@ -118,3 +120,4 @@ class MasterAsetSeeder extends Seeder
         $this->command->info("Total: " . count($countPerLokasi) . " desa, " . count($daftarAset) . " aset GV");
     }
 }
+*/

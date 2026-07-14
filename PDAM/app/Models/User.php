@@ -35,10 +35,9 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
 
-    /** Role constants — sesuai ENUM di PRD §3.2 */
+    /** Role constants — sesuai PRD §4.0.2 (2 role saja) */
     public const ROLE_ADMIN = 'admin';
-    public const ROLE_MANAJEMEN = 'manajemen';
-    public const ROLE_TEKNISI = 'teknisi';
+    public const ROLE_PETUGAS = 'petugas';
 
     /**
      * Get the attributes that should be cast.
@@ -63,19 +62,11 @@ class User extends Authenticatable
     }
 
     /**
-     * Cek apakah user adalah Manajemen.
+     * Cek apakah user adalah Petugas.
      */
-    public function isManajemen(): bool
+    public function isPetugas(): bool
     {
-        return $this->role === self::ROLE_MANAJEMEN;
-    }
-
-    /**
-     * Cek apakah user adalah Teknisi.
-     */
-    public function isTeknisi(): bool
-    {
-        return $this->role === self::ROLE_TEKNISI;
+        return $this->role === self::ROLE_PETUGAS;
     }
 
     /**
@@ -85,8 +76,7 @@ class User extends Authenticatable
     {
         return match ($this->role) {
             self::ROLE_ADMIN => 'Administrator',
-            self::ROLE_MANAJEMEN => 'Manajemen',
-            self::ROLE_TEKNISI => 'Teknisi',
+            self::ROLE_PETUGAS => 'Petugas',
             default => ucfirst($this->role),
         };
     }

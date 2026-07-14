@@ -82,20 +82,12 @@
                     Dashboard
                 </a>
 
-                <a href="{{ route('manajemen-aset') }}" wire:navigate
-                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('manajemen-aset') ? 'bg-cyan-500/10 text-cyan-400 shadow-sm' : 'text-slate-400 hover:text-white hover:bg-slate-800/60' }}">
+                <a href="{{ route('peta-distribusi') }}" wire:navigate
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('peta-distribusi') ? 'bg-cyan-500/10 text-cyan-400 shadow-sm' : 'text-slate-400 hover:text-white hover:bg-slate-800/60' }}">
                     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
                     </svg>
-                    Master Aset
-                </a>
-
-                <a href="{{ route('manajemen-daerah-tekanan') }}" wire:navigate
-                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('manajemen-daerah-tekanan') ? 'bg-cyan-500/10 text-cyan-400 shadow-sm' : 'text-slate-400 hover:text-white hover:bg-slate-800/60' }}">
-                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    Daerah Tekanan
+                    Peta Distribusi
                 </a>
 
                 <a href="{{ route('log-valve') }}" wire:navigate
@@ -114,13 +106,35 @@
                     Log Tekanan
                 </a>
 
-                <a href="{{ route('peta-distribusi') }}" wire:navigate
-                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('peta-distribusi') ? 'bg-cyan-500/10 text-cyan-400 shadow-sm' : 'text-slate-400 hover:text-white hover:bg-slate-800/60' }}">
+                <p class="px-3 mt-4 mb-2 text-xs font-semibold tracking-wider text-slate-500 uppercase">Master Data</p>
+
+                <a href="{{ route('manajemen-aset') }}" wire:navigate
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('manajemen-aset') ? 'bg-cyan-500/10 text-cyan-400 shadow-sm' : 'text-slate-400 hover:text-white hover:bg-slate-800/60' }}">
                     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
                     </svg>
-                    Peta Distribusi
+                    Master Aset
                 </a>
+
+                <a href="{{ route('manajemen-daerah-tekanan') }}" wire:navigate
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('manajemen-daerah-tekanan') ? 'bg-cyan-500/10 text-cyan-400 shadow-sm' : 'text-slate-400 hover:text-white hover:bg-slate-800/60' }}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Daerah Tekanan
+                </a>
+
+                @if(auth()->user()->isAdmin())
+                    <p class="px-3 mt-4 mb-2 text-xs font-semibold tracking-wider text-slate-500 uppercase">Admin</p>
+
+                    <a href="{{ route('manajemen-pengguna') }}" wire:navigate
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('manajemen-pengguna') ? 'bg-cyan-500/10 text-cyan-400 shadow-sm' : 'text-slate-400 hover:text-white hover:bg-slate-800/60' }}">
+                        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                        </svg>
+                        Manajemen Pengguna
+                    </a>
+                @endif
             </nav>
 
             {{-- Sidebar User Info --}}
@@ -207,9 +221,7 @@
                                 <p class="text-sm font-semibold text-white truncate">{{ Auth::user()->name }}</p>
                                 <p class="text-xs text-slate-400 truncate mt-0.5">{{ Auth::user()->email }}</p>
                                 <span class="inline-flex items-center mt-2 px-2 py-0.5 rounded-md text-xs font-medium
-                                    {{ Auth::user()->isAdmin() ? 'bg-violet-500/15 text-violet-400 border border-violet-500/20' : '' }}
-                                    {{ Auth::user()->isManajemen() ? 'bg-amber-500/15 text-amber-400 border border-amber-500/20' : '' }}
-                                    {{ Auth::user()->isTeknisi() ? 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/20' : '' }}
+                                    {{ Auth::user()->isAdmin() ? 'bg-violet-500/15 text-violet-400 border border-violet-500/20' : 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/20' }}
                                 ">
                                     {{ Auth::user()->role_label }}
                                 </span>

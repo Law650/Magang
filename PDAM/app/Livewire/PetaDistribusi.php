@@ -2,84 +2,151 @@
 
 namespace App\Livewire;
 
+use App\Helpers\FormatHelper;
+use App\Models\AsetValve;
 use App\Models\Lokasi;
 use App\Models\LogTekanan;
 use Livewire\Component;
 
 class PetaDistribusi extends Component
 {
-    public array $markers = [];
-    public array $stats = [];
+    public string $activeTab = 'gv';
+
+    public array $gvMarkers = [];
+    public array $tekananMarkers = [];
+    public array $gvStats = [];
+    public array $tekananStats = [];
 
     public function mount()
     {
         $this->refreshData();
     }
 
-    public function refreshData()
+    public function setTab(string $tab): void
     {
-        $this->markers = $this->getMarkers();
-        $this->stats = $this->getStats();
-        $this->dispatch('markers-updated', markers: $this->markers);
+        $this->activeTab = $tab;
+    }
+
+    public function refreshData(): void
+    {
+        $this->gvMarkers = $this->getGvMarkers();
+        $this->tekananMarkers = $this->getTekananMarkers();
+        $this->gvStats = $this->getGvStats();
+        $this->tekananStats = $this->getTekananStats();
+
+        $this->dispatch('gv-markers-updated', markers: $this->gvMarkers);
+        $this->dispatch('tekanan-markers-updated', markers: $this->tekananMarkers);
     }
 
     /**
-     * Build map marker data for each lokasi.
-     * Includes latest pressure reading and asset count.
-     *
-     * @return array<int, array<string, mixed>>
+     * Marker data dari master_aset_valve (Peta GV).
      */
-    private function getMarkers(): array
+    private function getGvMarkers(): array
     {
-        $lokasis = Lokasi::withCount('asetValves')
-            ->with(['logTekanans' => function ($q) {
-                $q->orderBy('waktu_pengecekan', 'desc');
-            }, 'asetValves'])
+        $asets = AsetValve::with(['lokasi', 'lastLogValve.user'])
+            ->whereHas('lokasi', fn ($q) => $q->whereNotNull('latitude')->whereNotNull('longitude'))
+            ->get();
+
+        return $asets->map(function ($aset) {
+            $persentase = $aset->persentase_bukaan;
+            $status = $persentase >= 75 ? 'penuh' : ($persentase >= 25 ? 'sebagian' : 'tertutup');
+
+            $lastLog = $aset->lastLogValve;
+            $teknisiTerakhir = $lastLog?->user?->name ?? '-';
+
+            return [
+                'id' => $aset->id,
+                'nama' => $aset->nama_aset,
+                'lokasi' => $aset->lokasi->nama_lokasi ?? '-',
+                'lat' => (float) $aset->lokasi->latitude,
+                'lng' => (float) $aset->lokasi->longitude,
+                'kapasitas' => (float) $aset->kapasitas_full_putaran,
+                'sisaBukaan' => FormatHelper::putaran($aset->sisa_bukaan),
+                'persentase' => $persentase,
+                'status' => $status,
+                'teknisiTerakhir' => $teknisiTerakhir,
+            ];
+        })->toArray();
+    }
+
+    /**
+     * Marker data dari lokasi + log_tekanan terbaru (Peta Tekanan).
+     */
+    private function getTekananMarkers(): array
+    {
+        $lokasis = Lokasi::where('jenis', 'tekanan')
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
             ->get();
 
         return $lokasis->map(function ($lokasi) {
-            $latestTekanan = $lokasi->logTekanans->first();
-            $nilaiTekanan = $latestTekanan ? (float) $latestTekanan->nilai_tekanan : null;
-            $status = $latestTekanan ? $latestTekanan->status : 'unknown';
+            $latestLog = LogTekanan::where('lokasi_id', $lokasi->id)
+                ->orderBy('waktu_pengecekan', 'desc')
+                ->first();
 
-            $valves = $lokasi->asetValves->map(fn ($v) => [
-                'nama' => $v->nama_aset,
-                'kapasitas' => (float) $v->kapasitas_full_putaran,
-                'tutupan' => (float) $v->total_tutupan_saat_ini,
-                'sisaBukaan' => \App\Helpers\FormatHelper::putaran($v->sisa_bukaan),
-                'persentase' => $v->persentase_bukaan,
-            ])->values()->toArray();
+            $nilaiTekanan = $latestLog ? (float) $latestLog->nilai_tekanan : null;
+            $status = $latestLog ? $latestLog->status : 'unknown';
+            $statusAliran = $latestLog?->status_aliran;
+            $waktu = $latestLog?->waktu_pengecekan;
+
+            // Derive laju air dari tekanan jika status_aliran belum ada
+            if ($nilaiTekanan !== null && $statusAliran === null) {
+                $statusAliran = $nilaiTekanan > 0 ? 'mengalir' : 'tidak_mengalir';
+            }
 
             return [
                 'id' => $lokasi->id,
                 'nama' => $lokasi->nama_lokasi,
                 'lat' => (float) $lokasi->latitude,
                 'lng' => (float) $lokasi->longitude,
-                'jumlahAset' => $lokasi->aset_valves_count,
                 'tekanan' => $nilaiTekanan,
                 'status' => $status,
-                'valves' => $valves,
+                'statusAliran' => $statusAliran,
+                'waktu' => $waktu,
             ];
         })->toArray();
     }
 
     /**
-     * Compute summary statistics for the sidebar.
-     *
-     * @return array{total: int, normal: int, rendah: int, kritis: int}
+     * Stats for GV tab.
      */
-    private function getStats(): array
+    private function getGvStats(): array
     {
-        $lokasis = Lokasi::whereNotNull('latitude')->get();
+        $asets = AsetValve::all();
+        $total = $asets->count();
+        $penuh = 0;
+        $sebagian = 0;
+        $tertutup = 0;
+
+        foreach ($asets as $aset) {
+            $p = $aset->persentase_bukaan;
+            if ($p >= 75) {
+                $penuh++;
+            } elseif ($p >= 25) {
+                $sebagian++;
+            } else {
+                $tertutup++;
+            }
+        }
+
+        return compact('total', 'penuh', 'sebagian', 'tertutup');
+    }
+
+    /**
+     * Stats for Tekanan tab.
+     */
+    private function getTekananStats(): array
+    {
+        $lokasis = Lokasi::where('jenis', 'tekanan')->whereNotNull('latitude')->get();
         $total = $lokasis->count();
         $normal = 0;
         $rendah = 0;
         $kritis = 0;
 
         foreach ($lokasis as $lokasi) {
-            $latest = $lokasi->logTekanans()->orderBy('waktu_pengecekan', 'desc')->first();
+            $latest = LogTekanan::where('lokasi_id', $lokasi->id)
+                ->orderBy('waktu_pengecekan', 'desc')
+                ->first();
             if (! $latest) {
                 continue;
             }
@@ -96,7 +163,7 @@ class PetaDistribusi extends Component
 
     public function render(): mixed
     {
-        $this->refreshData(); // Auto update on wire:poll
-        return view('livewire.peta-distribusi')->layout('components.layouts.app', ['title' => 'Peta Distribusi Aset']);
+        $this->refreshData();
+        return view('livewire.peta-distribusi')->layout('components.layouts.app', ['title' => 'Peta Distribusi']);
     }
 }

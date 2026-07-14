@@ -27,6 +27,9 @@ class LogTekanan extends Model
         'nama_teknisi',
         'nilai_tekanan',
         'status',
+        'status_aliran',
+        'kekeruhan',
+        'keterangan',
         'waktu_pengecekan',
         'latitude',
         'longitude',
@@ -50,15 +53,15 @@ class LogTekanan extends Model
 
     /**
      * Klasifikasi status tekanan otomatis berdasarkan nilai.
-     * Normal ≥ 1.0, Rendah 0.5–<1.0, Kritis < 0.5
+     * Normal >= 0.7, Rendah > 0 - < 0.7, Kritis <= 0
      */
     public static function klasifikasiStatus(float $nilaiTekanan): string
     {
-        if ($nilaiTekanan >= 1.0) {
+        if ($nilaiTekanan >= 0.7) {
             return 'normal';
         }
 
-        if ($nilaiTekanan >= 0.5) {
+        if ($nilaiTekanan > 0) {
             return 'rendah';
         }
 

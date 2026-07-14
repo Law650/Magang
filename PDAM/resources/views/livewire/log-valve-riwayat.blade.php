@@ -2,7 +2,7 @@
     {{-- Page Header --}}
     <div class="mb-6">
         <h1 class="text-2xl font-bold text-white">Riwayat Operasional Valve</h1>
-        <p class="text-sm text-slate-400 mt-1">Riwayat aktivitas buka/tutup katup dari teknisi lapangan</p>
+        <p class="text-sm text-slate-400 mt-1">Riwayat aktivitas buka/tutup katup dari petugas lapangan</p>
     </div>
 
     {{-- Stat Cards --}}
@@ -77,7 +77,7 @@
             <input
                 type="text"
                 wire:model.live.debounce.300ms="search"
-                placeholder="Cari teknisi, aset, atau lokasi..."
+                placeholder="Cari petugas, aset, atau lokasi..."
                 class="w-full pl-10 pr-4 py-2.5 bg-slate-900/50 border border-slate-700/50 rounded-xl text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-500/40 transition"
             >
         </div>
@@ -108,13 +108,14 @@
                 <thead>
                     <tr class="border-b border-slate-800/50">
                         <th class="px-5 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Waktu</th>
-                        <th class="px-5 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Teknisi</th>
+                        <th class="px-5 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Petugas</th>
                         <th class="px-5 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Aset</th>
                         <th class="px-5 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Lokasi</th>
                         <th class="px-5 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">Aksi</th>
                         <th class="px-5 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">Putaran</th>
                         <th class="px-5 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">Sisa Bukaan</th>
                         <th class="px-5 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Tutupan</th>
+                        <th class="px-5 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">Foto</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-800/30">
@@ -150,6 +151,17 @@
                             <td class="px-5 py-4 text-center font-mono text-slate-300">{{ \App\Helpers\FormatHelper::putaran($log->jumlah_putaran) }}</td>
                             <td class="px-5 py-4 text-center font-mono text-slate-300">{{ \App\Helpers\FormatHelper::putaran($log->snapshot_sisa_bukaan) }}</td>
                             <td class="px-5 py-4 text-center font-mono text-slate-300">{{ \App\Helpers\FormatHelper::putaran($log->snapshot_total_tutupan) }}</td>
+                            <td class="px-5 py-4 text-center">
+                                @if($log->foto_eviden)
+                                    <a href="{{ Storage::url($log->foto_eviden) }}" target="_blank" class="inline-flex items-center justify-center p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors" title="Lihat Foto">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                        </svg>
+                                    </a>
+                                @else
+                                    <span class="text-xs text-slate-600">-</span>
+                                @endif
+                            </td>
                         </tr>
                     @empty
                         <tr>

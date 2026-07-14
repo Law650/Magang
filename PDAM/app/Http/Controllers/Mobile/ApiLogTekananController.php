@@ -28,6 +28,9 @@ class ApiLogTekananController extends Controller
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'foto_eviden' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:5120'],
+            'status_aliran' => ['nullable', 'string', 'in:mengalir,tidak_mengalir'],
+            'kekeruhan' => ['nullable', 'string', 'in:jernih,keruh'],
+            'keterangan' => ['nullable', 'string'],
         ]);
 
         // Handle foto upload
@@ -48,7 +51,10 @@ class ApiLogTekananController extends Controller
             'nama_teknisi' => $validated['nama_teknisi'],
             'nilai_tekanan' => $validated['nilai_tekanan'],
             'status' => $status,
+            'status_aliran' => $validated['status_aliran'] ?? null,
+            'kekeruhan' => $validated['kekeruhan'] ?? null,
             'waktu_pengecekan' => $validated['waktu_pengecekan'],
+            'keterangan' => $validated['keterangan'] ?? null,
             'latitude' => $validated['latitude'] ?? null,
             'longitude' => $validated['longitude'] ?? null,
             'foto_eviden' => $fotoPath,
@@ -84,6 +90,9 @@ class ApiLogTekananController extends Controller
                     'id' => $latestLog->id,
                     'nilai_tekanan' => $latestLog->nilai_tekanan,
                     'status' => $latestLog->status,
+                    'status_aliran' => $latestLog->status_aliran,
+                    'kekeruhan' => $latestLog->kekeruhan,
+                    'keterangan' => $latestLog->keterangan,
                     'waktu_pengecekan' => $latestLog->waktu_pengecekan,
                     'nama_teknisi' => $latestLog->nama_teknisi,
                     'foto_eviden' => $latestLog->foto_eviden ? asset('storage/' . $latestLog->foto_eviden) : null,

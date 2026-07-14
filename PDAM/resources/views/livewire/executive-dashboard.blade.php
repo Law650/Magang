@@ -335,7 +335,7 @@
         <div class="px-6 py-4 border-b border-slate-700/40 flex items-center justify-between">
             <div>
                 <h3 class="text-base font-semibold text-white">Live Activity Feed</h3>
-                <p class="text-xs text-slate-400 mt-0.5">5 aktivitas terbaru dari teknisi lapangan</p>
+                <p class="text-xs text-slate-400 mt-0.5">5 aktivitas terbaru dari petugas lapangan</p>
             </div>
             <div class="flex items-center gap-1.5">
                 <span class="relative flex h-2 w-2">

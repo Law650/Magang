@@ -32,6 +32,7 @@ class ApiLogValveController extends Controller
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'foto_eviden' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:5120'],
+            'kapasitas_full' => ['nullable', 'numeric', 'min:0.01'],
         ]);
 
         // Normalize aksi_kerja ke lowercase
@@ -48,6 +49,11 @@ class ApiLogValveController extends Controller
 
         $log = DB::transaction(function () use ($validated, $fotoPath, $request) {
             $aset = AsetValve::lockForUpdate()->findOrFail($validated['aset_id']);
+            
+            // Allow updating kapasitas_full from mobile
+            if (isset($validated['kapasitas_full'])) {
+                $aset->kapasitas_full_putaran = $validated['kapasitas_full'];
+            }
 
             $totalTutupan = (float) $aset->total_tutupan_saat_ini;
             $kapasitasFull = (float) $aset->kapasitas_full_putaran;

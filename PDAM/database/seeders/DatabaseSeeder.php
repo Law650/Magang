@@ -16,9 +16,9 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             UserSeeder::class,
-            MasterAsetSeeder::class,
-            LogValveSeeder::class,
-            LogTekananSeeder::class,
+            // MasterAsetSeeder::class,
+            // LogValveSeeder::class,
+            // LogTekananSeeder::class,
         ]);
     }
 }

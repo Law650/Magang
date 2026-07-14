@@ -37,6 +37,7 @@
                 class="w-full pl-10 pr-4 py-2.5 bg-slate-900/50 border border-slate-700/50 rounded-xl text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-500/40 transition"
             >
         </div>
+        @if(auth()->user()->isAdmin())
         <button
             wire:click="create"
             class="flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-sm font-semibold rounded-xl hover:from-cyan-400 hover:to-blue-500 shadow-lg shadow-cyan-500/25 transition-all duration-300 hover:shadow-cyan-500/40 hover:-translate-y-0.5 active:translate-y-0"
@@ -46,6 +47,7 @@
             </svg>
             Tambah Daerah
         </button>
+        @endif
     </div>
 
     {{-- Table --}}
@@ -73,6 +75,7 @@
                                 {{ $lokasi->longitude ?? '-' }}
                             </td>
                             <td class="px-5 py-4 text-center">
+                                @if(auth()->user()->isAdmin())
                                 <div class="flex items-center justify-center gap-1">
                                     <button
                                         wire:click="edit({{ $lokasi->id }})"
@@ -94,6 +97,9 @@
                                         </svg>
                                     </button>
                                 </div>
+                                @else
+                                <span class="text-xs text-slate-500">-</span>
+                                @endif
                             </td>
                         </tr>
                     @empty
