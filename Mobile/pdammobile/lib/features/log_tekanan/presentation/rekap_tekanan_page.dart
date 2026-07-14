@@ -98,23 +98,46 @@ class _RekapTekananPageState extends ConsumerState<RekapTekananPage> {
                     children: [
                       const Expanded(child: Text('Detail Daerah', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.primaryDark))),
                       if (hasLog)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: statusColor.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(statusIcon, size: 14, color: statusColor),
-                              const SizedBox(width: 4),
-                              Text(
-                                item.status!.toUpperCase(),
-                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: statusColor),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: statusColor.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(statusIcon, size: 14, color: statusColor),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    item.status!.toUpperCase(),
+                                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: statusColor),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (item.statusAliran != null) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: (item.statusAliran == 'mengalir' ? Colors.cyan : Colors.red).withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  item.statusAliran == 'mengalir' ? 'MENGALIR' : 'TIDAK MENGALIR',
+                                  style: TextStyle(
+                                    fontSize: 11, 
+                                    fontWeight: FontWeight.bold, 
+                                    color: item.statusAliran == 'mengalir' ? Colors.cyan : Colors.red
+                                  ),
+                                ),
                               ),
                             ],
-                          ),
+                          ],
                         ),
                     ],
                   ),
@@ -132,8 +155,14 @@ class _RekapTekananPageState extends ConsumerState<RekapTekananPage> {
                         _buildDetailRow('Nama Daerah', item.namaLokasi),
                         if (hasLog) ...[
                           _buildDetailRow('Tekanan Terakhir', '${item.nilaiTekanan} Bar'),
+                          if (item.statusAliran != null)
+                            _buildDetailRow('Aliran', item.statusAliran!.toUpperCase()),
+                          if (item.kekeruhan != null)
+                            _buildDetailRow('Kekeruhan', item.kekeruhan!),
                           _buildDetailRow('Waktu Pengecekan', formatWaktu(item.waktuPengecekan)),
-                          _buildDetailRow('Petugas Teknisi', item.namaTeknisi ?? '-'),
+                          _buildDetailRow('Nama Petugas', item.namaTeknisi ?? '-'),
+                          if (item.keterangan != null)
+                            _buildDetailRow('Keterangan', item.keterangan!),
                         ] else ...[
                           _buildDetailRow('Status', 'Belum Pernah Dicek'),
                         ]
@@ -407,23 +436,46 @@ class _RekapTekananPageState extends ConsumerState<RekapTekananPage> {
                                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                                 ),
                               ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: statusColor.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(statusIcon, size: 16, color: statusColor),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      item.status?.toUpperCase() ?? 'BELUM ADA DATA',
-                                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: statusColor),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: statusColor.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(statusIcon, size: 16, color: statusColor),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          item.status?.toUpperCase() ?? 'BELUM ADA DATA',
+                                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: statusColor),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  if (item.statusAliran != null) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: (item.statusAliran == 'mengalir' ? Colors.cyan : Colors.red).withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Text(
+                                        item.statusAliran == 'mengalir' ? 'MENGALIR' : 'TIDAK MENGALIR',
+                                        style: TextStyle(
+                                          fontSize: 10, 
+                                          fontWeight: FontWeight.bold, 
+                                          color: item.statusAliran == 'mengalir' ? Colors.cyan : Colors.red
+                                        ),
+                                      ),
                                     ),
                                   ],
-                                ),
+                                ],
                               ),
                             ],
                           ),
@@ -451,7 +503,7 @@ class _RekapTekananPageState extends ConsumerState<RekapTekananPage> {
                               children: [
                                 const Icon(Icons.person_outline, size: 16, color: AppColors.textSecondary),
                                 const SizedBox(width: 4),
-                                Text('Teknisi: ${item.namaTeknisi}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                                Text('Petugas: ${item.namaTeknisi}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                               ],
                             ),
                           ]

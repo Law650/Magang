@@ -13,6 +13,9 @@ class RekapTekanan {
   final double longitude;
   final double? nilaiTekanan;
   final String? status;
+  final String? statusAliran;
+  final String? kekeruhan;
+  final String? keterangan;
   final String? waktuPengecekan;
   final String? namaTeknisi;
   final String? fotoEviden;
@@ -24,6 +27,9 @@ class RekapTekanan {
     required this.longitude,
     this.nilaiTekanan,
     this.status,
+    this.statusAliran,
+    this.kekeruhan,
+    this.keterangan,
     this.waktuPengecekan,
     this.namaTeknisi,
     this.fotoEviden,
@@ -45,6 +51,9 @@ class RekapTekanan {
       longitude: _parseDouble(json['longitude']) ?? 0.0,
       nilaiTekanan: latest != null ? _parseDouble(latest['nilai_tekanan']) : null,
       status: latest?['status'],
+      statusAliran: latest?['status_aliran'],
+      kekeruhan: latest?['kekeruhan'],
+      keterangan: latest?['keterangan'],
       waktuPengecekan: latest?['waktu_pengecekan'],
       namaTeknisi: latest?['nama_teknisi'],
       fotoEviden: latest?['foto_eviden'],
@@ -60,8 +69,12 @@ class RekapTekanan {
       'latest_log': {
         'nilai_tekanan': nilaiTekanan,
         'status': status,
+        'status_aliran': statusAliran,
+        'kekeruhan': kekeruhan,
+        'keterangan': keterangan,
         'waktu_pengecekan': waktuPengecekan,
         'nama_teknisi': namaTeknisi,
+        'foto_eviden': fotoEviden,
       }
     };
   }

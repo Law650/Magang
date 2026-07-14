@@ -153,6 +153,7 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
       longitude: gps.longitude,
       waktu: DateTime.now(),
       namaLokasiAset: _selectedAset!.namaLokasi,
+      sumberFoto: 'Kamera Langsung',
     );
 
     final watermarkedBytes = await processWatermarkInIsolate(input);
@@ -278,17 +279,17 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Gate Valve & Washout'),
+        title: const Text('Gate Valve'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Breadcrumb(title: 'Gate Valve & Washout'),
+            const Breadcrumb(title: 'Gate Valve'),
             const SizedBox(height: 16),
             const FormHeaderCard(
-              title: 'Formulir Gate Valve & Washout',
+              title: 'Formulir Gate Valve',
               subtitle: 'Catat setiap perubahan posisi valve secara akurat.',
               icon: Icons.settings_input_component,
             ),
@@ -312,7 +313,7 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildSectionLabel('Nama Teknisi Bertugas *'),
+                    _buildSectionLabel('Nama Petugas Bertugas *'),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _namaTeknisiController,
@@ -468,6 +469,7 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
                     const SizedBox(height: 8),
                     FractionalCounterInput(
                       value: _kapasitasFull,
+                      readOnly: true,
                       onChanged: (val) {
                         setState(() {
                           _kapasitasFull = val;

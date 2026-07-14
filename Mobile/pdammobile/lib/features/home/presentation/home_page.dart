@@ -24,7 +24,7 @@ class HomePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final technicianName = ref.watch(technicianNameProvider) ?? 'Teknisi';
+    final technicianName = ref.watch(technicianNameProvider) ?? 'Petugas';
     final syncState = ref.watch(syncControllerProvider);
     final gpsState = ref.watch(gpsServiceProvider);
     final connectivity = ref.watch(connectivityProvider);

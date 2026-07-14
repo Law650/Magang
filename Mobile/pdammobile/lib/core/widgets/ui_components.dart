@@ -364,11 +364,13 @@ class CustomToggleButton extends StatelessWidget {
 class FractionalCounterInput extends StatefulWidget {
   final double value;
   final ValueChanged<double> onChanged;
+  final bool readOnly;
 
   const FractionalCounterInput({
     super.key,
     required this.value,
     required this.onChanged,
+    this.readOnly = false,
   });
 
   @override
@@ -443,6 +445,7 @@ class _FractionalCounterInputState extends State<FractionalCounterInput> {
   }
 
   void _incrementInt() {
+    if (widget.readOnly) return;
     _focusNode.unfocus();
     setState(() {
       _integerPart++;
@@ -452,6 +455,7 @@ class _FractionalCounterInputState extends State<FractionalCounterInput> {
   }
 
   void _decrementInt() {
+    if (widget.readOnly) return;
     _focusNode.unfocus();
     if (_integerPart > 0) {
       setState(() {
@@ -468,16 +472,16 @@ class _FractionalCounterInputState extends State<FractionalCounterInput> {
       children: [
         // Integer part controls
         Material(
-          color: AppColors.primary,
+          color: widget.readOnly ? AppColors.cardBorder : AppColors.primary,
           borderRadius: BorderRadius.circular(12),
           child: InkWell(
-            onTap: _decrementInt,
+            onTap: widget.readOnly ? null : _decrementInt,
             borderRadius: BorderRadius.circular(12),
             child: Container(
               width: 48,
               height: 56,
               alignment: Alignment.center,
-              child: const Icon(Icons.remove, color: Colors.white),
+              child: Icon(Icons.remove, color: widget.readOnly ? AppColors.textHint : Colors.white),
             ),
           ),
         ),
@@ -486,7 +490,7 @@ class _FractionalCounterInputState extends State<FractionalCounterInput> {
           child: Container(
             height: 56,
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: widget.readOnly ? AppColors.disabled : AppColors.surface,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: AppColors.cardBorder),
             ),
@@ -494,12 +498,13 @@ class _FractionalCounterInputState extends State<FractionalCounterInput> {
             child: TextField(
               controller: _controller,
               focusNode: _focusNode,
+              readOnly: widget.readOnly,
               textAlign: TextAlign.center,
               keyboardType: TextInputType.number,
               style: GoogleFonts.inter(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: widget.readOnly ? AppColors.textHint : AppColors.textPrimary,
               ),
               decoration: const InputDecoration(
                 border: InputBorder.none,
@@ -509,6 +514,7 @@ class _FractionalCounterInputState extends State<FractionalCounterInput> {
                 isDense: true,
               ),
               onChanged: (val) {
+                if (widget.readOnly) return;
                 final parsed = int.tryParse(val);
                 if (parsed != null && parsed >= 0) {
                   _integerPart = parsed;
@@ -523,16 +529,16 @@ class _FractionalCounterInputState extends State<FractionalCounterInput> {
         ),
         const SizedBox(width: 8),
         Material(
-          color: AppColors.primary,
+          color: widget.readOnly ? AppColors.cardBorder : AppColors.primary,
           borderRadius: BorderRadius.circular(12),
           child: InkWell(
-            onTap: _incrementInt,
+            onTap: widget.readOnly ? null : _incrementInt,
             borderRadius: BorderRadius.circular(12),
             child: Container(
               width: 48,
               height: 56,
               alignment: Alignment.center,
-              child: const Icon(Icons.add, color: Colors.white),
+              child: Icon(Icons.add, color: widget.readOnly ? AppColors.textHint : Colors.white),
             ),
           ),
         ),
@@ -543,7 +549,7 @@ class _FractionalCounterInputState extends State<FractionalCounterInput> {
             height: 56,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: widget.readOnly ? AppColors.disabled : AppColors.surface,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: AppColors.cardBorder),
             ),
@@ -552,7 +558,7 @@ class _FractionalCounterInputState extends State<FractionalCounterInput> {
                 value: _fractionPart,
                 isExpanded: true,
                 dropdownColor: AppColors.surface,
-                icon: const Icon(Icons.arrow_drop_down, color: AppColors.textHint),
+                icon: Icon(Icons.arrow_drop_down, color: widget.readOnly ? AppColors.cardBorder : AppColors.textHint),
                 items: List.generate(_fractions.length, (index) {
                   return DropdownMenuItem(
                     value: _fractions[index],
@@ -561,12 +567,12 @@ class _FractionalCounterInputState extends State<FractionalCounterInput> {
                       style: GoogleFonts.inter(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        color: AppColors.textPrimary,
+                        color: widget.readOnly ? AppColors.textHint : AppColors.textPrimary,
                       ),
                     ),
                   );
                 }),
-                onChanged: (val) {
+                onChanged: widget.readOnly ? null : (val) {
                   if (val != null) {
                     setState(() {
                       _fractionPart = val;

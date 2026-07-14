@@ -30,31 +30,6 @@ void main() async {
   // Buka box antrian log
   final queuedLogsBox = await Hive.openBox<QueuedLog>(kQueuedLogsBoxName);
 
-  // MOCK DATA INJECTION
-  final hasMockData = queuedLogsBox.values.any((log) => log.idempotencyKey == 'mock-uuid-gv02-decimal');
-  if (!hasMockData) {
-    final queuedLog = QueuedLog(
-      idempotencyKey: 'mock-uuid-gv02-decimal',
-      payloadFields: {
-        'aset_id': 2,
-        'nama_aset': 'GV-02 Cabang A',
-        'nama_lokasi': 'Jl. Gatot Subroto',
-        'nama_teknisi': prefs.getString('technicianName') ?? 'Teknisi Dummy',
-        'waktu_kegiatan': DateTime.now().toIso8601String(),
-        'kapasitas_full': 10.0,
-        'aksi_kerja': 'tutup',
-        'jumlah_putaran': 7.25,
-        'keterangan': 'Pengecekan desimal',
-        'latitude': -7.983908,
-        'longitude': 112.621391,
-      },
-      fotoPath: 'dummy_path.jpg',
-      endpoint: '/log-valve',
-    );
-    queuedLog.status = QueueStatus.success; // Mock status success
-    await queuedLogsBox.add(queuedLog);
-  }
-
   // ── Workmanager Background Sync (Modul G) ─────────────────────
   await initBackgroundSync();
 
@@ -86,7 +61,7 @@ class PdamMobileApp extends ConsumerWidget {
     final hasName = technicianName != null && technicianName.isNotEmpty;
 
     return MaterialApp(
-      title: 'PDAM Mobile — Teknisi Lapangan',
+      title: 'PDAM Mobile — Petugas Lapangan',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       home: hasName ? const MainLayout() : const LoginPage(),

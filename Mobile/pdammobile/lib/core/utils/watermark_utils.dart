@@ -14,6 +14,7 @@ class WatermarkInput {
   final double longitude;
   final DateTime waktu;
   final String namaLokasiAset;
+  final String sumberFoto;
 
   const WatermarkInput({
     required this.rawBytes,
@@ -22,6 +23,7 @@ class WatermarkInput {
     required this.longitude,
     required this.waktu,
     required this.namaLokasiAset,
+    required this.sumberFoto,
   });
 }
 
@@ -45,10 +47,11 @@ Uint8List applyWatermark(WatermarkInput input) {
   final dateFormat = DateFormat('dd/MM/yyyy HH:mm:ss');
 
   final lines = [
-    'Teknisi: ${input.namaTeknisi}',
+    'Petugas: ${input.namaTeknisi}',
     'Lokasi Aset: ${input.namaLokasiAset}',
     'Koordinat: ${input.latitude.toStringAsFixed(6)}, ${input.longitude.toStringAsFixed(6)}',
     'Waktu: ${dateFormat.format(input.waktu)}',
+    'Sumber Foto: ${input.sumberFoto}',
   ];
 
   // Hitung ukuran font berdasarkan lebar gambar (responsif)

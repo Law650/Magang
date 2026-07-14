@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/providers/technician_provider.dart';
 import '../../../core/services/gps_service.dart';
@@ -120,10 +121,49 @@ class _LogTekananFormPageState extends ConsumerState<LogTekananFormPage> {
   }
 
   Future<void> _handleAmbilFoto(GpsSuccess gps) async {
-    final Uint8List? rawBytes = await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const StrictCameraPage()),
+    final source = await showModalBottomSheet<String>(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: AppColors.primary),
+              title: const Text('Kamera'),
+              onTap: () => Navigator.pop(context, 'camera'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library, color: AppColors.primary),
+              title: const Text('Galeri'),
+              onTap: () => Navigator.pop(context, 'gallery'),
+            ),
+          ],
+        ),
+      ),
     );
+
+    if (source == null) return;
+
+    Uint8List? rawBytes;
+    if (source == 'camera') {
+      rawBytes = await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const StrictCameraPage()),
+      );
+    } else if (source == 'gallery') {
+      final picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 50,
+        maxWidth: 1200,
+        maxHeight: 1200,
+      );
+      if (image != null) {
+        rawBytes = await image.readAsBytes();
+      }
+    }
+
     if (rawBytes == null || !mounted) return;
 
     showDialog(
@@ -139,6 +179,7 @@ class _LogTekananFormPageState extends ConsumerState<LogTekananFormPage> {
       longitude: gps.longitude,
       waktu: DateTime.now(),
       namaLokasiAset: _selectedLokasi!.namaLokasi,
+      sumberFoto: source == 'camera' ? 'Kamera Langsung' : 'Galeri HP',
     );
 
     final watermarkedBytes = await processWatermarkInIsolate(input);
@@ -321,7 +362,7 @@ class _LogTekananFormPageState extends ConsumerState<LogTekananFormPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildSectionLabel('Nama Teknisi *'),
+                    _buildSectionLabel('Nama Petugas *'),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _namaTeknisiController,

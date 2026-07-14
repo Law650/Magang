@@ -12,6 +12,7 @@ import '../../../core/widgets/searchable_bottom_sheet.dart';
 import '../../log_tekanan/data/rekap_tekanan_provider.dart';
 import '../../log_tekanan/data/lokasi_repository.dart';
 import '../../log_valve/data/aset_repository.dart';
+import '../../../core/providers/technician_provider.dart';
 import 'dart:async';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -56,8 +57,13 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
     final lokasiAsync = ref.watch(lokasiListProvider);
     final rekapTekananAsync = ref.watch(rekapTekananProvider);
     
-    // Semua log difilter berdasarkan kategori tab yang dipilih
+    final currentUserName = ref.watch(technicianNameProvider);
+
+    // Semua log difilter berdasarkan nama user dan kategori tab yang dipilih
     final allLogs = syncController.getAllLogs().where((log) {
+      if (log.payloadFields['nama_teknisi'] != currentUserName && log.idempotencyKey != 'db_mock') {
+        return false;
+      }
       if (_kategoriFilter == 'Tekanan') {
         return log.endpoint.contains('/log-tekanan');
       } else {
@@ -543,6 +549,9 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
             'longitude': rekap.longitude ?? 0.0,
             'nilai_tekanan': rekap.nilaiTekanan,
             'status': rekap.status,
+            'status_aliran': rekap.statusAliran,
+            'kekeruhan': rekap.kekeruhan,
+            'keterangan': rekap.keterangan,
             'nama_teknisi': rekap.namaTeknisi ?? 'Sistem',
             'foto_eviden': rekap.fotoEviden,
           },
@@ -567,16 +576,40 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                 const SizedBox(width: 8),
                 Text('Status Tekanan Daerah', style: theme.textTheme.titleMedium?.copyWith(color: Colors.white)),
                 const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
-                  child: Row(
-                    children: [
-                      Icon(statusIcon, color: statusColor, size: 10),
-                      const SizedBox(width: 4),
-                      Text(rekap.status?.toUpperCase() ?? 'BELUM ADA', style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold)),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(statusIcon, color: statusColor, size: 10),
+                          const SizedBox(width: 4),
+                          Text(rekap.status?.toUpperCase() ?? 'BELUM ADA', style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ),
+                    if (rekap.statusAliran != null) ...[
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: (rekap.statusAliran == 'mengalir' ? Colors.cyan : Colors.red).withValues(alpha: 0.2), 
+                          borderRadius: BorderRadius.circular(12)
+                        ),
+                        child: Text(
+                          rekap.statusAliran == 'mengalir' ? 'MENGALIR' : 'TIDAK MENGALIR', 
+                          style: TextStyle(
+                            color: rekap.statusAliran == 'mengalir' ? Colors.cyan : Colors.red, 
+                            fontSize: 9, 
+                            fontWeight: FontWeight.bold
+                          )
+                        ),
+                      ),
                     ],
-                  ),
+                  ],
                 ),
               ],
             ),
@@ -635,7 +668,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
               children: [
                 const Icon(Icons.person_outline, size: 14, color: Colors.white70),
                 const SizedBox(width: 6),
-                Text('Teknisi: ${rekap.namaTeknisi}', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                Text('Petugas: ${rekap.namaTeknisi}', style: const TextStyle(color: Colors.white70, fontSize: 12)),
               ],
             ),
           ],
@@ -995,7 +1028,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                       if (map['jumlah_putaran'] != null)
                         _buildDetailRow('Jml Putaran', '${_formatNumber((map['jumlah_putaran'] as num).toDouble())} Putaran'),
                       if (map['nama_teknisi'] != null)
-                        _buildDetailRow('Teknisi Terakhir', map['nama_teknisi'].toString()),
+                        _buildDetailRow('Petugas Terakhir', map['nama_teknisi'].toString()),
                       _buildDetailRow('Kapasitas Full', '${_formatNumber(kapasitasFull)} Putaran'),
                       if (lat != 0.0 || lng != 0.0)
                         _buildDetailRow('Titik Koordinat', '${lat.toStringAsFixed(5)}, ${lng.toStringAsFixed(5)}'),
@@ -1132,7 +1165,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                     children: [
                       _buildDetailRow(isValve ? 'Aset / Valve' : 'Lokasi Daerah', map[isValve ? 'nama_aset' : 'nama_lokasi'] ?? '-'),
                       if (isValve) _buildDetailRow('Lokasi', map['nama_lokasi'] ?? '-'),
-                      _buildDetailRow('Teknisi', map['nama_teknisi'] ?? '-'),
+                      _buildDetailRow('Petugas', map['nama_teknisi'] ?? '-'),
                       
                       if (isValve) ...[
                         _buildDetailRow('Aksi', map['aksi_kerja']?.toString().toUpperCase() ?? '-'),

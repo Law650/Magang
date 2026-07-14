@@ -7,8 +7,7 @@ import '../../main/presentation/main_layout.dart';
 /// Halaman Login (Menggantikan IdentityPage) — Modul A.
 ///
 /// Karena akun akan dibuat di backend via seeder, untuk sementara aplikasi mobile
-/// menggunakan mock login (selalu sukses selama tidak kosong) dan menggunakan
-/// username sebagai "Nama Teknisi" di shared_preferences.
+/// menggunakan API login yang sesungguhnya ke backend.
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
 
@@ -63,7 +62,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
 
     setState(() => _isLoading = true);
 
-    // Mock proses login ke backend
+    // Proses login ke backend
     final errorMessage = await ref
         .read(technicianNameProvider.notifier)
         .login(_usernameController.text, _passwordController.text);
@@ -141,7 +140,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Aplikasi Teknisi Lapangan',
+                        'Aplikasi Petugas Lapangan',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: AppColors.textSecondary,
                           fontSize: 16,
@@ -188,7 +187,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                               style: theme.textTheme.bodyLarge,
                               decoration: const InputDecoration(
                                 labelText: 'Username / Email',
-                                hintText: 'Contoh: budi_teknisi',
+                                hintText: 'Contoh: Petugas Arya',
                                 prefixIcon: Icon(Icons.person_outline_rounded),
                               ),
                               validator: (value) {
