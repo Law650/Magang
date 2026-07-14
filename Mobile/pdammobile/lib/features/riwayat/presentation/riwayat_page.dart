@@ -12,6 +12,9 @@ import '../../../core/widgets/searchable_bottom_sheet.dart';
 import '../../log_tekanan/data/rekap_tekanan_provider.dart';
 import '../../log_tekanan/data/lokasi_repository.dart';
 import '../../log_valve/data/aset_repository.dart';
+import 'dart:async';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 class RiwayatPage extends ConsumerStatefulWidget {
   const RiwayatPage({super.key});
 
@@ -20,8 +23,30 @@ class RiwayatPage extends ConsumerStatefulWidget {
 }
 
 class _RiwayatPageState extends ConsumerState<RiwayatPage> {
-  Lokasi? _selectedLokasi;
-  AsetValve? _selectedAset;
+  String? _selectedLokasiName;
+  String? _selectedAsetName;
+  String _kategoriFilter = 'Tekanan';
+  Timer? _refreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      final syncState = ref.read(syncControllerProvider);
+      if (!syncState.isSyncing) {
+        // ref.read(syncControllerProvider.notifier).forceSyncNow(); // don't force sync every 5s, just refresh data
+        ref.invalidate(asetValveListProvider);
+        ref.invalidate(rekapTekananProvider);
+        ref.invalidate(lokasiListProvider);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,26 +56,27 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
     final lokasiAsync = ref.watch(lokasiListProvider);
     final rekapTekananAsync = ref.watch(rekapTekananProvider);
     
-    // Semua log (valve dan tekanan)
-    final allLogs = syncController.getAllLogs();
+    // Semua log difilter berdasarkan kategori tab yang dipilih
+    final allLogs = syncController.getAllLogs().where((log) {
+      if (_kategoriFilter == 'Tekanan') {
+        return log.endpoint.contains('/log-tekanan');
+      } else {
+        return log.endpoint.contains('/log-valve');
+      }
+    }).toList();
     
     // Filter berdasarkan lokasi jika dipilih
-    final filteredByLokasi = _selectedLokasi == null 
+    final filteredByLokasi = _selectedLokasiName == null 
         ? allLogs 
         : allLogs.where((log) {
-            final pid = log.payloadFields['lokasi_id'];
-            if (pid != null && pid == _selectedLokasi!.id) return true;
-            
             final pNama = log.payloadFields['nama_lokasi'];
-            if (pNama != null && pNama == _selectedLokasi!.namaLokasi) return true;
-            
-            return false;
+            return pNama == _selectedLokasiName;
           }).toList();
 
     // Filter berdasarkan aset jika dipilih (untuk list tabel riwayat)
-    final filteredLogs = _selectedAset == null 
+    final filteredLogs = _selectedAsetName == null 
         ? filteredByLokasi 
-        : filteredByLokasi.where((log) => log.payloadFields['aset_id'] == _selectedAset!.id).toList();
+        : filteredByLokasi.where((log) => log.payloadFields['nama_aset'] == _selectedAsetName).toList();
 
     // Data untuk kartu status langsung (HANYA log valve dari antrean offline)
     final valveLogs = filteredLogs.where((log) => log.endpoint.contains('/log-valve')).toList();
@@ -58,9 +84,20 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
     
     // Data rekap tekanan dari server untuk lokasi yang dipilih
     RekapTekanan? selectedRekap;
-    if (_selectedLokasi != null && _selectedAset == null) {
+    if (_kategoriFilter == 'Tekanan' && _selectedLokasiName != null && _selectedAsetName == null) {
       final rekapList = rekapTekananAsync.valueOrNull ?? [];
-      selectedRekap = rekapList.where((r) => r.id == _selectedLokasi!.id).firstOrNull;
+      selectedRekap = rekapList.where((r) => r.namaLokasi == _selectedLokasiName).firstOrNull;
+    }
+
+    AsetValve? selectedAsetDb;
+    if (_selectedAsetName != null) {
+      final asetList = asetAsync.valueOrNull ?? [];
+      for (final a in asetList) {
+        if (a.namaAset == _selectedAsetName) {
+          selectedAsetDb = a;
+          break;
+        }
+      }
     }
 
     final theme = Theme.of(context);
@@ -114,7 +151,60 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    Text('Lokasi', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
+                    // Kategori Toggle
+                    Row(
+                      children: [
+                        Expanded(
+                          child: InkWell(
+                            onTap: () {
+                              if (_kategoriFilter != 'Tekanan') {
+                                setState(() {
+                                  _kategoriFilter = 'Tekanan';
+                                  _selectedLokasiName = null;
+                                  _selectedAsetName = null;
+                                });
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              decoration: BoxDecoration(
+                                color: _kategoriFilter == 'Tekanan' ? AppColors.primary : Colors.transparent,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: _kategoriFilter == 'Tekanan' ? AppColors.primary : AppColors.cardBorder),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text('Tekanan', style: TextStyle(color: _kategoriFilter == 'Tekanan' ? Colors.white : AppColors.textSecondary, fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: InkWell(
+                            onTap: () {
+                              if (_kategoriFilter != 'Valve') {
+                                setState(() {
+                                  _kategoriFilter = 'Valve';
+                                  _selectedLokasiName = null;
+                                  _selectedAsetName = null;
+                                });
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              decoration: BoxDecoration(
+                                color: _kategoriFilter == 'Valve' ? AppColors.primary : Colors.transparent,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: _kategoriFilter == 'Valve' ? AppColors.primary : AppColors.cardBorder),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text('Valve', style: TextStyle(color: _kategoriFilter == 'Valve' ? Colors.white : AppColors.textSecondary, fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(_kategoriFilter == 'Tekanan' ? 'Lokasi Tekanan' : 'Jalur Valve', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
                     const SizedBox(height: 4),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -122,21 +212,76 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                         border: Border.all(color: AppColors.cardBorder),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: lokasiAsync.when(
-                        data: (lokasiList) => InkWell(
+                      child: InkWell(
+                        onTap: () async {
+                          List<String> unik = [];
+                          if (_kategoriFilter == 'Tekanan') {
+                            unik = (lokasiAsync.valueOrNull ?? []).map((l) => l.namaLokasi).toSet().toList();
+                          } else {
+                            unik = (asetAsync.valueOrNull ?? []).map((a) => a.namaLokasi).toSet().toList();
+                          }
+                          unik.sort();
+                          
+                          final selected = await SearchableBottomSheet.show<String>(
+                            context: context,
+                            title: 'Filter Lokasi',
+                            items: unik,
+                            itemAsString: (l) => l,
+                          );
+                          if (selected != null) {
+                            setState(() {
+                              _selectedLokasiName = selected;
+                              _selectedAsetName = null; // Reset aset jika lokasi berubah
+                            });
+                          }
+                        },
+                        child: Container(
+                          height: 48,
+                          alignment: Alignment.centerLeft,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  _selectedLokasiName ?? 'Pilih Lokasi',
+                                  style: theme.textTheme.bodyLarge?.copyWith(
+                                    color: _selectedLokasiName != null ? AppColors.textPrimary : AppColors.textHint,
+                                  ),
+                                ),
+                              ),
+                              const Icon(Icons.arrow_drop_down, color: AppColors.textHint),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    
+                    if (_kategoriFilter == 'Valve' && _selectedLokasiName != null) ...[
+                      const SizedBox(height: 16),
+                      Text('Aset / Valve', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: AppColors.cardBorder),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: InkWell(
                           onTap: () async {
-                            final selected = await SearchableBottomSheet.show<Lokasi>(
+                            final unik = (asetAsync.valueOrNull ?? [])
+                                .where((a) => _selectedLokasiName == null || a.namaLokasi == _selectedLokasiName)
+                                .map((a) => a.namaAset)
+                                .toSet()
+                                .toList();
+                            unik.sort();
+                            
+                            final selected = await SearchableBottomSheet.show<String>(
                               context: context,
-                              title: 'Filter Lokasi',
-                              items: lokasiList,
-                              itemAsString: (l) => l.namaLokasi,
+                              title: 'Filter Valve',
+                              items: unik,
+                              itemAsString: (a) => a,
                             );
                             if (selected != null) {
-                              setState(() {
-                                _selectedLokasi = selected;
-                                // Reset aset jika lokasi berubah
-                                _selectedAset = null;
-                              });
+                              setState(() => _selectedAsetName = selected);
                             }
                           },
                           child: Container(
@@ -146,82 +291,31 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                               children: [
                                 Expanded(
                                   child: Text(
-                                    _selectedLokasi?.namaLokasi ?? 'Semua Lokasi',
-                                    style: theme.textTheme.bodyLarge?.copyWith(
-                                      color: _selectedLokasi != null ? AppColors.textPrimary : AppColors.textHint,
-                                    ),
+                                  _selectedAsetName ?? 'Semua Valve',
+                                  style: theme.textTheme.bodyLarge?.copyWith(
+                                    color: _selectedAsetName != null ? AppColors.textPrimary : AppColors.textHint,
                                   ),
                                 ),
-                                const Icon(Icons.arrow_drop_down, color: AppColors.textHint),
-                              ],
-                            ),
+                              ),
+                              const Icon(Icons.arrow_drop_down, color: AppColors.textHint),
+                            ],
                           ),
                         ),
-                        loading: () => const Center(child: CircularProgressIndicator()),
-                        error: (_, __) => const Text('Gagal memuat'),
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    Text('Aset / Valve', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: AppColors.cardBorder),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: asetAsync.when(
-                        data: (asetList) {
-                          final filteredList = asetList
-                              .where((aset) => _selectedLokasi == null || aset.namaLokasi == _selectedLokasi!.namaLokasi)
-                              .toList();
-                          return InkWell(
-                            onTap: () async {
-                              final selected = await SearchableBottomSheet.show<AsetValve>(
-                                context: context,
-                                title: 'Filter Valve',
-                                items: filteredList,
-                                itemAsString: (a) => a.namaAset,
-                              );
-                              if (selected != null) {
-                                setState(() => _selectedAset = selected);
-                              }
-                            },
-                            child: Container(
-                              height: 48,
-                              alignment: Alignment.centerLeft,
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      _selectedAset?.namaAset ?? 'Semua Valve',
-                                      style: theme.textTheme.bodyLarge?.copyWith(
-                                        color: _selectedAset != null ? AppColors.textPrimary : AppColors.textHint,
-                                      ),
-                                    ),
-                                  ),
-                                  const Icon(Icons.arrow_drop_down, color: AppColors.textHint),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                        loading: () => const Center(child: CircularProgressIndicator()),
-                        error: (_, __) => const Text('Gagal memuat'),
-                      ),
-                    ),
+                    ], // Closes the ...[ from _kategoriFilter == 'Valve'
                   ],
                 ),
               ),
               const SizedBox(height: 16),
 
               // Kartu Status Langsung
-              if (_selectedAset != null && _selectedAset!.sisaBukaan != null)
-                _buildKartuStatusLangsungAset(context, _selectedAset!, theme)
-              else if (_selectedLokasi != null && selectedRekap != null)
+              if (_selectedLokasiName == null && _selectedAsetName == null)
+                const SizedBox.shrink()
+              else if (selectedAsetDb != null && selectedAsetDb.sisaBukaan != null)
+                _buildKartuStatusLangsungAset(context, selectedAsetDb, theme)
+              else if (_selectedLokasiName != null && selectedRekap != null)
                 _buildKartuStatusLangsungTekanan(context, selectedRekap, theme)
-              else if (latestLog != null)
-                _buildKartuStatusLangsung(context, latestLog, theme)
               else
                 Container(
                   padding: const EdgeInsets.all(20),
@@ -230,7 +324,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: const Center(
-                    child: Text('Tidak ada data yang sesuai filter.', style: TextStyle(color: Colors.white70)),
+                    child: Text('Tidak ada data status langsung untuk filter ini.', style: TextStyle(color: Colors.white70)),
                   ),
                 ),
               
@@ -296,7 +390,13 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
     final sisaBukaan = aset.sisaBukaan ?? 0.0;
     final totalTutupan = kapasitasFull - sisaBukaan;
     
-    final percentBuka = aset.persentaseBukaan ?? (kapasitasFull > 0 ? (sisaBukaan / kapasitasFull) : 0.0);
+    double percentBuka = 0.0;
+    if (aset.persentaseBukaan != null) {
+      percentBuka = aset.persentaseBukaan! / 100.0;
+    } else if (kapasitasFull > 0) {
+      percentBuka = sisaBukaan / kapasitasFull;
+    }
+    percentBuka = percentBuka.clamp(0.0, 1.0);
     final percentTutup = 1.0 - percentBuka;
 
     return InkWell(
@@ -310,8 +410,10 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
             'nama_aset': namaAset,
             'nama_lokasi': namaLokasi,
             'kapasitas_full': kapasitasFull,
+            'sisa_bukaan': sisaBukaan,
             'latitude': aset.latitude ?? 0.0,
             'longitude': aset.longitude ?? 0.0,
+            'nama_teknisi': aset.namaTeknisi,
           },
         );
         _showAsetDetailBottomSheet(context, dummyLog);
@@ -358,7 +460,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
               const SizedBox(width: 8),
               Expanded(child: _buildValueCard('Total Tutupan', totalTutupan, const Color(0xFF5D3E4B))),
               const SizedBox(width: 8),
-              Expanded(child: _buildValueCard('Sisa Bukaan', sisaBukaan, const Color(0xFF1B6A5C))),
+              Expanded(child: _buildValueCard('Putaran Saat Ini\n(Terbuka)', sisaBukaan, const Color(0xFF1B6A5C))),
             ],
           ),
 
@@ -395,6 +497,8 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
               style: const TextStyle(color: AppColors.statusNormal, fontWeight: FontWeight.bold),
             ),
           ),
+          const SizedBox(height: 16),
+          _buildMiniMapPlaceholder(aset.latitude ?? 0.0, aset.longitude ?? 0.0, height: 100),
         ],
       ),
     ),
@@ -440,6 +544,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
             'nilai_tekanan': rekap.nilaiTekanan,
             'status': rekap.status,
             'nama_teknisi': rekap.namaTeknisi ?? 'Sistem',
+            'foto_eviden': rekap.fotoEviden,
           },
         );
         // Kita bisa menggunakan _showDetailBottomSheet karena itu umum
@@ -534,6 +639,9 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
               ],
             ),
           ],
+          
+          const SizedBox(height: 16),
+          _buildMiniMapPlaceholder(rekap.latitude ?? 0.0, rekap.longitude ?? 0.0, height: 100),
         ],
       ),
     ),
@@ -606,7 +714,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                 const SizedBox(width: 8),
                 Expanded(child: _buildValueCard('Total Tutupan', totalTutupan, const Color(0xFF5D3E4B))),
                 const SizedBox(width: 8),
-                Expanded(child: _buildValueCard('Sisa Bukaan', sisaBukaan, const Color(0xFF1B6A5C))),
+                Expanded(child: _buildValueCard('Putaran Saat Ini\n(Terbuka)', sisaBukaan, const Color(0xFF1B6A5C))),
               ],
             ),
 
@@ -650,6 +758,13 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                 Text('${(percentBuka * 100).toStringAsFixed(1)}% Terbuka', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.statusNormal, fontWeight: FontWeight.bold)),
               ],
             ),
+            
+            const SizedBox(height: 16),
+            _buildMiniMapPlaceholder(
+              (map['latitude'] as num?)?.toDouble() ?? 0.0, 
+              (map['longitude'] as num?)?.toDouble() ?? 0.0, 
+              height: 100
+            ),
           ],
         ),
       ),
@@ -664,8 +779,9 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(title, style: const TextStyle(fontSize: 10, color: Colors.white70)),
+          Text(title, style: const TextStyle(fontSize: 10, color: Colors.white70), textAlign: TextAlign.center),
           const SizedBox(height: 4),
           Text(
             _formatNumber(value), 
@@ -707,8 +823,8 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
     sisa = sisa.clamp(0.0, kapasitasFull);
     
     // Detail untuk Tekanan
-    final tekanan = (map['tekanan'] as num?)?.toDouble() ?? 0.0;
-    final aliran = map['aliran_air'] ?? 'Normal';
+    final tekanan = (map['nilai_tekanan'] as num?)?.toDouble() ?? 0.0;
+    final aliran = map['status_aliran'] ?? 'Normal';
 
     return InkWell(
       onTap: () => _showDetailBottomSheet(context, log),
@@ -868,12 +984,21 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                   child: Column(
                     children: [
                       _buildDetailRow('Nama Aset', namaAset),
-                      _buildDetailRow('Lokasi', namaLokasi),
+                      _buildDetailRow('Jalur/Lokasi', namaLokasi),
+                      if (map['sisa_bukaan'] != null) ...[
+                        _buildDetailRow('Putaran Saat Ini\n(Terbuka)', '${_formatNumber((map['sisa_bukaan'] as num).toDouble())} Putaran'),
+                        _buildDetailRow('Sisa Putaran\n(yang bisa dibuka', '${_formatNumber(kapasitasFull - (map['sisa_bukaan'] as num).toDouble())} Putaran'),
+                        _buildDetailRow('Sisa Putaran\n(yang bisa ditutup)', '${_formatNumber((map['sisa_bukaan'] as num).toDouble())} Putaran'),
+                      ],
+                      if (map['aksi_kerja'] != null)
+                        _buildDetailRow('Aksi Kerja', map['aksi_kerja'].toString()),
+                      if (map['jumlah_putaran'] != null)
+                        _buildDetailRow('Jml Putaran', '${_formatNumber((map['jumlah_putaran'] as num).toDouble())} Putaran'),
+                      if (map['nama_teknisi'] != null)
+                        _buildDetailRow('Teknisi Terakhir', map['nama_teknisi'].toString()),
                       _buildDetailRow('Kapasitas Full', '${_formatNumber(kapasitasFull)} Putaran'),
-                      _buildDetailRow('Jenis Valve', 'Gate Valve (Besi Cor)'),
-                      _buildDetailRow('Diameter', '150 mm'),
-                      _buildDetailRow('Tahun Pasang', '2015'),
-                      _buildDetailRow('Kondisi Fisik', 'Beroperasi Normal'),
+                      if (lat != 0.0 || lng != 0.0)
+                        _buildDetailRow('Titik Koordinat', '${lat.toStringAsFixed(5)}, ${lng.toStringAsFixed(5)}'),
                     ],
                   ),
                 ),
@@ -907,42 +1032,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                     _openMaps(context, lat, lng);
                   },
                   borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    height: 120,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.blue.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
-                      image: DecorationImage(
-                        image: NetworkImage(
-                          lat != 0.0 && lng != 0.0 
-                          ? 'https://maps.googleapis.com/maps/api/staticmap?center=$lat,$lng&zoom=15&size=400x200&maptype=roadmap&markers=color:red%7C$lat,$lng'
-                          : 'https://maps.googleapis.com/maps/api/staticmap?center=-7.983908,112.621391&zoom=15&size=400x200&maptype=roadmap',
-                        ),
-                        fit: BoxFit.cover,
-                        opacity: 0.5,
-                      ),
-                    ),
-                    child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.location_on, color: Colors.red, size: 40),
-                          const SizedBox(height: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
-                            ),
-                            child: Text('$lat, $lng', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                    child: _buildMiniMapPlaceholder(lat, lng),
                 ),
                 
                 const SizedBox(height: 24),
@@ -1005,26 +1095,27 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Detail Laporan', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.primaryDark)),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: (log.status == 'success' ? AppColors.statusNormal : (log.status == 'failed' ? AppColors.statusKritis : Colors.orange)).withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(20),
+                    Text(log.idempotencyKey == 'db_mock' ? 'Detail Tekanan Daerah' : 'Detail Laporan', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.primaryDark)),
+                    if (log.idempotencyKey != 'db_mock')
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: (log.status == 'success' ? AppColors.statusNormal : (log.status == 'failed' ? AppColors.statusKritis : Colors.orange)).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              log.status == 'success' ? Icons.check_circle : (log.status == 'failed' ? Icons.error : Icons.schedule),
+                              size: 14,
+                              color: (log.status == 'success' ? AppColors.statusNormal : (log.status == 'failed' ? AppColors.statusKritis : Colors.orange)),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(log.status.toUpperCase(), style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: (log.status == 'success' ? AppColors.statusNormal : (log.status == 'failed' ? AppColors.statusKritis : Colors.orange)))),
+                          ],
+                        ),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            log.status == 'success' ? Icons.check_circle : (log.status == 'failed' ? Icons.error : Icons.schedule),
-                            size: 14,
-                            color: (log.status == 'success' ? AppColors.statusNormal : (log.status == 'failed' ? AppColors.statusKritis : Colors.orange)),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(log.status.toUpperCase(), style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: (log.status == 'success' ? AppColors.statusNormal : (log.status == 'failed' ? AppColors.statusKritis : Colors.orange)))),
-                        ],
-                      ),
-                    ),
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -1047,8 +1138,8 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                         _buildDetailRow('Aksi', map['aksi_kerja']?.toString().toUpperCase() ?? '-'),
                         _buildDetailRow('Putaran', '${_formatNumber((map['jumlah_putaran'] as num?)?.toDouble() ?? 0.0)} Putaran'),
                       ] else ...[
-                        _buildDetailRow('Tekanan', '${map['tekanan']} Bar'),
-                        _buildDetailRow('Aliran', map['aliran_air'] ?? '-'),
+                        _buildDetailRow('Tekanan', '${map['nilai_tekanan'] ?? 0.0} Bar'),
+                        _buildDetailRow('Aliran', map['status_aliran']?.toString().toUpperCase() ?? '-'),
                         if (map['kekeruhan'] != null) _buildDetailRow('Kekeruhan', map['kekeruhan']!),
                       ],
                       
@@ -1074,6 +1165,28 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                     ),
                   ),
                   const SizedBox(height: 24),
+                ] else if (map['foto_eviden'] != null && map['foto_eviden'].toString().isNotEmpty) ...[
+                  const Text('Foto Bukti', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      width: double.infinity,
+                      constraints: const BoxConstraints(maxHeight: 350),
+                      child: Image.network(
+                        map['foto_eviden'].toString(),
+                        headers: const {'ngrok-skip-browser-warning': '69420'},
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => Container(
+                          width: double.infinity,
+                          height: 150,
+                          color: Colors.grey[200],
+                          child: const Center(child: Icon(Icons.broken_image, color: Colors.grey, size: 40)),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
                 ],
                 
                 const Text('Lokasi Koordinat', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
@@ -1087,41 +1200,8 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                   },
                   borderRadius: BorderRadius.circular(16),
                   child: Container(
-                    height: 120,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.blue.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
-                      image: DecorationImage(
-                        image: NetworkImage(
-                          lat != 0.0 && lng != 0.0 
-                          ? 'https://maps.googleapis.com/maps/api/staticmap?center=$lat,$lng&zoom=15&size=400x200&maptype=roadmap&markers=color:red%7C$lat,$lng'
-                          : 'https://maps.googleapis.com/maps/api/staticmap?center=-7.983908,112.621391&zoom=15&size=400x200&maptype=roadmap',
-                        ),
-                        fit: BoxFit.cover,
-                        opacity: 0.5,
-                      ),
+                    child: _buildMiniMapPlaceholder(lat, lng),
                     ),
-                    child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.location_on, color: Colors.red, size: 40),
-                          const SizedBox(height: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
-                            ),
-                            child: Text('$lat, $lng', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
                 ),
                 
                 const SizedBox(height: 24),
@@ -1181,6 +1261,77 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
   }
 
   String _formatNumber(double value) {
-    return value == value.toInt() ? value.toInt().toString() : value.toString();
+    int intPart = value.floor();
+    double fracPart = value - intPart;
+    if (fracPart < 0.001) {
+      return intPart.toString();
+    }
+    
+    int eights = (fracPart * 8).round();
+    if (eights == 8) return (intPart + 1).toString();
+    if (eights == 0) return intPart.toString();
+    
+    int numerator = eights;
+    int denominator = 8;
+    while (numerator % 2 == 0 && denominator % 2 == 0) {
+      numerator = numerator ~/ 2;
+      denominator = denominator ~/ 2;
+    }
+    
+    if (intPart == 0) return '$numerator/$denominator';
+    return '$intPart $numerator/$denominator';
+  }
+
+  Widget _buildMiniMapPlaceholder(double lat, double lng, {double height = 120}) {
+    if (lat == 0.0 && lng == 0.0) {
+      return Container(
+        height: height,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: Colors.blue.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+        ),
+        child: const Center(child: Text('Koordinat tidak tersedia', style: TextStyle(color: Colors.blue))),
+      );
+    }
+    
+    final center = LatLng(lat, lng);
+    return Container(
+      height: height,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: IgnorePointer(
+          ignoring: true, // Prevent scroll conflicts
+          child: FlutterMap(
+            options: MapOptions(
+              initialCenter: center,
+              initialZoom: 15.0,
+            ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+                userAgentPackageName: 'com.pdam.mobile',
+              ),
+              MarkerLayer(
+                markers: [
+                  Marker(
+                    point: center,
+                    width: 40,
+                    height: 40,
+                    child: const Icon(Icons.location_on, color: Colors.red, size: 30),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

@@ -110,4 +110,16 @@ class LokasiRepository {
     // Jika tidak ada cache dan offline, baru kita lempar exception
     throw Exception('Koneksi terputus dan tidak ada data offline');
   }
+
+  Future<void> tambahDaerahTekanan(Map<String, dynamic> data) async {
+    try {
+      final response = await _apiClient.dio.post('/lokasi-tekanan', data: data);
+      if (response.data['success'] != true) {
+        throw Exception(response.data['message'] ?? 'Gagal menambah daerah tekanan');
+      }
+    } on DioException catch (e) {
+      final msg = e.response?.data?['message'] ?? e.message;
+      throw Exception(msg);
+    }
+  }
 }

@@ -19,6 +19,8 @@ class _TambahAsetPageState extends ConsumerState<TambahAsetPage> {
   final _formKey = GlobalKey<FormState>();
   final _jalurController = TextEditingController();
   final _jenisPipaController = TextEditingController();
+  final _latController = TextEditingController();
+  final _lngController = TextEditingController();
   double _kapasitasFull = 0.0;
   bool _isLoading = false;
 
@@ -26,10 +28,12 @@ class _TambahAsetPageState extends ConsumerState<TambahAsetPage> {
   void dispose() {
     _jalurController.dispose();
     _jenisPipaController.dispose();
+    _latController.dispose();
+    _lngController.dispose();
     super.dispose();
   }
 
-  void _simpanData(GpsState gpsState) async {
+  void _simpanData() async {
     if (!_formKey.currentState!.validate()) return;
     
     if (_kapasitasFull <= 0) {
@@ -42,14 +46,22 @@ class _TambahAsetPageState extends ConsumerState<TambahAsetPage> {
       return;
     }
 
-    if (gpsState is! GpsSuccess) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Tunggu hingga sinyal GPS stabil untuk menyimpan titik koordinat.'),
-          backgroundColor: AppColors.statusKritis,
-        ),
-      );
-      return;
+    double? lat;
+    if (_latController.text.trim().isNotEmpty) {
+      lat = double.tryParse(_latController.text.trim());
+      if (lat == null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Format Latitude tidak valid.')));
+        return;
+      }
+    }
+
+    double? lng;
+    if (_lngController.text.trim().isNotEmpty) {
+      lng = double.tryParse(_lngController.text.trim());
+      if (lng == null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Format Longitude tidak valid.')));
+        return;
+      }
     }
 
     setState(() => _isLoading = true);
@@ -60,8 +72,8 @@ class _TambahAsetPageState extends ConsumerState<TambahAsetPage> {
         'jalur': _jalurController.text.trim(),
         'jenis_pipa': _jenisPipaController.text.trim(),
         'kapasitas_full': _kapasitasFull,
-        'latitude': gpsState.latitude,
-        'longitude': gpsState.longitude,
+        'latitude': lat,
+        'longitude': lng,
       });
 
       // Refresh data
@@ -165,22 +177,63 @@ class _TambahAsetPageState extends ConsumerState<TambahAsetPage> {
 
                     _buildSectionLabel('Kapasitas Full Bukaan (Putaran) *'),
                     const SizedBox(height: 8),
-                    CounterInput(
+                    FractionalCounterInput(
                       value: _kapasitasFull,
-                      step: 0.25,
                       onChanged: (val) {
                         setState(() {
                           _kapasitasFull = val;
                         });
                       },
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 20),
+
+                    _buildSectionLabel('Titik Koordinat (Latitude & Longitude)'),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _latController,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                            decoration: const InputDecoration(hintText: 'Cth: -6.9090'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _lngController,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                            decoration: const InputDecoration(hintText: 'Cth: 109.3816'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          if (gpsState is GpsSuccess) {
+                            _latController.text = gpsState.latitude.toString();
+                            _lngController.text = gpsState.longitude.toString();
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Sinyal GPS belum stabil atau aktif.')),
+                            );
+                            ref.read(gpsServiceProvider.notifier).captureLocation(context);
+                          }
+                        },
+                        icon: const Icon(Icons.my_location),
+                        label: const Text('Gunakan Lokasi Saat Ini'),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
 
                     SizedBox(
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: _isLoading ? null : () => _simpanData(gpsState),
+                        onPressed: _isLoading ? null : () => _simpanData(),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.accentGreen,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

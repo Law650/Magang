@@ -15,6 +15,7 @@ class RekapTekanan {
   final String? status;
   final String? waktuPengecekan;
   final String? namaTeknisi;
+  final String? fotoEviden;
 
   RekapTekanan({
     required this.id,
@@ -25,6 +26,7 @@ class RekapTekanan {
     this.status,
     this.waktuPengecekan,
     this.namaTeknisi,
+    this.fotoEviden,
   });
 
   static double? _parseDouble(dynamic value) {
@@ -45,6 +47,7 @@ class RekapTekanan {
       status: latest?['status'],
       waktuPengecekan: latest?['waktu_pengecekan'],
       namaTeknisi: latest?['nama_teknisi'],
+      fotoEviden: latest?['foto_eviden'],
     );
   }
 

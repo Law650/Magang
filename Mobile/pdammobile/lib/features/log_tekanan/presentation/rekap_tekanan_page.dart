@@ -141,6 +141,28 @@ class _RekapTekananPageState extends ConsumerState<RekapTekananPage> {
                     ),
                   ),
                   
+                  if (item.fotoEviden != null && item.fotoEviden!.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    const Text('Bukti Foto', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                    const SizedBox(height: 12),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Image.network(
+                        item.fotoEviden!,
+                        headers: const {'ngrok-skip-browser-warning': '69420'},
+                        width: double.infinity,
+                        height: 200,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          width: double.infinity,
+                          height: 200,
+                          color: Colors.grey.withValues(alpha: 0.1),
+                          child: const Center(child: Icon(Icons.broken_image, color: Colors.grey, size: 40)),
+                        ),
+                      ),
+                    ),
+                  ],
+
                   const SizedBox(height: 24),
                   
                   const Text('Lokasi Koordinat', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),

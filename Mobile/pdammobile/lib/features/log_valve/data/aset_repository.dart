@@ -17,6 +17,7 @@ class AsetValve {
   final double? persentaseBukaan;
   final double? latitude;
   final double? longitude;
+  final String? namaTeknisi;
 
   const AsetValve({
     required this.id,
@@ -27,6 +28,7 @@ class AsetValve {
     this.persentaseBukaan,
     this.latitude,
     this.longitude,
+    this.namaTeknisi,
   });
 
   static double? _parseDouble(dynamic value) {
@@ -46,6 +48,7 @@ class AsetValve {
       persentaseBukaan: _parseDouble(json['persentase_bukaan']),
       latitude: _parseDouble(json['latitude']),
       longitude: _parseDouble(json['longitude']),
+      namaTeknisi: json['nama_teknisi'],
     );
   }
 
@@ -59,6 +62,7 @@ class AsetValve {
       'persentase_bukaan': persentaseBukaan,
       'latitude': latitude,
       'longitude': longitude,
+      'nama_teknisi': namaTeknisi,
     };
   }
 

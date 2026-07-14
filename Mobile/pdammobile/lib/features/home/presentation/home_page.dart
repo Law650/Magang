@@ -11,6 +11,9 @@ import '../../../core/services/gps_service.dart';
 import '../../../core/widgets/ui_components.dart';
 import '../../identity/presentation/login_page.dart';
 import '../../log_valve/data/aset_repository.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import '../../../core/models/queued_log.dart';
 
 final connectivityProvider = StreamProvider<List<ConnectivityResult>>((ref) {
   return Connectivity().onConnectivityChanged;
@@ -33,6 +36,8 @@ class HomePage extends ConsumerWidget {
     final dateFormat = DateFormat('dd MMM yyyy, HH:mm', 'id');
     final totalLog = syncState.pendingCount + syncState.successCount + syncState.failedCount;
     final progress = totalLog == 0 ? 0.0 : syncState.successCount / totalLog;
+    
+    final recentLogs = ref.read(syncControllerProvider.notifier).getAllLogs().reversed.take(3).toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -66,10 +71,7 @@ class HomePage extends ConsumerWidget {
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none, color: Colors.white),
-            onPressed: () {},
-          ),
+
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
             onPressed: () async {
@@ -93,45 +95,14 @@ class HomePage extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Search Bar mock
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: AppColors.cardBorder),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.search, color: AppColors.textHint),
-                    SizedBox(width: 8),
-                    Text('Cari Menu atau Aset...', style: TextStyle(color: AppColors.textHint)),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              
-              // Quick Actions
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildQuickAction(Icons.warning_amber_rounded, 'Lapor\nKebocoran', AppColors.statusKritis),
-                  _buildQuickAction(Icons.build_rounded, 'Lapor\nRusak', AppColors.primary),
-                  _buildQuickAction(Icons.qr_code_scanner_rounded, 'Pindai\nAset', AppColors.primaryDark),
-                  _buildQuickAction(Icons.map_rounded, 'Peta\nJaringan', AppColors.statusNormal),
-                ],
-              ),
-              
-              const SizedBox(height: 24),
+
               
               const Breadcrumb(title: 'Dashboard Utama'),
               const SizedBox(height: 16),
-              
-              Text('Status Pekerjaan', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 12),
 
-              // Gauge Dashboard Card
+              // Status Sinkronisasi & Upload Card
+              Text('Status Sinkronisasi', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -142,73 +113,52 @@ class HomePage extends ConsumerWidget {
                 child: Column(
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _buildGauge(
-                          title: 'Target Harian',
-                          progress: 0.65, // Mock
-                          color: AppColors.primary,
-                        ),
-                        _buildGauge(
-                          title: 'Efisiensi',
-                          progress: 0.90, // Mock
-                          color: AppColors.statusNormal,
-                        ),
-                        _buildGauge(
-                          title: 'Sinkronisasi',
-                          progress: totalLog == 0 ? 1.0 : progress,
-                          color: AppColors.accentGreen,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    const Divider(height: 1),
-                    const SizedBox(height: 16),
-                    Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _buildStatText('Pending', syncState.pendingCount.toString()),
-                        _buildStatText('Gagal', syncState.failedCount.toString()),
-                        _buildStatText('Sukses', syncState.successCount.toString()),
-                        _buildStatText('Total', totalLog.toString()),
+                        _buildUploadStat('Pending', syncState.pendingCount.toString(), Colors.orange),
+                        _buildUploadStat('Gagal', syncState.failedCount.toString(), AppColors.statusKritis),
+                        _buildUploadStat('Sukses', syncState.successCount.toString(), AppColors.statusNormal),
+                        _buildUploadStat('Total', totalLog.toString(), AppColors.primary),
                       ],
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: syncState.isSyncing || !isOnline
+                            ? null
+                            : () => ref.read(syncControllerProvider.notifier).forceSyncNow(),
+                        icon: syncState.isSyncing
+                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            : const Icon(Icons.sync_rounded),
+                        label: Text(syncState.isSyncing 
+                            ? 'Menyinkronkan...' 
+                            : (isOnline ? 'Sinkronkan Data Sekarang' : 'Koneksi Terputus (Offline)')),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          minimumSize: const Size.fromHeight(48),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      syncState.lastSyncTime != null
+                          ? 'Terakhir sync: ${dateFormat.format(syncState.lastSyncTime!)}'
+                          : 'Belum ada data disinkronkan',
+                      style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textHint),
                     ),
                   ],
                 ),
               ),
-
               const SizedBox(height: 24),
-
-              // Sync Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: syncState.isSyncing || !isOnline
-                      ? null
-                      : () => ref.read(syncControllerProvider.notifier).forceSyncNow(),
-                  icon: syncState.isSyncing
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Icon(Icons.sync_rounded),
-                  label: Text(syncState.isSyncing 
-                      ? 'Menyinkronkan...' 
-                      : (isOnline ? 'Sinkronkan Data Sekarang' : 'Koneksi Terputus (Offline)')),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    minimumSize: const Size.fromHeight(56),
-                  ),
-                ),
+              
+              // Mini Map
+              Consumer(
+                builder: (context, ref, child) {
+                  final asetAsync = ref.watch(asetValveListProvider);
+                  return _buildMiniMap(gpsState, asetAsync);
+                },
               ),
-
-              const SizedBox(height: 16),
-              Center(
-                child: Text(
-                  syncState.lastSyncTime != null
-                      ? 'Terakhir sync: ${dateFormat.format(syncState.lastSyncTime!)}'
-                      : 'Belum ada data disinkronkan',
-                  style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textHint),
-                ),
-              ),
-
               const SizedBox(height: 24),
               
               // Aset Terdekat
@@ -230,15 +180,55 @@ class HomePage extends ConsumerWidget {
               ),
               const SizedBox(height: 24),
 
-              // Aktivitas Terakhir Mock
+              // Aktivitas Terakhir
               Text('Aktivitas Terakhir', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
               
-              _buildActivityItem('Cek Valve Jl. Merdeka', 'Tutup (1.5 putaran)', '12:30', AppColors.primary),
-              const SizedBox(height: 8),
-              _buildActivityItem('Ukur Tekanan Perum. Asri', '0.8 Bar (Mengalir)', '10:15', AppColors.accentGreen),
-              const SizedBox(height: 8),
-              _buildActivityItem('Cek Valve Jl. Sudirman', 'Buka (2.0 putaran)', '09:00', AppColors.statusKritis),
+              if (recentLogs.isEmpty)
+                const Center(child: Text('Belum ada aktivitas', style: TextStyle(color: AppColors.textHint)))
+              else
+                ...recentLogs.map((log) {
+                  final isValve = log.endpoint.contains('/log-valve');
+                  final title = isValve 
+                      ? 'Cek Valve ${log.payloadFields['nama_lokasi'] ?? ''}'
+                      : 'Ukur Tekanan ${log.payloadFields['nama_lokasi'] ?? ''}';
+                  
+                  String subtitle = '';
+                  Color iconColor = AppColors.primary;
+                  if (isValve) {
+                    final aksi = log.payloadFields['aksi_kerja']?.toString() ?? 'Buka';
+                    final putaran = log.payloadFields['jumlah_putaran']?.toString() ?? '0';
+                    subtitle = '$aksi ($putaran putaran)';
+                    iconColor = aksi.toLowerCase() == 'tutup' ? AppColors.statusKritis : AppColors.primary;
+                  } else {
+                    final tekanan = log.payloadFields['nilai_tekanan']?.toString() ?? '0';
+                    final status = log.payloadFields['status']?.toString() ?? '';
+                    subtitle = '$tekanan Bar ($status)';
+                    iconColor = AppColors.accentGreen;
+                  }
+                  
+                  // Extract time
+                  String time = '';
+                  if (log.payloadFields['waktu_pengecekan'] != null) {
+                    try {
+                      final dt = DateTime.parse(log.payloadFields['waktu_pengecekan']).toLocal();
+                      time = DateFormat('HH:mm').format(dt);
+                    } catch (_) {}
+                  } else if (log.idempotencyKey.isNotEmpty) {
+                      final parts = log.idempotencyKey.split('_');
+                      if (parts.length > 1) {
+                         try {
+                           final dt = DateTime.fromMillisecondsSinceEpoch(int.parse(parts.last));
+                           time = DateFormat('HH:mm').format(dt);
+                         } catch(_) {}
+                      }
+                  }
+                  
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: _buildActivityItem(title, subtitle, time, iconColor),
+                  );
+                }),
               
               const SizedBox(height: 32),
             ],
@@ -406,6 +396,15 @@ class HomePage extends ConsumerWidget {
       ],
     );
   }
+  Widget _buildUploadStat(String label, String value, Color color) {
+    return Column(
+      children: [
+        Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color)),
+        const SizedBox(height: 4),
+        Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+      ],
+    );
+  }
 
   Widget _buildActivityItem(String title, String subtitle, String time, Color iconColor) {
     return Container(
@@ -434,6 +433,114 @@ class HomePage extends ConsumerWidget {
           ),
           Text(time, style: const TextStyle(color: AppColors.textHint, fontSize: 12)),
         ],
+      ),
+    );
+  }
+
+  Widget _buildMiniMap(GpsState gpsState, AsyncValue<List<AsetValve>> asetAsync) {
+    LatLng center = const LatLng(-6.8909, 109.4390); // default
+    if (gpsState is GpsSuccess) {
+      center = LatLng(gpsState.latitude, gpsState.longitude);
+    }
+    
+    CameraFit? cameraFit;
+    final points = <LatLng>[];
+    if (gpsState is GpsSuccess) {
+      points.add(center);
+    }
+    
+    final list = asetAsync.value;
+    if (list != null) {
+      for (final aset in list) {
+        if (aset.latitude != null && aset.longitude != null) {
+          points.add(LatLng(aset.latitude!, aset.longitude!));
+        }
+      }
+    }
+
+    if (points.isNotEmpty) {
+      cameraFit = CameraFit.bounds(
+        bounds: LatLngBounds.fromPoints(points),
+        padding: const EdgeInsets.all(48.0),
+      );
+    }
+
+    return Container(
+      height: 320,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.cardBorder),
+        color: AppColors.surface,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Stack(
+          children: [
+            FlutterMap(
+              key: ValueKey('map_${points.length}'), // Paksa rebuild saat jumlah poin berubah agar auto-fit jalan
+              options: MapOptions(
+                initialCenter: center,
+                initialZoom: 14.0,
+                initialCameraFit: cameraFit,
+                interactionOptions: const InteractionOptions(
+                  flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+                ),
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+                  userAgentPackageName: 'com.pdam.mobile',
+                ),
+                MarkerLayer(
+                  markers: [
+                    // Marker untuk lokasi user (GPS)
+                    if (gpsState is GpsSuccess)
+                      Marker(
+                        point: center,
+                        width: 40,
+                        height: 40,
+                        child: const Icon(Icons.my_location, color: Colors.blue, size: 30),
+                      ),
+                    
+                    // Marker dari Aset Valve
+                    ...asetAsync.maybeWhen(
+                      data: (list) => list.where((a) => a.latitude != null && a.longitude != null).map(
+                        (aset) => Marker(
+                          point: LatLng(aset.latitude!, aset.longitude!),
+                          width: 40,
+                          height: 40,
+                          child: const Icon(Icons.location_on, color: AppColors.accentGreen, size: 30),
+                        ),
+                      ).toList(),
+                      orElse: () => [],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            
+            // Overlay untuk memberi tahu bahwa ini Mini Map
+            Positioned(
+              top: 12,
+              left: 12,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.7),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.map, color: Colors.white, size: 14),
+                    SizedBox(width: 6),
+                    Text('Peta Lokasi Aset', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

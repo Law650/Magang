@@ -17,6 +17,7 @@ import '../../camera/presentation/preview_watermark_page.dart';
 import '../data/lokasi_repository.dart';
 import '../data/rekap_tekanan_provider.dart';
 import 'rekap_tekanan_page.dart';
+import 'tambah_daerah_page.dart';
 
 class LogTekananFormPage extends ConsumerStatefulWidget {
   const LogTekananFormPage({super.key});
@@ -352,39 +353,55 @@ class _LogTekananFormPageState extends ConsumerState<LogTekananFormPage> {
 
                     _buildSectionLabel('Cari / Tambah Lokasi Daerah *'),
                     const SizedBox(height: 8),
-                    InkWell(
-                      onTap: _showLokasiSearchDialog,
-                      child: Container(
-                        height: 56,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.cardBorder),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.search, color: AppColors.textHint),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                _selectedLokasi?.namaLokasi ?? 'Cari lokasi...',
-                                style: theme.textTheme.bodyLarge?.copyWith(
-                                  color: _selectedLokasi != null ? AppColors.textPrimary : AppColors.textHint,
-                                ),
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.all(8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: InkWell(
+                            onTap: _showLokasiSearchDialog,
+                            child: Container(
+                              height: 56,
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
                               decoration: BoxDecoration(
-                                color: AppColors.accentGreen,
-                                borderRadius: BorderRadius.circular(8),
+                                color: AppColors.surface,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: AppColors.cardBorder),
                               ),
-                              child: const Icon(Icons.add, color: Colors.white, size: 20),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.search, color: AppColors.textHint),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      _selectedLokasi?.namaLokasi ?? 'Cari lokasi...',
+                                      style: theme.textTheme.bodyLarge?.copyWith(
+                                        color: _selectedLokasi != null ? AppColors.textPrimary : AppColors.textHint,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ],
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 8),
+                        InkWell(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const TambahDaerahPage()),
+                            );
+                          },
+                          child: Container(
+                            height: 56,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            decoration: BoxDecoration(
+                              color: AppColors.accentGreen,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(Icons.add, color: Colors.white),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 20),
 
@@ -432,7 +449,7 @@ class _LogTekananFormPageState extends ConsumerState<LogTekananFormPage> {
                       option1Color: AppColors.accentGreen,
                       option2Text: 'Tidak Mengalir',
                       option2Icon: Icons.do_not_disturb_alt,
-                      option2Color: AppColors.textSecondary,
+                      option2Color: AppColors.statusKritis,
                       selectedIndex: _aliranIndex,
                       onChanged: (idx) => setState(() => _aliranIndex = idx),
                     ),

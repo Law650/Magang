@@ -30,7 +30,7 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
   final _namaTeknisiController = TextEditingController();
   final _keteranganController = TextEditingController();
 
-  Lokasi? _selectedLokasi;
+  String? _selectedNamaLokasi;
   AsetValve? _selectedAset;
   double _kapasitasFull = 0.0;
   double _bukaanSaatIni = 0.0;
@@ -201,7 +201,6 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
     try {
       final idempotencyKey = const Uuid().v4();
       final payloadFields = <String, dynamic>{
-        'lokasi_id': _selectedLokasi?.id,
         'aset_id': _selectedAset!.id,
         'nama_aset': _selectedAset!.namaAset,
         'nama_lokasi': _selectedAset!.namaLokasi,
@@ -238,11 +237,12 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
       );
 
       if (isSuccess) {
-        // Segarkan data cache lokasi & aset agar bukaan valve terbaru ditarik dari server
-        ref.invalidate(lokasiListProvider);
+        // Segarkan data cache aset agar bukaan valve terbaru ditarik dari server
+        ref.invalidate(asetValveListProvider);
       }
 
       setState(() {
+        _selectedNamaLokasi = null;
         _selectedAset = null;
         _kapasitasFull = 0.0;
         _bukaanSaatIni = 0.0;
@@ -366,40 +366,43 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: AppColors.cardBorder),
                       ),
-                      child: lokasiAsync.when(
-                        data: (lokasiList) => InkWell(
-                          onTap: () async {
-                            final selected = await SearchableBottomSheet.show<Lokasi>(
-                              context: context,
-                              title: 'Pilih Jalur',
-                              items: lokasiList,
-                              itemAsString: (l) => l.namaLokasi,
-                            );
-                            if (selected != null) {
-                              setState(() {
-                                _selectedLokasi = selected;
-                                _selectedAset = null; // Reset aset jika lokasi berubah
-                              });
-                            }
-                          },
-                          child: Container(
-                            height: 56,
-                            alignment: Alignment.centerLeft,
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    _selectedLokasi?.namaLokasi ?? 'Pilih Jalur',
-                                    style: theme.textTheme.bodyLarge?.copyWith(
-                                      color: _selectedLokasi != null ? AppColors.textPrimary : AppColors.textHint,
+                      child: asetAsync.when(
+                        data: (asetList) {
+                          final uniqueJalur = asetList.map((a) => a.namaLokasi).toSet().toList();
+                          return InkWell(
+                            onTap: () async {
+                              final selected = await SearchableBottomSheet.show<String>(
+                                context: context,
+                                title: 'Pilih Jalur',
+                                items: uniqueJalur,
+                                itemAsString: (l) => l,
+                              );
+                              if (selected != null) {
+                                setState(() {
+                                  _selectedNamaLokasi = selected;
+                                  _selectedAset = null; // Reset aset jika lokasi berubah
+                                });
+                              }
+                            },
+                            child: Container(
+                              height: 56,
+                              alignment: Alignment.centerLeft,
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      _selectedNamaLokasi ?? 'Pilih Jalur',
+                                      style: theme.textTheme.bodyLarge?.copyWith(
+                                        color: _selectedNamaLokasi != null ? AppColors.textPrimary : AppColors.textHint,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                const Icon(Icons.arrow_drop_down, color: AppColors.textHint),
-                              ],
+                                  const Icon(Icons.arrow_drop_down, color: AppColors.textHint),
+                                ],
+                              ),
                             ),
-                          ),
-                        ),
+                          );
+                        },
                         loading: () => const Center(child: CircularProgressIndicator()),
                         error: (_, __) => const Text('Gagal memuat'),
                       ),
@@ -417,9 +420,9 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
                       ),
                       child: asetAsync.when(
                         data: (asetList) {
-                          final availableAsets = _selectedLokasi == null 
+                          final availableAsets = _selectedNamaLokasi == null 
                               ? asetList 
-                              : asetList.where((e) => e.namaLokasi == _selectedLokasi!.namaLokasi).toList();
+                              : asetList.where((e) => e.namaLokasi == _selectedNamaLokasi).toList();
                           return InkWell(
                             onTap: () async {
                               final selected = await SearchableBottomSheet.show<AsetValve>(
@@ -463,9 +466,8 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
 
                     _buildSectionLabel('Kapasitas Full Bukaan (Putaran) *'),
                     const SizedBox(height: 8),
-                    CounterInput(
+                    FractionalCounterInput(
                       value: _kapasitasFull,
-                      step: 0.25,
                       onChanged: (val) {
                         setState(() {
                           _kapasitasFull = val;
@@ -518,7 +520,7 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
                     CustomToggleButton(
                       option1Text: 'Buka',
                       option1Icon: Icons.arrow_upward,
-                      option1Color: AppColors.textSecondary,
+                      option1Color: AppColors.accentGreen,
                       option2Text: 'Tutup',
                       option2Icon: Icons.arrow_downward,
                       option2Color: AppColors.statusKritis,
@@ -531,9 +533,8 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
 
                     _buildSectionLabel('Jumlah Putaran Saat Ini *'),
                     const SizedBox(height: 8),
-                    CounterInput(
+                    FractionalCounterInput(
                       value: _jumlahPutaran,
-                      step: 0.25,
                       onChanged: (val) => setState(() => _jumlahPutaran = val),
                     ),
                     const SizedBox(height: 4),

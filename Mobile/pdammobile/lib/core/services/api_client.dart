@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiClient {
-  static const String baseUrl = 'http://192.168.0.114:8000/api';
+  static const String baseUrl = 'https://untouched-creed-manly.ngrok-free.dev/api';
   
   late Dio _dio;
 
@@ -14,6 +14,7 @@ class ApiClient {
         receiveTimeout: const Duration(seconds: 15),
         headers: {
           'Accept': 'application/json',
+          'ngrok-skip-browser-warning': '69420',
         },
       ),
     );

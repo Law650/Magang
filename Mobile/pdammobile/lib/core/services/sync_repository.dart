@@ -47,7 +47,7 @@ class SyncRepository {
       if (entry.fotoPath.isNotEmpty) {
         final fotoFile = File(entry.fotoPath);
         if (fotoFile.existsSync()) {
-          formMap['foto'] = await MultipartFile.fromFile(
+          formMap['foto_eviden'] = await MultipartFile.fromFile(
             entry.fotoPath,
             filename: '${entry.idempotencyKey}.jpg',
             contentType: DioMediaType('image', 'jpeg'),

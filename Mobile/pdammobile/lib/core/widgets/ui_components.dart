@@ -201,7 +201,7 @@ class _CounterInputState extends State<CounterInput> {
               controller: _controller,
               focusNode: _focusNode,
               textAlign: TextAlign.center,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: TextInputType.numberWithOptions(decimal: widget.isDecimal),
               style: GoogleFonts.inter(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -209,11 +209,17 @@ class _CounterInputState extends State<CounterInput> {
               ),
               decoration: const InputDecoration(
                 border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
                 contentPadding: EdgeInsets.zero,
                 isDense: true,
               ),
               onChanged: (val) {
-                final textValue = val.replaceAll(',', '.');
+                String textValue = val.replaceAll(',', '.');
+                if (!widget.isDecimal) {
+                  textValue = textValue.replaceAll('.', '');
+                }
+
                 final parsed = double.tryParse(textValue);
                 if (parsed != null) {
                   widget.onChanged(parsed.clamp(widget.min, widget.max));
@@ -351,6 +357,228 @@ class CustomToggleButton extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class FractionalCounterInput extends StatefulWidget {
+  final double value;
+  final ValueChanged<double> onChanged;
+
+  const FractionalCounterInput({
+    super.key,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  State<FractionalCounterInput> createState() => _FractionalCounterInputState();
+}
+
+class _FractionalCounterInputState extends State<FractionalCounterInput> {
+  late int _integerPart;
+  late double _fractionPart;
+  late TextEditingController _controller;
+  final FocusNode _focusNode = FocusNode();
+
+  final List<double> _fractions = [0.0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875];
+  final List<String> _fractionLabels = ['0', '1/8', '1/4', '3/8', '1/2', '5/8', '3/4', '7/8'];
+
+  @override
+  void initState() {
+    super.initState();
+    _parseValue(widget.value);
+    _controller = TextEditingController(text: _integerPart.toString());
+    _focusNode.addListener(_onFocusChange);
+  }
+
+  @override
+  void didUpdateWidget(covariant FractionalCounterInput oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.value != widget.value) {
+      _parseValue(widget.value);
+      if (!_focusNode.hasFocus) {
+        _controller.text = _integerPart.toString();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.removeListener(_onFocusChange);
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _onFocusChange() {
+    if (!_focusNode.hasFocus) {
+      final val = int.tryParse(_controller.text) ?? _integerPart;
+      setState(() {
+        _integerPart = val < 0 ? 0 : val;
+        _controller.text = _integerPart.toString();
+      });
+      _updateValue();
+    }
+  }
+
+  void _parseValue(double value) {
+    _integerPart = value.floor();
+    double remainder = value - _integerPart;
+
+    // Find nearest fraction
+    double minDiff = 1.0;
+    _fractionPart = 0.0;
+    for (double f in _fractions) {
+      double diff = (remainder - f).abs();
+      if (diff < minDiff) {
+        minDiff = diff;
+        _fractionPart = f;
+      }
+    }
+  }
+
+  void _updateValue() {
+    widget.onChanged((_integerPart + _fractionPart));
+  }
+
+  void _incrementInt() {
+    _focusNode.unfocus();
+    setState(() {
+      _integerPart++;
+      _controller.text = _integerPart.toString();
+    });
+    _updateValue();
+  }
+
+  void _decrementInt() {
+    _focusNode.unfocus();
+    if (_integerPart > 0) {
+      setState(() {
+        _integerPart--;
+        _controller.text = _integerPart.toString();
+      });
+      _updateValue();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        // Integer part controls
+        Material(
+          color: AppColors.primary,
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            onTap: _decrementInt,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              width: 48,
+              height: 56,
+              alignment: Alignment.center,
+              child: const Icon(Icons.remove, color: Colors.white),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Container(
+            height: 56,
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.cardBorder),
+            ),
+            alignment: Alignment.center,
+            child: TextField(
+              controller: _controller,
+              focusNode: _focusNode,
+              textAlign: TextAlign.center,
+              keyboardType: TextInputType.number,
+              style: GoogleFonts.inter(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
+                isDense: true,
+              ),
+              onChanged: (val) {
+                final parsed = int.tryParse(val);
+                if (parsed != null && parsed >= 0) {
+                  _integerPart = parsed;
+                  _updateValue();
+                }
+              },
+              onSubmitted: (val) {
+                _focusNode.unfocus();
+              },
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Material(
+          color: AppColors.primary,
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            onTap: _incrementInt,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              width: 48,
+              height: 56,
+              alignment: Alignment.center,
+              child: const Icon(Icons.add, color: Colors.white),
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        // Fraction dropdown
+        Expanded(
+          child: Container(
+            height: 56,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.cardBorder),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<double>(
+                value: _fractionPart,
+                isExpanded: true,
+                dropdownColor: AppColors.surface,
+                icon: const Icon(Icons.arrow_drop_down, color: AppColors.textHint),
+                items: List.generate(_fractions.length, (index) {
+                  return DropdownMenuItem(
+                    value: _fractions[index],
+                    child: Text(
+                      _fractionLabels[index],
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  );
+                }),
+                onChanged: (val) {
+                  if (val != null) {
+                    setState(() {
+                      _fractionPart = val;
+                    });
+                    _updateValue();
+                  }
+                },
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
