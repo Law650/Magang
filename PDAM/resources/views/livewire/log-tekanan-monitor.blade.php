@@ -1,4 +1,4 @@
-<div>
+<div wire:poll.30s>
     {{-- Page Header --}}
     <div class="mb-6">
         <h1 class="text-2xl font-bold text-white">Monitoring Tekanan Air</h1>
@@ -159,6 +159,18 @@
                             ctx.restore();
                         }
                     }
+                }
+            });
+
+            // Listen for chart data updates from Livewire
+            window.addEventListener('chart-data-updated', (event) => {
+                if (window.tekananChartInstance) {
+                    const data = event.detail.chartData;
+                    window.tekananChartInstance.data.labels = data.labels;
+                    window.tekananChartInstance.data.datasets[0].data = data.values;
+                    window.tekananChartInstance.data.datasets[0].backgroundColor = data.colors;
+                    window.tekananChartInstance.data.datasets[0].borderColor = data.colors.map(c => c.replace('0.8', '1'));
+                    window.tekananChartInstance.update();
                 }
             });
         });

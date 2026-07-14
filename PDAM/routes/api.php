@@ -28,6 +28,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/aset-valve', [ApiAsetController::class, 'index']);
     Route::post('/aset-valve', [ApiAsetController::class, 'store']);
     Route::get('/lokasi', [ApiAsetController::class, 'lokasi']);
+    Route::post('/lokasi-tekanan', [ApiAsetController::class, 'storeLokasiTekanan']);
 
     // Transaksi / Log
     Route::post('/log-valve', [ApiLogValveController::class, 'store']);

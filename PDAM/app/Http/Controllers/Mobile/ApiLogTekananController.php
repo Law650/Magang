@@ -66,8 +66,8 @@ class ApiLogTekananController extends Controller
      */
     public function rekap(): JsonResponse
     {
-        // Ambil semua lokasi
-        $lokasis = Lokasi::all();
+        // Ambil semua lokasi tekanan
+        $lokasis = Lokasi::where('jenis', 'tekanan')->get();
 
         $rekap = $lokasis->map(function ($lokasi) {
             // Ambil log terbaru secara manual untuk menghindari query deadlock latestOfMany

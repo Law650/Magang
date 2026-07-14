@@ -8,6 +8,21 @@ use Livewire\Component;
 
 class PetaDistribusi extends Component
 {
+    public array $markers = [];
+    public array $stats = [];
+
+    public function mount()
+    {
+        $this->refreshData();
+    }
+
+    public function refreshData()
+    {
+        $this->markers = $this->getMarkers();
+        $this->stats = $this->getStats();
+        $this->dispatch('markers-updated', markers: $this->markers);
+    }
+
     /**
      * Build map marker data for each lokasi.
      * Includes latest pressure reading and asset count.
@@ -33,7 +48,7 @@ class PetaDistribusi extends Component
                 'nama' => $v->nama_aset,
                 'kapasitas' => (float) $v->kapasitas_full_putaran,
                 'tutupan' => (float) $v->total_tutupan_saat_ini,
-                'sisaBukaan' => $v->sisa_bukaan,
+                'sisaBukaan' => \App\Helpers\FormatHelper::putaran($v->sisa_bukaan),
                 'persentase' => $v->persentase_bukaan,
             ])->values()->toArray();
 
@@ -81,9 +96,7 @@ class PetaDistribusi extends Component
 
     public function render(): mixed
     {
-        return view('livewire.peta-distribusi', [
-            'markers' => $this->getMarkers(),
-            'stats' => $this->getStats(),
-        ])->layout('components.layouts.app', ['title' => 'Peta Distribusi Aset']);
+        $this->refreshData(); // Auto update on wire:poll
+        return view('livewire.peta-distribusi')->layout('components.layouts.app', ['title' => 'Peta Distribusi Aset']);
     }
 }

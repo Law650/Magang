@@ -104,6 +104,12 @@
                     init() {
                         this.initMap();
                         this.renderMarkers();
+
+                        // Listen to the dispatched event from Livewire
+                        window.addEventListener('markers-updated', (e) => {
+                            this.markers = e.detail.markers;
+                            this.renderMarkers();
+                        });
                     },
 
                     initMap() {

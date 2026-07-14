@@ -87,4 +87,12 @@ class AsetValve extends Model
     {
         return $this->hasMany(LogValve::class);
     }
+
+    /**
+     * Log aktivitas terakhir untuk mendapatkan info teknisi terakhir.
+     */
+    public function lastLogValve()
+    {
+        return $this->hasOne(LogValve::class)->latestOfMany();
+    }
 }

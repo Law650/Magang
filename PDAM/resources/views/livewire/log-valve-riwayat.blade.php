@@ -1,7 +1,7 @@
-<div>
+<div wire:poll.30s>
     {{-- Page Header --}}
     <div class="mb-6">
-        <h1 class="text-2xl font-bold text-white">Log Aktivitas Valve</h1>
+        <h1 class="text-2xl font-bold text-white">Riwayat Operasional Valve</h1>
         <p class="text-sm text-slate-400 mt-1">Riwayat aktivitas buka/tutup katup dari teknisi lapangan</p>
     </div>
 
@@ -147,9 +147,9 @@
                                     </span>
                                 @endif
                             </td>
-                            <td class="px-5 py-4 text-center font-mono text-slate-300">{{ $log->jumlah_putaran }}</td>
-                            <td class="px-5 py-4 text-center font-mono text-slate-300">{{ $log->snapshot_sisa_bukaan }}</td>
-                            <td class="px-5 py-4 text-center font-mono text-slate-300">{{ $log->snapshot_total_tutupan }}</td>
+                            <td class="px-5 py-4 text-center font-mono text-slate-300">{{ \App\Helpers\FormatHelper::putaran($log->jumlah_putaran) }}</td>
+                            <td class="px-5 py-4 text-center font-mono text-slate-300">{{ \App\Helpers\FormatHelper::putaran($log->snapshot_sisa_bukaan) }}</td>
+                            <td class="px-5 py-4 text-center font-mono text-slate-300">{{ \App\Helpers\FormatHelper::putaran($log->snapshot_total_tutupan) }}</td>
                         </tr>
                     @empty
                         <tr>

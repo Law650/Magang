@@ -109,6 +109,8 @@ class LogTekananMonitor extends Component
         $kondisiNormal = (clone $statsQuery)->where('status', 'normal')->count();
         $peringatanKritis = (clone $statsQuery)->where('status', 'kritis')->count();
 
+        $this->dispatch('chart-data-updated', chartData: $this->chartData);
+
         return view('livewire.log-tekanan-monitor', [
             'logs' => $logs,
             'totalPengecekan' => $totalPengecekan,

@@ -63,7 +63,8 @@ class ManajemenAset extends Component
         ]);
 
         $lokasi = Lokasi::firstOrCreate(
-            ['nama_lokasi' => $validated['nama_lokasi']]
+            ['nama_lokasi' => $validated['nama_lokasi'], 'jenis' => 'valve'],
+            ['latitude' => null, 'longitude' => null]
         );
 
         if ($this->editingId) {
@@ -112,7 +113,7 @@ class ManajemenAset extends Component
      */
     public function getLokasiListProperty(): array
     {
-        return Lokasi::orderBy('nama_lokasi')->pluck('nama_lokasi')->toArray();
+        return Lokasi::where('jenis', 'valve')->orderBy('nama_lokasi')->pluck('nama_lokasi')->toArray();
     }
 
     public function render(): mixed
@@ -131,7 +132,7 @@ class ManajemenAset extends Component
 
         // Stats
         $totalAset = AsetValve::count();
-        $totalLokasi = Lokasi::count();
+        $totalLokasi = Lokasi::where('jenis', 'valve')->count();
         $rataPersentase = AsetValve::count() > 0
             ? round(AsetValve::all()->avg(fn ($a) => $a->persentase_bukaan), 1)
             : 0;

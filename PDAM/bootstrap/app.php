@@ -14,6 +14,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Trust proxies for Ngrok
+        $middleware->trustProxies(at: '*');
+
         // Redirect unauthenticated users ke halaman login
         $middleware->redirectGuestsTo('/login');
 

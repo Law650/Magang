@@ -23,7 +23,7 @@ class ApiAsetController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = AsetValve::with('lokasi');
+        $query = AsetValve::with(['lokasi', 'lastLogValve']);
 
         if ($request->filled('search')) {
             $search = '%' . $request->input('search') . '%';
@@ -46,6 +46,7 @@ class ApiAsetController extends Controller
                 'persentase_bukaan' => $aset->persentase_bukaan,
                 'latitude' => $aset->lokasi->latitude ? (float) $aset->lokasi->latitude : null,
                 'longitude' => $aset->lokasi->longitude ? (float) $aset->lokasi->longitude : null,
+                'nama_teknisi' => $aset->lastLogValve ? $aset->lastLogValve->nama_teknisi : null,
             ]),
         ]);
     }
@@ -57,7 +58,8 @@ class ApiAsetController extends Controller
      */
     public function lokasi(): JsonResponse
     {
-        $lokasis = Lokasi::withCount('asetValves')
+        $lokasis = Lokasi::where('jenis', 'tekanan')
+            ->withCount('asetValves')
             ->orderBy('nama_lokasi')
             ->get();
 
@@ -88,8 +90,10 @@ class ApiAsetController extends Controller
             'longitude' => 'nullable|numeric',
         ]);
 
-        // Cek apakah Jalur (Lokasi) sudah ada
-        $lokasi = Lokasi::where('nama_lokasi', $validated['jalur'])->first();
+        // Cek apakah Jalur (Lokasi) sudah ada khusus untuk valve
+        $lokasi = Lokasi::where('nama_lokasi', $validated['jalur'])
+            ->where('jenis', 'valve')
+            ->first();
 
         if (!$lokasi) {
             // Buat Jalur baru jika belum ada, simpan koordinatnya
@@ -97,6 +101,7 @@ class ApiAsetController extends Controller
                 'nama_lokasi' => $validated['jalur'],
                 'latitude' => $validated['latitude'] ?? null,
                 'longitude' => $validated['longitude'] ?? null,
+                'jenis' => 'valve',
             ]);
         } else {
             // Jika jalur sudah ada dan koordinat baru dikirim, kita bisa menimpanya atau membiarkannya.
@@ -127,6 +132,43 @@ class ApiAsetController extends Controller
                 'kapasitas_full_putaran' => (float) $aset->kapasitas_full_putaran,
                 'sisa_bukaan' => $aset->sisa_bukaan,
                 'persentase_bukaan' => $aset->persentase_bukaan,
+                'latitude' => $lokasi->latitude ? (float) $lokasi->latitude : null,
+                'longitude' => $lokasi->longitude ? (float) $lokasi->longitude : null,
+            ],
+        ]);
+    }
+
+    /**
+     * Menambah Daerah (Lokasi) khusus Tekanan.
+     *
+     * POST /api/lokasi-tekanan
+     */
+    public function storeLokasiTekanan(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'nama_lokasi' => [
+                'required', 
+                'string', 
+                'max:150', 
+                \Illuminate\Validation\Rule::unique('lokasis')->where(fn ($query) => $query->where('jenis', 'tekanan'))
+            ],
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+        ]);
+
+        $lokasi = Lokasi::create([
+            'nama_lokasi' => $validated['nama_lokasi'],
+            'latitude' => $validated['latitude'] ?? null,
+            'longitude' => $validated['longitude'] ?? null,
+            'jenis' => 'tekanan',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Daerah Tekanan berhasil ditambahkan.',
+            'data' => [
+                'id' => $lokasi->id,
+                'nama_lokasi' => $lokasi->nama_lokasi,
                 'latitude' => $lokasi->latitude ? (float) $lokasi->latitude : null,
                 'longitude' => $lokasi->longitude ? (float) $lokasi->longitude : null,
             ],

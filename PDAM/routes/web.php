@@ -41,6 +41,7 @@ Route::middleware(['auth', 'check.active'])->group(function () {
     // Dashboard Pages (Livewire full-page components)
     Route::get('/', ExecutiveDashboard::class)->name('dashboard');
     Route::get('/manajemen-aset', ManajemenAset::class)->name('manajemen-aset');
+    Route::get('/manajemen-daerah-tekanan', \App\Livewire\ManajemenDaerahTekanan::class)->name('manajemen-daerah-tekanan');
     Route::get('/log-valve', LogValveRiwayat::class)->name('log-valve');
     Route::get('/log-tekanan', LogTekananMonitor::class)->name('log-tekanan');
     Route::get('/peta', PetaDistribusi::class)->name('peta-distribusi');

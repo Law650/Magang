@@ -17,6 +17,7 @@ class Lokasi extends Model
         'nama_lokasi',
         'latitude',
         'longitude',
+        'jenis',
     ];
 
     /**
