@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Mobile;
+namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 
@@ -31,13 +31,12 @@ class ApiAuthController extends Controller
 
         $login = $validated['login'];
 
-        $user = User::where('email', $login)
-                    ->orWhere('name', $login)
+        $user = User::where('username', $login)
                     ->first();
 
         if (! $user || ! Hash::check($validated['password'], $user->password)) {
             throw ValidationException::withMessages([
-                'login' => ['Username/Email atau password salah.'],
+                'login' => ['Username atau password salah.'],
             ]);
         }
 
@@ -59,7 +58,7 @@ class ApiAuthController extends Controller
                 'user' => [
                     'id' => $user->id,
                     'name' => $user->name,
-                    'email' => $user->email,
+                    'username' => $user->username,
                     'role' => $user->role,
                     'phone' => $user->phone,
                 ],
@@ -83,7 +82,7 @@ class ApiAuthController extends Controller
             'data' => [
                 'id' => $user->id,
                 'name' => $user->name,
-                'email' => $user->email,
+                'username' => $user->username,
                 'role' => $user->role,
                 'phone' => $user->phone,
             ],

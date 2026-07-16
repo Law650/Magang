@@ -10,7 +10,7 @@
             <svg class="w-4 h-4 text-cyan-400 animate-spin-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
             </svg>
-            <span class="text-xs text-slate-400">Auto-refresh 30 detik</span>
+            <span class="text-xs text-slate-400">Auto-refresh 10 detik</span>
         </div>
     </div>
 
@@ -81,7 +81,7 @@
     </div>
 
     {{-- GV Map --}}
-    <div class="rounded-2xl bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-slate-700/40 overflow-hidden">
+    <div class="relative z-10 rounded-2xl bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-slate-700/40 overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-700/40 flex items-center justify-between">
             <div>
                 <h3 class="text-base font-semibold text-white">Peta Gate Valve</h3>
@@ -93,17 +93,20 @@
                 <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-red-500"></span> Tertutup</div>
             </div>
         </div>
-        <div wire:ignore>
+        <div wire:ignore wire:key="map-gv">
             <div
                 x-data="{
                     map: null, markerLayer: null, markers: @js($gvMarkers), markerObjects: {},
                     init() {
                         this.initMap();
                         this.renderMarkers();
+                        new ResizeObserver(() => { if (this.map) this.map.invalidateSize(); }).observe(this.$refs.gvMap);
                         window.addEventListener('gv-markers-updated', (e) => { this.markers = e.detail.markers; this.renderMarkers(); });
                         window.addEventListener('focus-gv-marker', (e) => {
-                            if (this.map) { this.map.setView([e.detail.lat, e.detail.lng], 16, { animate: true });
+                            if (this.map) { 
+                                this.map.setView([e.detail.lat, e.detail.lng], 16, { animate: true });
                                 if (this.markerObjects[e.detail.id]) setTimeout(() => this.markerObjects[e.detail.id].openPopup(), 250);
+                                this.$refs.gvMap.scrollIntoView({ behavior: 'smooth', block: 'center' });
                             }
                         });
                     },
@@ -123,6 +126,7 @@
                         this.markers.forEach(m => {
                             const c = this.getColor(m.status);
                             const badge = { penuh:'background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3)', sebagian:'background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3)', tertutup:'background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3)' };
+                            const fotoHtml = m.foto ? `<div style='margin-top:12px;border-radius:8px;overflow:hidden;border:1px solid rgba(51,65,85,0.4);'><img src='${m.foto}' alt='Foto GV' style='width:100%;height:120px;object-fit:cover;display:block;'></div>` : '';
                             const popup = `<div style='font-family:Inter,sans-serif;min-width:220px;padding:4px 0;'>
                                 <div style='font-size:14px;font-weight:700;color:#f1f5f9;margin-bottom:4px;'>${m.nama}</div>
                                 <div style='font-size:11px;color:#94a3b8;margin-bottom:10px;'>${m.lokasi}</div>
@@ -133,6 +137,7 @@
                                 </div>
                                 <div style='margin-top:10px;background:rgba(30,41,59,0.6);padding:8px 10px;border-radius:8px;border:1px solid rgba(51,65,85,0.4);'><div style='font-size:10px;color:#64748b;margin-bottom:2px;'>Petugas Terakhir</div><div style='font-size:12px;font-weight:600;color:#e2e8f0;'>${m.teknisiTerakhir}</div></div>
                                 <div style='margin-top:8px;'><div style='width:100%;height:6px;background:rgba(51,65,85,0.5);border-radius:3px;overflow:hidden;'><div style='height:100%;width:${m.persentase}%;background:${c};border-radius:3px;'></div></div><div style='font-size:10px;color:#94a3b8;margin-top:4px;text-align:right;'>${m.persentase}% terbuka</div></div>
+                                ${fotoHtml}
                             </div>`;
                             const marker = L.marker([m.lat, m.lng], { icon: this.icon(c) }).bindPopup(popup, { className:'dark-popup', maxWidth:280 });
                             this.markerObjects[m.id] = marker;
@@ -244,7 +249,7 @@
     </div>
 
     {{-- Tekanan Map --}}
-    <div class="rounded-2xl bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-slate-700/40 overflow-hidden">
+    <div class="relative z-10 rounded-2xl bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-slate-700/40 overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-700/40 flex items-center justify-between">
             <div>
                 <h3 class="text-base font-semibold text-white">Peta Tekanan Air</h3>
@@ -256,17 +261,20 @@
                 <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-red-500"></span> Kritis (Tidak Mengalir)</div>
             </div>
         </div>
-        <div wire:ignore>
+        <div wire:ignore wire:key="map-tekanan">
             <div
                 x-data="{
                     map: null, markerLayer: null, markers: @js($tekananMarkers), markerObjects: {},
                     init() {
                         this.initMap();
                         this.renderMarkers();
+                        new ResizeObserver(() => { if (this.map) this.map.invalidateSize(); }).observe(this.$refs.tekananMap);
                         window.addEventListener('tekanan-markers-updated', (e) => { this.markers = e.detail.markers; this.renderMarkers(); });
                         window.addEventListener('focus-tekanan-marker', (e) => {
-                            if (this.map) { this.map.setView([e.detail.lat, e.detail.lng], 16, { animate: true });
+                            if (this.map) { 
+                                this.map.setView([e.detail.lat, e.detail.lng], 16, { animate: true });
                                 if (this.markerObjects[e.detail.id]) setTimeout(() => this.markerObjects[e.detail.id].openPopup(), 250);
+                                this.$refs.tekananMap.scrollIntoView({ behavior: 'smooth', block: 'center' });
                             }
                         });
                     },
@@ -291,6 +299,7 @@
                             const badge = { normal:'background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3)', rendah:'background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3)', kritis:'background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3)', unknown:'background:rgba(100,116,139,0.15);color:#94a3b8;border:1px solid rgba(100,116,139,0.3)' };
                             const tekananText = m.tekanan !== null ? m.tekanan.toFixed(2) + ' Bar' : '-';
                             const waktuText = m.waktu || '-';
+                            const fotoHtml = m.foto ? `<div style='margin-top:12px;border-radius:8px;overflow:hidden;border:1px solid rgba(51,65,85,0.4);'><img src='${m.foto}' alt='Foto' style='width:100%;height:120px;object-fit:cover;display:block;'></div>` : '';
                             const popup = `<div style='font-family:Inter,sans-serif;min-width:240px;padding:4px 0;'>
                                 <div style='font-size:14px;font-weight:700;color:#f1f5f9;margin-bottom:4px;'>${m.nama}</div>
                                 <div style='font-size:10px;font-family:monospace;color:#64748b;margin-bottom:10px;display:flex;align-items:center;gap:4px;'>
@@ -305,6 +314,7 @@
                                     <div style='background:rgba(30,41,59,0.6);padding:8px 10px;border-radius:8px;border:1px solid rgba(51,65,85,0.4);'><div style='font-size:10px;color:#64748b;margin-bottom:2px;'>Tekanan</div><div style='font-size:16px;font-weight:700;color:${c};'>${tekananText}</div></div>
                                     <div style='background:rgba(30,41,59,0.6);padding:8px 10px;border-radius:8px;border:1px solid rgba(51,65,85,0.4);'><div style='font-size:10px;color:#64748b;margin-bottom:2px;'>Terakhir Dicek</div><div style='font-size:11px;font-weight:600;color:#e2e8f0;'>${waktuText}</div></div>
                                 </div>
+                                ${fotoHtml}
                             </div>`;
                             const marker = L.marker([m.lat, m.lng], { icon: this.icon(c) }).bindPopup(popup, { className:'dark-popup', maxWidth:300 });
                             this.markerObjects[m.id] = marker;

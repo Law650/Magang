@@ -1,9 +1,9 @@
 <?php
 
-use App\Http\Controllers\Mobile\ApiAsetController;
-use App\Http\Controllers\Mobile\ApiAuthController;
-use App\Http\Controllers\Mobile\ApiLogTekananController;
-use App\Http\Controllers\Mobile\ApiLogValveController;
+use App\Http\Controllers\Api\ApiAsetController;
+use App\Http\Controllers\Api\ApiAuthController;
+use App\Http\Controllers\Api\ApiLogTekananController;
+use App\Http\Controllers\Api\ApiLogValveController;
 use Illuminate\Support\Facades\Route;
 
 /*

@@ -10,7 +10,7 @@
             <svg class="w-4 h-4 text-cyan-400 animate-spin-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
             </svg>
-            <span class="text-xs text-slate-400">Auto-refresh 30 detik</span>
+            <span class="text-xs text-slate-400">Auto-refresh 10 detik</span>
         </div>
     </div>
 
@@ -81,8 +81,8 @@
         <div class="rounded-2xl bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-slate-700/40 p-6">
             <div class="flex items-center justify-between mb-5">
                 <div>
-                    <h3 class="text-base font-semibold text-white">Status Valve</h3>
-                    <p class="text-xs text-slate-400 mt-0.5">Distribusi posisi katup saat ini</p>
+                    <h3 class="text-base font-semibold text-white">Status Kesehatan Distribusi Air</h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Kondisi tekanan terkini seluruh daerah</p>
                 </div>
                 <div class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-700/40 text-xs text-slate-400">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -158,99 +158,80 @@
             </div>
         </div>
 
-        {{-- Line Chart: Tren Tekanan 7 Hari --}}
+        {{-- Daerah Bermasalah Table --}}
         <div class="rounded-2xl bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-slate-700/40 p-6">
             <div class="flex items-center justify-between mb-5">
                 <div>
-                    <h3 class="text-base font-semibold text-white">Tren Tekanan Air</h3>
-                    <p class="text-xs text-slate-400 mt-0.5">Rata-rata tekanan 7 hari terakhir (Bar)</p>
+                    <h3 class="text-base font-semibold text-white">Daerah Bermasalah</h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Daerah dengan tekanan rendah atau kritis</p>
                 </div>
                 <div class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-700/40 text-xs text-slate-400">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
                     </svg>
-                    7 Hari
+                    Real-time
                 </div>
             </div>
-            <div
-                x-data="{
-                    chart: null,
-                    chartData: @js($lineChartData),
-                    init() {
-                        this.renderChart();
-                    },
-                    renderChart() {
-                        const ctx = this.$refs.lineCanvas.getContext('2d');
-                        if (this.chart) this.chart.destroy();
 
-                        const gradient = ctx.createLinearGradient(0, 0, 0, 250);
-                        gradient.addColorStop(0, 'rgba(6, 182, 212, 0.25)');
-                        gradient.addColorStop(1, 'rgba(6, 182, 212, 0.01)');
-
-                        this.chart = new Chart(ctx, {
-                            type: 'line',
-                            data: {
-                                labels: this.chartData.labels,
-                                datasets: [{
-                                    label: 'Rata-rata Tekanan (Bar)',
-                                    data: this.chartData.values,
-                                    borderColor: '#06b6d4',
-                                    backgroundColor: gradient,
-                                    borderWidth: 2.5,
-                                    fill: true,
-                                    tension: 0.4,
-                                    pointBackgroundColor: '#06b6d4',
-                                    pointBorderColor: '#0f172a',
-                                    pointBorderWidth: 2,
-                                    pointRadius: 5,
-                                    pointHoverRadius: 7,
-                                    pointHoverBackgroundColor: '#22d3ee',
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                scales: {
-                                    x: {
-                                        grid: { color: 'rgba(51, 65, 85, 0.3)', drawBorder: false },
-                                        ticks: { color: '#64748b', font: { size: 11, family: 'Inter' } }
-                                    },
-                                    y: {
-                                        beginAtZero: true,
-                                        grid: { color: 'rgba(51, 65, 85, 0.3)', drawBorder: false },
-                                        ticks: {
-                                            color: '#64748b',
-                                            font: { size: 11, family: 'Inter' },
-                                            callback: function(value) { return value + ' Bar'; }
-                                        }
-                                    }
-                                },
-                                plugins: {
-                                    legend: { display: false },
-                                    tooltip: {
-                                        backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                                        titleColor: '#e2e8f0',
-                                        bodyColor: '#94a3b8',
-                                        borderColor: 'rgba(51, 65, 85, 0.5)',
-                                        borderWidth: 1,
-                                        cornerRadius: 8,
-                                        padding: 12,
-                                        callbacks: {
-                                            label: function(ctx) {
-                                                return ` Tekanan: ${ctx.raw} Bar`;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        });
-                    }
-                }"
-                x-effect="chartData = @js($lineChartData); if(chart) renderChart();"
-                class="relative h-64"
-            >
-                <canvas x-ref="lineCanvas"></canvas>
-            </div>
+            @if($daerahBermasalah->isEmpty())
+                <div class="flex flex-col items-center justify-center h-52 text-center">
+                    <div class="flex items-center justify-center w-14 h-14 rounded-full bg-emerald-500/10 mb-3">
+                        <svg class="w-7 h-7 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                    </div>
+                    <p class="text-sm font-medium text-emerald-400">Semua Daerah Normal</p>
+                    <p class="text-xs text-slate-500 mt-1">Tidak ada daerah dengan tekanan rendah atau kritis</p>
+                </div>
+            @else
+                <div class="overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent pr-1" style="max-height: 290px;">
+                    <table class="w-full text-sm">
+                        <thead class="sticky top-0 bg-slate-800/95 backdrop-blur-sm z-10">
+                            <tr class="border-b border-slate-700/40">
+                                <th class="text-left px-4 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">Daerah</th>
+                                <th class="text-center px-4 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</th>
+                                <th class="text-center px-4 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">Tekanan</th>
+                                <th class="text-center px-4 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">Aliran</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($daerahBermasalah as $daerah)
+                                <tr class="border-b border-slate-700/20 hover:bg-slate-700/20 transition-colors">
+                                    <td class="px-4 py-2.5">
+                                        <p class="text-white font-medium text-sm">{{ $daerah['nama_lokasi'] }}</p>
+                                        <p class="text-xs text-slate-500 mt-0.5">{{ \Carbon\Carbon::parse($daerah['waktu'])->diffForHumans() }}</p>
+                                    </td>
+                                    <td class="text-center px-4 py-2.5">
+                                        @if($daerah['status'] === 'kritis')
+                                            <span class="inline-flex px-2 py-0.5 rounded-md text-xs font-medium bg-red-500/15 text-red-400 border border-red-500/20">Kritis</span>
+                                        @else
+                                            <span class="inline-flex px-2 py-0.5 rounded-md text-xs font-medium bg-amber-500/15 text-amber-400 border border-amber-500/20">Rendah</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center px-4 py-2.5 font-mono text-sm {{ $daerah['status'] === 'kritis' ? 'text-red-400' : 'text-amber-400' }}">
+                                        {{ number_format($daerah['nilai_tekanan'], 2) }} Bar
+                                    </td>
+                                    <td class="text-center px-4 py-2.5">
+                                        @if($daerah['status_aliran'] === 'mengalir')
+                                            <span class="inline-flex items-center gap-1 text-xs text-cyan-400">
+                                                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                                                Mengalir
+                                            </span>
+                                        @elseif($daerah['status_aliran'] === 'tidak_mengalir')
+                                            <span class="inline-flex items-center gap-1 text-xs text-red-400">
+                                                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>
+                                                Tidak Mengalir
+                                            </span>
+                                        @else
+                                            <span class="text-xs text-slate-500">-</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
         </div>
     </div>
 
@@ -260,9 +241,9 @@
             <h3 class="text-base font-semibold text-white">Ringkasan Bukaan Terkini Setiap GV</h3>
             <p class="text-xs text-slate-400 mt-0.5">Posisi aktual katup dan persentase laju aliran air</p>
         </div>
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent" style="max-height: 560px;">
             <table class="w-full text-sm">
-                <thead>
+                <thead class="sticky top-0 bg-slate-800/95 backdrop-blur-sm z-10">
                     <tr class="border-b border-slate-700/40">
                         <th class="text-left px-6 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Nama GV</th>
                         <th class="text-left px-6 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Lokasi</th>
@@ -335,7 +316,7 @@
         <div class="px-6 py-4 border-b border-slate-700/40 flex items-center justify-between">
             <div>
                 <h3 class="text-base font-semibold text-white">Live Activity Feed</h3>
-                <p class="text-xs text-slate-400 mt-0.5">5 aktivitas terbaru dari petugas lapangan</p>
+                <p class="text-xs text-slate-400 mt-0.5">10 aktivitas terbaru dari petugas lapangan</p>
             </div>
             <div class="flex items-center gap-1.5">
                 <span class="relative flex h-2 w-2">
@@ -345,7 +326,7 @@
                 <span class="text-xs text-cyan-400 font-medium">Live</span>
             </div>
         </div>
-        <div class="divide-y divide-slate-700/30 max-h-80 overflow-y-auto">
+        <div class="divide-y divide-slate-700/30 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent" style="max-height: 700px;">
             @forelse ($recentActivities as $activity)
                 <div class="px-6 py-4 hover:bg-slate-700/15 transition-colors duration-150">
                     <div class="flex items-start gap-4">

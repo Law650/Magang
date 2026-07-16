@@ -50,12 +50,13 @@
 <body class="h-full bg-slate-950 text-slate-200 font-sans antialiased" style="font-family: 'Inter', system-ui, sans-serif;">
 
     {{-- Mobile menu overlay --}}
-    <div x-data="{ sidebarOpen: false, userMenuOpen: false }" class="flex h-full">
+    <div x-data="{ sidebarOpen: window.innerWidth >= 1024, userMenuOpen: false }" class="flex h-full">
 
         {{-- Sidebar --}}
         <aside
             :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
-            class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-900/95 backdrop-blur-xl border-r border-slate-800/50 flex flex-col transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0"
+            :style="!sidebarOpen && window.innerWidth >= 1024 ? 'margin-left: -16rem;' : ''"
+            class="fixed inset-y-0 left-0 z-50 w-64 shrink-0 bg-slate-900/95 backdrop-blur-xl border-r border-slate-800/50 flex flex-col transition-all duration-300 ease-in-out lg:static lg:inset-0"
         >
             {{-- Logo --}}
             <div class="flex items-center gap-3 px-6 py-5 border-b border-slate-800/50">
@@ -165,12 +166,12 @@
         ></div>
 
         {{-- Main content area --}}
-        <div class="flex flex-col flex-1 min-h-0 overflow-hidden">
+        <div class="flex flex-col flex-1 min-w-0 overflow-hidden">
 
             {{-- Topbar --}}
             <header class="sticky top-0 z-30 flex items-center justify-between px-4 sm:px-6 h-16 bg-slate-900/80 backdrop-blur-xl border-b border-slate-800/50">
                 {{-- Mobile menu button --}}
-                <button @click="sidebarOpen = !sidebarOpen" class="lg:hidden p-2 -ml-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">
+                <button @click="sidebarOpen = !sidebarOpen" class="p-2 -ml-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                     </svg>
@@ -219,7 +220,7 @@
                             {{-- User info --}}
                             <div class="px-4 py-3 border-b border-slate-800/60">
                                 <p class="text-sm font-semibold text-white truncate">{{ Auth::user()->name }}</p>
-                                <p class="text-xs text-slate-400 truncate mt-0.5">{{ Auth::user()->email }}</p>
+                                <p class="text-xs text-slate-400 truncate mt-0.5">{{ Auth::user()->username }}</p>
                                 <span class="inline-flex items-center mt-2 px-2 py-0.5 rounded-md text-xs font-medium
                                     {{ Auth::user()->isAdmin() ? 'bg-violet-500/15 text-violet-400 border border-violet-500/20' : 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/20' }}
                                 ">

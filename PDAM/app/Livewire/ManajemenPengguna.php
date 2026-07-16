@@ -18,7 +18,7 @@ class ManajemenPengguna extends Component
     public ?int $editingId = null;
     public string $name = '';
     public string $username = '';
-    public string $email = '';
+
     public string $password = '';
     public string $password_confirmation = '';
     public string $phone = '';
@@ -48,7 +48,7 @@ class ManajemenPengguna extends Component
         $this->editingId = $user->id;
         $this->name = $user->name;
         $this->username = $user->username ?? '';
-        $this->email = $user->email;
+
         $this->phone = $user->phone ?? '';
         $this->role = $user->role;
         $this->password = '';
@@ -65,7 +65,7 @@ class ManajemenPengguna extends Component
         $rules = [
             'name' => ['required', 'string', 'max:150'],
             'username' => ['required', 'string', 'max:50', Rule::unique('users', 'username')->ignore($this->editingId)],
-            'email' => ['required', 'email', 'max:150', Rule::unique('users', 'email')->ignore($this->editingId)],
+
             'phone' => ['nullable', 'string', 'max:20'],
             'role' => ['required', 'in:admin,petugas'],
         ];
@@ -85,7 +85,7 @@ class ManajemenPengguna extends Component
             $data = [
                 'name' => $validated['name'],
                 'username' => $validated['username'],
-                'email' => $validated['email'],
+
                 'phone' => $validated['phone'] ?? null,
                 'role' => $validated['role'],
             ];
@@ -97,7 +97,7 @@ class ManajemenPengguna extends Component
             User::create([
                 'name' => $validated['name'],
                 'username' => $validated['username'],
-                'email' => $validated['email'],
+
                 'password' => $validated['password'],
                 'phone' => $validated['phone'] ?? null,
                 'role' => $validated['role'],
@@ -150,12 +150,10 @@ class ManajemenPengguna extends Component
         $this->editingId = null;
         $this->name = '';
         $this->username = '';
-        $this->email = '';
         $this->password = '';
-        $this->password_confirmation = '';
         $this->phone = '';
         $this->role = 'petugas';
-        $this->resetValidation();
+        $this->is_active = true;
     }
 
     public function render(): mixed
@@ -166,8 +164,8 @@ class ManajemenPengguna extends Component
             $searchTerm = '%' . $this->search . '%';
             $query->where(function ($q) use ($searchTerm) {
                 $q->where('name', 'like', $searchTerm)
-                    ->orWhere('email', 'like', $searchTerm)
-                    ->orWhere('username', 'like', $searchTerm);
+                    ->orWhere('username', 'like', $searchTerm)
+                    ->orWhere('phone', 'like', $searchTerm);
             });
         }
 

@@ -70,10 +70,14 @@ class LogTekananMonitor extends Component
             ->groupBy('lokasi_id')
             ->pluck('latest_id');
 
-        $latestLogs = LogTekanan::with('lokasi')
-            ->whereIn('id', $latestPerLokasi)
-            ->orderBy('lokasi_id')
-            ->get();
+        $query = LogTekanan::with('lokasi')
+            ->whereIn('id', $latestPerLokasi);
+
+        if ($this->filterStatus !== '') {
+            $query->where('status', $this->filterStatus);
+        }
+
+        $latestLogs = $query->orderBy('lokasi_id')->get();
 
         $labels = [];
         $values = [];

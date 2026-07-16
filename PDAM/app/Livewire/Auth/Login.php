@@ -49,7 +49,7 @@ class Login extends Component
     public function messages(): array
     {
         return [
-            'login.required' => 'Email atau username wajib diisi.',
+            'login.required' => 'Username wajib diisi.',
             'password.required' => 'Password wajib diisi.',
             'password.min' => 'Password minimal 6 karakter.',
         ];
@@ -64,16 +64,14 @@ class Login extends Component
 
         $this->ensureIsNotRateLimited();
 
-        $fieldType = filter_var($this->login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
-
         if (! Auth::attempt(
-            [$fieldType => $this->login, 'password' => $this->password],
+            ['username' => $this->login, 'password' => $this->password],
             $this->remember
         )) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
-                'login' => __('Email/username atau password yang Anda masukkan salah.'),
+                'login' => __('Username atau password yang Anda masukkan salah.'),
             ]);
         }
 

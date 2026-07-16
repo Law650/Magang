@@ -20,7 +20,6 @@ class UserSeeder extends Seeder
             [
                 'name' => 'Administrator PDAM',
                 'username' => 'admin',
-                'email' => 'admin@pdam.go.id',
                 'password' => 'password',
                 'role' => User::ROLE_ADMIN,
                 'phone' => '081200000001',
@@ -31,7 +30,6 @@ class UserSeeder extends Seeder
             [
                 'name' => 'B',
                 'username' => 'b',
-                'email' => 'b.petugas@pdam.go.id',
                 'password' => 'password',
                 'role' => User::ROLE_PETUGAS,
                 'phone' => '081200000004',
@@ -40,7 +38,6 @@ class UserSeeder extends Seeder
             [
                 'name' => 'A',
                 'username' => 'a',
-                'email' => 'a.petugas@pdam.go.id',
                 'password' => 'password',
                 'role' => User::ROLE_PETUGAS,
                 'phone' => '081200000005',
@@ -49,7 +46,6 @@ class UserSeeder extends Seeder
             [
                 'name' => 'C',
                 'username' => 'c',
-                'email' => 'c.petugas@pdam.go.id',
                 'password' => 'password',
                 'role' => User::ROLE_PETUGAS,
                 'phone' => '081200000006',
@@ -59,7 +55,7 @@ class UserSeeder extends Seeder
 
         foreach ($users as $userData) {
             User::updateOrCreate(
-                ['email' => $userData['email']],
+                ['username' => $userData['username']],
                 $userData,
             );
         }

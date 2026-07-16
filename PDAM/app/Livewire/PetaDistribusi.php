@@ -54,17 +54,22 @@ class PetaDistribusi extends Component
             $lastLog = $aset->lastLogValve;
             $teknisiTerakhir = $lastLog?->user?->name ?? '-';
 
+            $lat = $aset->lokasi->latitude;
+            $lng = $aset->lokasi->longitude;
+            $foto = $lastLog?->foto_eviden ? asset('storage/' . $lastLog->foto_eviden) : null;
+
             return [
                 'id' => $aset->id,
                 'nama' => $aset->nama_aset,
                 'lokasi' => $aset->lokasi->nama_lokasi ?? '-',
-                'lat' => (float) $aset->lokasi->latitude,
-                'lng' => (float) $aset->lokasi->longitude,
+                'lat' => (float) $lat,
+                'lng' => (float) $lng,
                 'kapasitas' => (float) $aset->kapasitas_full_putaran,
                 'sisaBukaan' => FormatHelper::putaran($aset->sisa_bukaan),
                 'persentase' => $persentase,
                 'status' => $status,
                 'teknisiTerakhir' => $teknisiTerakhir,
+                'foto' => $foto,
             ];
         })->toArray();
     }
@@ -94,15 +99,20 @@ class PetaDistribusi extends Component
                 $statusAliran = $nilaiTekanan > 0 ? 'mengalir' : 'tidak_mengalir';
             }
 
+            $lat = $lokasi->latitude;
+            $lng = $lokasi->longitude;
+            $foto = $latestLog?->foto_eviden ? asset('storage/' . $latestLog->foto_eviden) : null;
+
             return [
                 'id' => $lokasi->id,
                 'nama' => $lokasi->nama_lokasi,
-                'lat' => (float) $lokasi->latitude,
-                'lng' => (float) $lokasi->longitude,
+                'lat' => (float) $lat,
+                'lng' => (float) $lng,
                 'tekanan' => $nilaiTekanan,
                 'status' => $status,
                 'statusAliran' => $statusAliran,
                 'waktu' => $waktu,
+                'foto' => $foto,
             ];
         })->toArray();
     }

@@ -15,8 +15,8 @@ class ManajemenDaerahTekanan extends Component
     // Form fields
     public ?int $editingId = null;
     public string $nama_lokasi = '';
-    public string $latitude = '';
-    public string $longitude = '';
+    public ?string $latitude = null;
+    public ?string $longitude = null;
 
     /**
      * Reset pagination when search changes.
@@ -44,8 +44,8 @@ class ManajemenDaerahTekanan extends Component
 
         $this->editingId = $lokasi->id;
         $this->nama_lokasi = $lokasi->nama_lokasi;
-        $this->latitude = (string) $lokasi->latitude;
-        $this->longitude = (string) $lokasi->longitude;
+        $this->latitude = $lokasi->latitude !== null ? (string) $lokasi->latitude : null;
+        $this->longitude = $lokasi->longitude !== null ? (string) $lokasi->longitude : null;
 
         $this->dispatch('open-modal');
     }
@@ -55,6 +55,9 @@ class ManajemenDaerahTekanan extends Component
      */
     public function save(): void
     {
+        if ($this->latitude === '') $this->latitude = null;
+        if ($this->longitude === '') $this->longitude = null;
+
         $validated = $this->validate([
             'nama_lokasi' => ['required', 'string', 'max:150'],
             'latitude' => ['nullable', 'numeric'],
@@ -96,8 +99,8 @@ class ManajemenDaerahTekanan extends Component
     {
         $this->editingId = null;
         $this->nama_lokasi = '';
-        $this->latitude = '';
-        $this->longitude = '';
+        $this->latitude = null;
+        $this->longitude = null;
         $this->resetValidation();
     }
 

@@ -69,111 +69,124 @@
     </div>
 
     {{-- Chart.js Bar Chart --}}
-    <div class="bg-slate-900/50 backdrop-blur rounded-xl border border-slate-800/50 p-5 mb-6" wire:ignore>
+    <div class="bg-slate-900/50 backdrop-blur rounded-xl border border-slate-800/50 p-5 mb-6">
         <h3 class="text-sm font-semibold text-slate-300 mb-4">Tekanan Terkini per Daerah</h3>
-        <div class="relative h-72">
-            <canvas id="tekananChart"></canvas>
+        <div class="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+            <div 
+                x-data="createTekananChart()" 
+                x-effect="updateChart(@js($chartData))" 
+                class="relative h-72"
+            >
+                <canvas x-ref="canvas" wire:ignore></canvas>
+            </div>
         </div>
     </div>
 
-    {{-- Chart initialization script --}}
     <script>
-        document.addEventListener('livewire:navigated', () => {
-            const ctx = document.getElementById('tekananChart');
-            if (!ctx) return;
-
-            const chartData = @json($chartData);
-
-            if (window.tekananChartInstance) {
-                window.tekananChartInstance.destroy();
-            }
-
-            window.tekananChartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: chartData.labels,
-                    datasets: [{
-                        label: 'Tekanan (Bar)',
-                        data: chartData.values,
-                        backgroundColor: chartData.colors,
-                        borderColor: chartData.colors.map(c => c.replace('0.8', '1')),
-                        borderWidth: 1,
-                        borderRadius: 6,
-                        borderSkipped: false,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                            titleColor: '#e2e8f0',
-                            bodyColor: '#94a3b8',
-                            borderColor: 'rgba(51, 65, 85, 0.5)',
-                            borderWidth: 1,
-                            cornerRadius: 8,
-                            padding: 12,
-                            callbacks: {
-                                label: function(context) {
-                                    const val = context.parsed.y;
-                                    let status = val >= 0.7 ? '🟢 Normal' : (val > 0 ? '🟡 Rendah' : '🔴 Kritis');
-                                    return `${val} Bar — ${status}`;
-                                }
+        if (typeof window.createTekananChart === 'undefined') {
+            window.createTekananChart = function() {
+                return {
+                    chart: null,
+                    chartData: null,
+                    init() {
+                        // Will be initialized by updateChart via x-effect
+                    },
+                    updateChart(data) {
+                        if (!data || !data.labels) return;
+                        this.chartData = data;
+                        
+                        this.$nextTick(() => {
+                            const canvas = this.$refs.canvas;
+                            // Using this.$el to get the parent div wrapper for setting width
+                            const container = this.$el;
+                            
+                            if (this.chartData.labels.length > 5) {
+                                container.style.minWidth = (this.chartData.labels.length * 120) + 'px';
+                            } else {
+                                container.style.minWidth = '100%';
                             }
-                        },
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: { color: 'rgba(51, 65, 85, 0.3)' },
-                            ticks: { color: '#64748b', font: { size: 11 } },
-                            title: { display: true, text: 'Tekanan (Bar)', color: '#94a3b8', font: { size: 12 } }
-                        },
-                        x: {
-                            grid: { display: false },
-                            ticks: { color: '#64748b', font: { size: 11 }, maxRotation: 45 }
-                        }
-                    },
-                    // Threshold line at y=1.0
-                    animation: {
-                        onComplete: function() {
-                            const chart = this;
-                            const yScale = chart.scales.y;
-                            const ctx = chart.ctx;
-                            const y = yScale.getPixelForValue(0.7);
 
-                            ctx.save();
-                            ctx.beginPath();
-                            ctx.setLineDash([6, 4]);
-                            ctx.strokeStyle = 'rgba(34, 197, 94, 0.6)';
-                            ctx.lineWidth = 2;
-                            ctx.moveTo(chart.chartArea.left, y);
-                            ctx.lineTo(chart.chartArea.right, y);
-                            ctx.stroke();
+                            if (this.chart) this.chart.destroy();
 
-                            ctx.fillStyle = 'rgba(34, 197, 94, 0.8)';
-                            ctx.font = '11px Inter, sans-serif';
-                            ctx.fillText('Batas Normal (0.7 Bar)', chart.chartArea.left + 5, y - 6);
-                            ctx.restore();
-                        }
+                            this.chart = new Chart(canvas.getContext('2d'), {
+                                type: 'bar',
+                                data: {
+                                    labels: this.chartData.labels,
+                                    datasets: [{
+                                        label: 'Tekanan (Bar)',
+                                        data: this.chartData.values,
+                                        backgroundColor: this.chartData.colors,
+                                        borderColor: this.chartData.colors.map(c => c.replace('0.8', '1')),
+                                        borderWidth: 1,
+                                        borderRadius: 6,
+                                        borderSkipped: false,
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    plugins: {
+                                        legend: { display: false },
+                                        tooltip: {
+                                            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                                            titleColor: '#e2e8f0',
+                                            bodyColor: '#94a3b8',
+                                            borderColor: 'rgba(51, 65, 85, 0.5)',
+                                            borderWidth: 1,
+                                            cornerRadius: 8,
+                                            padding: 12,
+                                            callbacks: {
+                                                label: function(context) {
+                                                    const val = context.parsed.y;
+                                                    let status = val >= 0.7 ? '🟢 Normal' : (val > 0 ? '🟡 Rendah' : '🔴 Kritis');
+                                                    return `${val} Bar — ${status}`;
+                                                }
+                                            }
+                                        },
+                                    },
+                                    scales: {
+                                        y: {
+                                            beginAtZero: true,
+                                            grid: { color: 'rgba(51, 65, 85, 0.3)' },
+                                            ticks: { color: '#64748b', font: { size: 11 } },
+                                            title: { display: true, text: 'Tekanan (Bar)', color: '#94a3b8', font: { size: 12 } }
+                                        },
+                                        x: {
+                                            grid: { display: false },
+                                            ticks: { color: '#64748b', font: { size: 11 }, maxRotation: 45 }
+                                        }
+                                    },
+                                    animation: {
+                                        onComplete: function(animation) {
+                                            const chartInstance = animation.chart;
+                                            if (!chartInstance || !chartInstance.scales || !chartInstance.scales.y) return;
+
+                                            const yScale = chartInstance.scales.y;
+                                            const ctx = chartInstance.ctx;
+                                            const y = yScale.getPixelForValue(0.7);
+
+                                            ctx.save();
+                                            ctx.beginPath();
+                                            ctx.setLineDash([6, 4]);
+                                            ctx.moveTo(chartInstance.chartArea.left, y);
+                                            ctx.lineTo(chartInstance.chartArea.right, y);
+                                            ctx.lineWidth = 1.5;
+                                            ctx.strokeStyle = 'rgba(34, 197, 94, 0.5)';
+                                            ctx.stroke();
+                                            ctx.restore();
+
+                                            ctx.fillStyle = 'rgba(34, 197, 94, 0.8)';
+                                            ctx.font = '10px Inter';
+                                            ctx.fillText('Batas Normal (0.7 Bar)', chartInstance.chartArea.left + 5, y - 5);
+                                        }
+                                    }
+                                }
+                            });
+                        });
                     }
-                }
-            });
-
-            // Listen for chart data updates from Livewire
-            window.addEventListener('chart-data-updated', (event) => {
-                if (window.tekananChartInstance) {
-                    const data = event.detail.chartData;
-                    window.tekananChartInstance.data.labels = data.labels;
-                    window.tekananChartInstance.data.datasets[0].data = data.values;
-                    window.tekananChartInstance.data.datasets[0].backgroundColor = data.colors;
-                    window.tekananChartInstance.data.datasets[0].borderColor = data.colors.map(c => c.replace('0.8', '1'));
-                    window.tekananChartInstance.update();
-                }
-            });
-        });
+                };
+            };
+        }
     </script>
 
     {{-- Search & Filter --}}

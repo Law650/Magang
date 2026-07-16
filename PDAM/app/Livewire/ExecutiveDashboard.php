@@ -37,52 +37,86 @@ class ExecutiveDashboard extends Component
     }
 
     /**
-     * Compute doughnut chart data for valve status distribution.
-     * Bukaan Penuh: persentase_bukaan >= 90
-     * Bukaan Sebagian: 10 < persentase_bukaan < 90
-     * Tertutup Rapat: persentase_bukaan <= 10
+     * Compute doughnut chart data for distribution health status.
+     * Based on latest pressure readings per daerah tekanan.
      *
      * @return array{labels: string[], values: int[], colors: string[]}
      */
     private function getDoughnutChartData(): array
     {
-        $allValves = AsetValve::all();
+        $lokasis = Lokasi::where('jenis', 'tekanan')->get();
 
-        $bukaanPenuh = $allValves->filter(fn ($v) => $v->persentase_bukaan >= 90)->count();
-        $bukaanSebagian = $allValves->filter(fn ($v) => $v->persentase_bukaan > 10 && $v->persentase_bukaan < 90)->count();
-        $tertutupRapat = $allValves->filter(fn ($v) => $v->persentase_bukaan <= 10)->count();
+        $normal = 0;
+        $rendah = 0;
+        $kritis = 0;
+        $belumAda = 0;
 
-        return [
-            'labels' => ['Bukaan Penuh', 'Bukaan Sebagian', 'Tertutup Rapat'],
-            'values' => [$bukaanPenuh, $bukaanSebagian, $tertutupRapat],
-            'colors' => ['#06b6d4', '#f59e0b', '#ef4444'],
-        ];
-    }
+        foreach ($lokasis as $lokasi) {
+            $latestLog = LogTekanan::where('lokasi_id', $lokasi->id)
+                ->orderBy('waktu_pengecekan', 'desc')
+                ->first();
 
-    /**
-     * Compute line chart data for pressure trends over the last 7 days.
-     *
-     * @return array{labels: string[], values: float[]}
-     */
-    private function getLineChartData(): array
-    {
-        $labels = [];
-        $values = [];
+            if (!$latestLog) {
+                $belumAda++;
+                continue;
+            }
 
-        for ($i = 6; $i >= 0; $i--) {
-            $date = Carbon::today()->subDays($i);
-            $labels[] = $date->translatedFormat('d M');
+            match ($latestLog->status) {
+                'normal' => $normal++,
+                'rendah' => $rendah++,
+                'kritis' => $kritis++,
+                default => $belumAda++,
+            };
+        }
 
-            $avg = LogTekanan::whereDate('waktu_pengecekan', $date)
-                ->avg('nilai_tekanan');
+        $labels = ['Normal', 'Rendah', 'Kritis'];
+        $values = [$normal, $rendah, $kritis];
+        $colors = ['#10b981', '#f59e0b', '#ef4444'];
 
-            $values[] = round((float) ($avg ?? 0), 2);
+        if ($belumAda > 0) {
+            $labels[] = 'Belum Ada Data';
+            $values[] = $belumAda;
+            $colors[] = '#64748b';
         }
 
         return [
             'labels' => $labels,
             'values' => $values,
+            'colors' => $colors,
         ];
+    }
+
+    /**
+     * Get list of daerah with rendah or kritis pressure status.
+     *
+     * @return \Illuminate\Support\Collection
+     */
+    private function getDaerahBermasalah()
+    {
+        $lokasis = Lokasi::where('jenis', 'tekanan')->get();
+
+        return $lokasis->map(function ($lokasi) {
+            $latestLog = LogTekanan::where('lokasi_id', $lokasi->id)
+                ->orderBy('waktu_pengecekan', 'desc')
+                ->first();
+
+            if (!$latestLog || !in_array($latestLog->status, ['rendah', 'kritis'])) {
+                return null;
+            }
+
+            return [
+                'id' => $lokasi->id,
+                'nama_lokasi' => $lokasi->nama_lokasi,
+                'status' => $latestLog->status,
+                'nilai_tekanan' => $latestLog->nilai_tekanan,
+                'status_aliran' => $latestLog->status_aliran,
+                'waktu' => $latestLog->waktu_pengecekan,
+                'nama_teknisi' => $latestLog->nama_teknisi,
+            ];
+        })->filter()->sortBy(function ($item) {
+            // Kritis di atas, lalu rendah
+            return $item['status'] === 'kritis' ? 0 : 1;
+        })->values();
     }
 
     /**
@@ -107,7 +141,7 @@ class ExecutiveDashboard extends Component
     }
 
     /**
-     * Get the 5 most recent valve log activities.
+     * Get the 10 most recent valve log activities.
      *
      * @return \Illuminate\Support\Collection
      */
@@ -115,7 +149,7 @@ class ExecutiveDashboard extends Component
     {
         return LogValve::with('asetValve')
             ->orderBy('waktu_kegiatan', 'desc')
-            ->limit(5)
+            ->limit(10)
             ->get();
     }
 
@@ -124,7 +158,7 @@ class ExecutiveDashboard extends Component
         return view('livewire.executive-dashboard', [
             'metrics' => $this->getMetrics(),
             'doughnutData' => $this->getDoughnutChartData(),
-            'lineChartData' => $this->getLineChartData(),
+            'daerahBermasalah' => $this->getDaerahBermasalah(),
             'valveSummary' => $this->getValveSummary(),
             'recentActivities' => $this->getRecentActivities(),
         ])->layout('components.layouts.app', ['title' => 'Executive Dashboard']);
