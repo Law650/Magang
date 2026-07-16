@@ -15,20 +15,32 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../core/models/queued_log.dart';
 
+/// Provider untuk memantau status koneksi internet perangkat secara realtime.
+/// Menggunakan package connectivity_plus untuk mendengarkan perubahan status jaringan (WiFi/Seluler).
 final connectivityProvider = StreamProvider<List<ConnectivityResult>>((ref) {
   return Connectivity().onConnectivityChanged;
 });
 
+/// Halaman Dashboard Utama (HomePage) untuk aplikasi PDAM Mobile.
+/// Menampilkan ringkasan data, status sinkronisasi, peta mini (GPS), dan log aktivitas terbaru.
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // 1. Mengambil data nama teknisi yang sedang login dari state
     final technicianName = ref.watch(technicianNameProvider) ?? 'Petugas';
+    
+    // 2. Memantau state sinkronisasi (jumlah antrean data, sukses, gagal, dll)
     final syncState = ref.watch(syncControllerProvider);
+    
+    // 3. Memantau status GPS (koordinat saat ini)
     final gpsState = ref.watch(gpsServiceProvider);
+    
+    // 4. Memantau status jaringan internet
     final connectivity = ref.watch(connectivityProvider);
     
+    // Mengecek apakah perangkat sedang terhubung ke internet
     final isOnline = connectivity.value != null && 
         !connectivity.value!.contains(ConnectivityResult.none);
     
@@ -75,6 +87,24 @@ class HomePage extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
             onPressed: () async {
+              final syncState = ref.read(syncControllerProvider);
+              if (syncState.pendingCount > 0) {
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Gagal Logout'),
+                    content: const Text('Ada data yang belum disinkronisasi. Harap tekan Sinkronkan Data terlebih dahulu sebelum logout!'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Mengerti'),
+                      ),
+                    ],
+                  ),
+                );
+                return;
+              }
+
               await ref.read(technicianNameProvider.notifier).logout();
               if (context.mounted) {
                 Navigator.of(context).pushAndRemoveUntil(
@@ -88,6 +118,7 @@ class HomePage extends ConsumerWidget {
         ],
       ),
       body: RefreshIndicator(
+        // Menarik layar ke bawah (pull-to-refresh) akan memicu sinkronisasi manual
         onRefresh: () async => await ref.read(syncControllerProvider.notifier).forceSyncNow(),
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -260,7 +291,10 @@ class HomePage extends ConsumerWidget {
     );
   }
 
+  /// Membangun daftar aset terdekat berdasarkan lokasi GPS pengguna saat ini.
+  /// Menggunakan rumus Haversine untuk menghitung jarak akurat di permukaan bumi.
   List<Widget> _buildNearbyAssets(GpsState gpsState, List<AsetValve> asetList) {
+    // Jika GPS belum aktif atau gagal mendapatkan lokasi, tampilkan pesan peringatan
     if (gpsState is! GpsSuccess) {
       return [
         Container(
@@ -283,28 +317,33 @@ class HomePage extends ConsumerWidget {
       ];
     }
     
-    // Hitung jarak (mock haversine)
+    // Koordinat pengguna saat ini
     final userLat = gpsState.latitude;
     final userLng = gpsState.longitude;
     
     final List<Map<String, dynamic>> assetsWithDistance = [];
+    
+    // Looping semua aset untuk menghitung jaraknya dari pengguna
     for (var aset in asetList) {
       if (aset.latitude == null || aset.longitude == null) continue;
-      // Haversine formula sederhana
-      const p = 0.017453292519943295;
+      
+      // Rumus Haversine: Menghitung jarak melengkung antara dua titik koordinat (dalam satuan kilometer)
+      const p = 0.017453292519943295; // Nilai Math.PI / 180
       final a = 0.5 - math.cos((aset.latitude! - userLat) * p)/2 + 
                 math.cos(userLat * p) * math.cos(aset.latitude! * p) * 
                 (1 - math.cos((aset.longitude! - userLng) * p))/2;
-      final distanceKm = 12742 * math.asin(math.sqrt(a)); // 2 * R; R = 6371 km
+      final distanceKm = 12742 * math.asin(math.sqrt(a)); // 12742 adalah Diameter bumi (2 * Radius 6371 km)
+      
       assetsWithDistance.add({
         'aset': aset,
         'distanceKm': distanceKm,
       });
     }
     
+    // Mengurutkan aset dari yang jaraknya paling dekat ke paling jauh
     assetsWithDistance.sort((a, b) => (a['distanceKm'] as double).compareTo(b['distanceKm'] as double));
     
-    // Ambil 2 terdekat
+    // Ambil maksimal 2 aset terdekat saja untuk ditampilkan di dashboard
     final nearby = assetsWithDistance.take(2).toList();
     
     return nearby.map((data) {
@@ -458,7 +497,7 @@ class HomePage extends ConsumerWidget {
       }
     }
 
-    if (points.isNotEmpty) {
+    if (points.length > 1) {
       cameraFit = CameraFit.bounds(
         bounds: LatLngBounds.fromPoints(points),
         padding: const EdgeInsets.all(48.0),

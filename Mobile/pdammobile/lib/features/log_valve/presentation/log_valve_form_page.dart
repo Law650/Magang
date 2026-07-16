@@ -30,6 +30,7 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
   final _namaTeknisiController = TextEditingController();
   final _keteranganController = TextEditingController();
 
+  bool _isTimeManuallyPicked = false;
   String? _selectedNamaLokasi;
   AsetValve? _selectedAset;
   double _kapasitasFull = 0.0;
@@ -123,6 +124,7 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
     if (time == null || !mounted) return;
 
     setState(() {
+      _isTimeManuallyPicked = true;
       _waktuKegiatan = DateTime(
         date.year,
         date.month,
@@ -206,7 +208,7 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
         'nama_aset': _selectedAset!.namaAset,
         'nama_lokasi': _selectedAset!.namaLokasi,
         'nama_teknisi': _namaTeknisiController.text.trim(),
-        'waktu_kegiatan': _waktuKegiatan.toIso8601String(),
+        'waktu_kegiatan': (_isTimeManuallyPicked ? _waktuKegiatan : DateTime.now()).toIso8601String(),
         'kapasitas_full': _kapasitasFull,
         'bukaan_saat_ini': _bukaanSaatIni,
         'aksi_kerja': _aksiKerjaIndex == 0 ? 'Buka' : 'Tutup',
@@ -251,6 +253,8 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
         _jumlahPutaran = 0.0;
         _keteranganController.clear();
         _fotoPath = null;
+        _isTimeManuallyPicked = false;
+        _waktuKegiatan = DateTime.now();
         _isSubmitting = false;
       });
     } catch (e) {
