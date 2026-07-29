@@ -12,12 +12,15 @@ import '../../../core/widgets/searchable_bottom_sheet.dart';
 import '../../log_tekanan/data/rekap_tekanan_provider.dart';
 import '../../log_tekanan/data/lokasi_repository.dart';
 import '../../log_valve/data/aset_repository.dart';
+import '../../log_valve/presentation/log_valve_form_page.dart';
+import '../../log_tekanan/presentation/log_tekanan_form_page.dart';
 import '../../../core/providers/technician_provider.dart';
 import 'dart:async';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 class RiwayatPage extends ConsumerStatefulWidget {
-  const RiwayatPage({super.key});
+  final AsetValve? initialAset;
+  const RiwayatPage({super.key, this.initialAset});
 
   @override
   ConsumerState<RiwayatPage> createState() => _RiwayatPageState();
@@ -32,6 +35,11 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialAset != null) {
+      _kategoriFilter = 'Valve';
+      _selectedLokasiName = widget.initialAset!.namaLokasi;
+      _selectedAsetName = widget.initialAset!.namaAset;
+    }
     _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       final syncState = ref.read(syncControllerProvider);
       if (!syncState.isSyncing) {
@@ -420,6 +428,8 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
             'latitude': aset.latitude ?? 0.0,
             'longitude': aset.longitude ?? 0.0,
             'nama_teknisi': aset.namaTeknisi,
+            'foto_eviden': aset.fotoEviden,
+            'foto_eviden_2': aset.fotoEviden2,
           },
         );
         _showAsetDetailBottomSheet(context, dummyLog);
@@ -458,6 +468,41 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
           Text('Nama Aset', style: theme.textTheme.bodySmall?.copyWith(color: Colors.white70)),
           Text(namaAset, style: theme.textTheme.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
           Text(namaLokasi, style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white70)),
+          
+          if (aset.fotoEviden != null) ...[
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      aset.fotoEviden!,
+                      height: 100,
+                      fit: BoxFit.cover,
+                      headers: const {'ngrok-skip-browser-warning': '69420'},
+                      errorBuilder: (_, __, ___) => Container(height: 100, color: Colors.black26, child: const Icon(Icons.broken_image, color: Colors.white54)),
+                    ),
+                  ),
+                ),
+                if (aset.fotoEviden2 != null) ...[
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        aset.fotoEviden2!,
+                        height: 100,
+                        fit: BoxFit.cover,
+                        headers: const {'ngrok-skip-browser-warning': '69420'},
+                        errorBuilder: (_, __, ___) => Container(height: 100, color: Colors.black26, child: const Icon(Icons.broken_image, color: Colors.white54)),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
           
           const SizedBox(height: 20),
           Row(
@@ -617,6 +662,21 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
           Text('Nama Lokasi / Jalur', style: theme.textTheme.bodySmall?.copyWith(color: Colors.white70)),
           Text(rekap.namaLokasi, style: theme.textTheme.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
           
+          if (rekap.fotoEviden != null) ...[
+            const SizedBox(height: 16),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                rekap.fotoEviden!,
+                height: 120,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                headers: const {'ngrok-skip-browser-warning': '69420'},
+                errorBuilder: (_, __, ___) => Container(height: 120, color: Colors.black26, child: const Icon(Icons.broken_image, color: Colors.white54)),
+              ),
+            ),
+          ],
+          
           const SizedBox(height: 20),
           Row(
             children: [
@@ -739,6 +799,72 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
             Text('Nama Aset', style: theme.textTheme.bodySmall?.copyWith(color: Colors.white70)),
             Text(namaAset, style: theme.textTheme.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
             Text(namaLokasi, style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white70)),
+            
+            if (log.fotoPath.isNotEmpty && File(log.fotoPath).existsSync()) ...[
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.file(
+                        File(log.fotoPath),
+                        height: 100,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(height: 100, color: Colors.black26, child: const Icon(Icons.broken_image, color: Colors.white54)),
+                      ),
+                    ),
+                  ),
+                  if (log.fotoPath2 != null && log.fotoPath2!.isNotEmpty && File(log.fotoPath2!).existsSync()) ...[
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.file(
+                          File(log.fotoPath2!),
+                          height: 100,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(height: 100, color: Colors.black26, child: const Icon(Icons.broken_image, color: Colors.white54)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ] else if (map['foto_eviden'] != null && map['foto_eviden'].toString().isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        map['foto_eviden'].toString(),
+                        height: 100,
+                        fit: BoxFit.cover,
+                        headers: const {'ngrok-skip-browser-warning': '69420'},
+                        errorBuilder: (_, __, ___) => Container(height: 100, color: Colors.black26, child: const Icon(Icons.broken_image, color: Colors.white54)),
+                      ),
+                    ),
+                  ),
+                  if (map['foto_eviden_2'] != null && map['foto_eviden_2'].toString().isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          map['foto_eviden_2'].toString(),
+                          height: 100,
+                          fit: BoxFit.cover,
+                          headers: const {'ngrok-skip-browser-warning': '69420'},
+                          errorBuilder: (_, __, ___) => Container(height: 100, color: Colors.black26, child: const Icon(Icons.broken_image, color: Colors.white54)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ],
             
             const SizedBox(height: 20),
             Row(
@@ -892,7 +1018,19 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                       ),
                     ],
                   ),
-                  Text(dateFormat.format(log.createdAt), style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textHint)),
+                  Row(
+                    children: [
+                      Text(dateFormat.format(log.createdAt), style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textHint)),
+                      if (map['is_edited'] == true) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                          decoration: BoxDecoration(color: Colors.blue.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
+                          child: const Text('Diedit', style: TextStyle(color: Colors.blue, fontSize: 9, fontStyle: FontStyle.italic, fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ],
+                  ),
                   const SizedBox(height: 8),
                   if (isValve)
                     Row(
@@ -1041,16 +1179,147 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                 if (log.fotoPath.isNotEmpty && File(log.fotoPath).existsSync()) ...[
                   const Text('Foto Bukti', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
                   const SizedBox(height: 12),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Container(
-                      width: double.infinity,
-                      constraints: const BoxConstraints(maxHeight: 350),
-                      child: Image.file(
-                        File(log.fotoPath),
-                        fit: BoxFit.contain,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: GestureDetector(
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) => Dialog(
+                                  backgroundColor: Colors.transparent,
+                                  insetPadding: const EdgeInsets.all(16),
+                                  child: InteractiveViewer(
+                                    child: Image.file(File(log.fotoPath)),
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              height: 200,
+                              child: Image.file(
+                                File(log.fotoPath),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
+                      if (log.fotoPath2 != null && log.fotoPath2!.isNotEmpty && File(log.fotoPath2!).existsSync()) ...[
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: GestureDetector(
+                              onTap: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => Dialog(
+                                    backgroundColor: Colors.transparent,
+                                    insetPadding: const EdgeInsets.all(16),
+                                    child: InteractiveViewer(
+                                      child: Image.file(File(log.fotoPath2!)),
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                height: 200,
+                                child: Image.file(
+                                  File(log.fotoPath2!),
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                ] else if (map['foto_eviden'] != null && map['foto_eviden'].toString().isNotEmpty) ...[
+                  const Text('Foto Bukti', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: GestureDetector(
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) => Dialog(
+                                  backgroundColor: Colors.transparent,
+                                  insetPadding: const EdgeInsets.all(16),
+                                  child: InteractiveViewer(
+                                    child: Image.network(
+                                      map['foto_eviden'].toString(),
+                                      headers: const {'ngrok-skip-browser-warning': '69420'},
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              height: 200,
+                              child: Image.network(
+                                map['foto_eviden'].toString(),
+                                headers: const {'ngrok-skip-browser-warning': '69420'},
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Container(
+                                  width: double.infinity,
+                                  height: 200,
+                                  color: Colors.grey[200],
+                                  child: const Center(child: Icon(Icons.broken_image, color: Colors.grey, size: 40)),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (map['foto_eviden_2'] != null && map['foto_eviden_2'].toString().isNotEmpty) ...[
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: GestureDetector(
+                              onTap: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => Dialog(
+                                    backgroundColor: Colors.transparent,
+                                    insetPadding: const EdgeInsets.all(16),
+                                    child: InteractiveViewer(
+                                      child: Image.network(
+                                        map['foto_eviden_2'].toString(),
+                                        headers: const {'ngrok-skip-browser-warning': '69420'},
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                height: 200,
+                                child: Image.network(
+                                  map['foto_eviden_2'].toString(),
+                                  headers: const {'ngrok-skip-browser-warning': '69420'},
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Container(
+                                    width: double.infinity,
+                                    height: 200,
+                                    color: Colors.grey[200],
+                                    child: const Center(child: Icon(Icons.broken_image, color: Colors.grey, size: 40)),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 24),
                 ],
@@ -1186,43 +1455,101 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                 if (log.fotoPath.isNotEmpty && File(log.fotoPath).existsSync()) ...[
                   const Text('Foto Bukti', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
                   const SizedBox(height: 12),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Container(
-                      width: double.infinity,
-                      constraints: const BoxConstraints(maxHeight: 350),
-                      child: Image.file(
-                        File(log.fotoPath),
-                        fit: BoxFit.contain,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            constraints: const BoxConstraints(maxHeight: 350),
+                            child: Image.file(
+                              File(log.fotoPath),
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
+                      if (log.fotoPath2 != null && log.fotoPath2!.isNotEmpty && File(log.fotoPath2!).existsSync()) ...[
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: Container(
+                              constraints: const BoxConstraints(maxHeight: 350),
+                              child: Image.file(
+                                File(log.fotoPath2!),
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 24),
                 ] else if (map['foto_eviden'] != null && map['foto_eviden'].toString().isNotEmpty) ...[
                   const Text('Foto Bukti', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
                   const SizedBox(height: 12),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Container(
-                      width: double.infinity,
-                      constraints: const BoxConstraints(maxHeight: 350),
-                      child: Image.network(
-                        map['foto_eviden'].toString(),
-                        headers: const {'ngrok-skip-browser-warning': '69420'},
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => Container(
-                          width: double.infinity,
-                          height: 150,
-                          color: Colors.grey[200],
-                          child: const Center(child: Icon(Icons.broken_image, color: Colors.grey, size: 40)),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            constraints: const BoxConstraints(maxHeight: 350),
+                            child: Image.network(
+                              map['foto_eviden'].toString(),
+                              headers: const {'ngrok-skip-browser-warning': '69420'},
+                              fit: BoxFit.contain,
+                              errorBuilder: (_, __, ___) => Container(
+                                width: double.infinity,
+                                height: 150,
+                                color: Colors.grey[200],
+                                child: const Center(child: Icon(Icons.broken_image, color: Colors.grey, size: 40)),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                      if (map['foto_eviden_2'] != null && map['foto_eviden_2'].toString().isNotEmpty) ...[
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: Container(
+                              constraints: const BoxConstraints(maxHeight: 350),
+                              child: Image.network(
+                                map['foto_eviden_2'].toString(),
+                                headers: const {'ngrok-skip-browser-warning': '69420'},
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, __, ___) => Container(
+                                  width: double.infinity,
+                                  height: 150,
+                                  color: Colors.grey[200],
+                                  child: const Center(child: Icon(Icons.broken_image, color: Colors.grey, size: 40)),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 24),
                 ],
                 
-                const Text('Lokasi Koordinat', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Informasi Laporan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                    if (map['is_edited'] == true)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(color: Colors.blue.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                        child: const Text('Telah Diedit', style: TextStyle(color: Colors.blue, fontSize: 12, fontWeight: FontWeight.bold, fontStyle: FontStyle.italic)),
+                      ),
+                  ],
+                ),
                 const SizedBox(height: 12),
                 
                 // Minimap Placeholder
@@ -1254,6 +1581,25 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                     ),
                   ),
                 ),
+                if (log.idempotencyKey != 'db_mock' && (log.status != 'success' || map['server_id'] != null)) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _navigateToEditForm(context, log);
+                      },
+                      icon: const Icon(Icons.edit, color: AppColors.primary),
+                      label: const Text('Edit Laporan', style: TextStyle(color: AppColors.primary)),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 56),
+                        side: const BorderSide(color: AppColors.primary),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 16), // Extra bottom padding for safe area
               ],
             ),
@@ -1261,6 +1607,27 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
         );
       },
     );
+  }
+
+  void _navigateToEditForm(BuildContext context, QueuedLog log) {
+    // Check if it's valve or tekanan
+    final isValve = log.endpoint.contains('/log-valve');
+    
+    if (isValve) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => LogValveFormPage(editLog: log),
+        ),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => LogTekananFormPage(editLog: log),
+        ),
+      );
+    }
   }
 
   Widget _buildDetailRow(String label, String value) {

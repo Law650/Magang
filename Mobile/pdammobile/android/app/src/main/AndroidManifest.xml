@@ -7,7 +7,7 @@
     <!-- Izin Internet (Wajib untuk rilis/APK) -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="pdammobile"
+        android:label="Tirta Flow"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

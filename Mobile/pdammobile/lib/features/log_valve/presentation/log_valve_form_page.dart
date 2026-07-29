@@ -19,7 +19,9 @@ import '../data/aset_repository.dart';
 import 'tambah_aset_page.dart';
 
 class LogValveFormPage extends ConsumerStatefulWidget {
-  const LogValveFormPage({super.key});
+  final QueuedLog? editLog;
+  final AsetValve? initialAset;
+  const LogValveFormPage({super.key, this.editLog, this.initialAset});
 
   @override
   ConsumerState<LogValveFormPage> createState() => _LogValveFormPageState();
@@ -38,6 +40,7 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
   int _aksiKerjaIndex = 0; // 0: Buka, 1: Tutup
   DateTime _waktuKegiatan = DateTime.now();
   String? _fotoPath;
+  String? _fotoPath2;
   bool _isSubmitting = false;
 
   double _jumlahPutaran = 0.0;
@@ -46,12 +49,58 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final name = ref.read(technicianNameProvider);
-      if (name != null) {
-        _namaTeknisiController.text = name;
+      if (widget.editLog != null) {
+        _populateEditData();
+      } else {
+        final name = ref.read(technicianNameProvider);
+        if (name != null) {
+          _namaTeknisiController.text = name;
+        }
+        if (widget.initialAset != null) {
+          _selectedAset = widget.initialAset;
+          _selectedNamaLokasi = widget.initialAset!.namaLokasi;
+          _kapasitasFull = widget.initialAset!.kapasitasFullPutaran;
+          _calculateBukaanSaatIni();
+        }
+        ref.read(gpsServiceProvider.notifier).captureLocation(context);
       }
-      ref.read(gpsServiceProvider.notifier).captureLocation(context);
     });
+  }
+
+  void _populateEditData() {
+    final log = widget.editLog!;
+    final map = log.payloadFields;
+    
+    _namaTeknisiController.text = map['nama_teknisi'] ?? '';
+    _keteranganController.text = map['keterangan'] ?? '';
+    
+    _selectedNamaLokasi = map['nama_lokasi'];
+    
+    // Reconstruct selected aset to populate the dropdown
+    if (map['aset_id'] != null) {
+      _selectedAset = AsetValve(
+        id: (map['aset_id'] as num).toInt(),
+        namaAset: map['nama_aset'] ?? 'Aset',
+        namaLokasi: map['nama_lokasi'] ?? '',
+        kapasitasFullPutaran: (map['kapasitas_full'] as num?)?.toDouble() ?? 0.0,
+      );
+    }
+    
+    _kapasitasFull = (map['kapasitas_full'] as num?)?.toDouble() ?? 0.0;
+    _bukaanSaatIni = (map['bukaan_saat_ini'] as num?)?.toDouble() ?? 0.0;
+    _jumlahPutaran = (map['jumlah_putaran'] as num?)?.toDouble() ?? 0.0;
+    
+    final aksi = map['aksi_kerja']?.toString().toLowerCase() ?? 'buka';
+    _aksiKerjaIndex = aksi == 'tutup' ? 1 : 0;
+    
+    if (map['waktu_kegiatan'] != null) {
+      _waktuKegiatan = DateTime.parse(map['waktu_kegiatan']);
+      _isTimeManuallyPicked = true;
+    }
+    
+    _fotoPath = log.fotoPath.isNotEmpty ? log.fotoPath : null;
+    _fotoPath2 = log.fotoPath2;
+    setState(() {});
   }
 
   @override
@@ -83,8 +132,16 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
     ).toList();
     
     if (valveLogs.isEmpty) {
-      // Tidak ada histori lokal, ikuti kapasitas full
-      _bukaanSaatIni = _kapasitasFull;
+      // Tidak ada histori lokal, gunakan status awal dari database backend
+      _bukaanSaatIni = _selectedAset!.sisaBukaan ?? 0.0;
+      
+      // Sesuaikan nilai default input jumlah putaran dan aksi kerja
+      if (_bukaanSaatIni >= _kapasitasFull && _kapasitasFull > 0) {
+        _aksiKerjaIndex = 1; // Paksa Tutup jika Full Buka
+      } else if (_bukaanSaatIni <= 0) {
+        _aksiKerjaIndex = 0; // Paksa Buka jika Full Tutup
+      }
+      _jumlahPutaran = 0.0;
     } else {
       // Urutkan berdasarkan waktu_kegiatan (terbaru di atas)
       valveLogs.sort((a, b) {
@@ -135,7 +192,7 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
     });
   }
 
-  Future<void> _handleAmbilFoto(GpsSuccess gps) async {
+  Future<void> _handleAmbilFoto(GpsSuccess gps, int position) async {
     final Uint8List? rawBytes = await Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const StrictCameraPage()),
@@ -155,7 +212,7 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
       longitude: gps.longitude,
       waktu: DateTime.now(),
       namaLokasiAset: _selectedAset!.namaLokasi,
-      sumberFoto: 'Kamera Langsung',
+      sumberFoto: 'Kamera Langsung ($position)',
     );
 
     final watermarkedBytes = await processWatermarkInIsolate(input);
@@ -175,9 +232,15 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
 
     if (action == 'retake') {
       if (!mounted) return;
-      _handleAmbilFoto(gps);
+      _handleAmbilFoto(gps, position);
     } else if (action != null) {
-      setState(() => _fotoPath = action);
+      setState(() {
+        if (position == 1) {
+          _fotoPath = action;
+        } else {
+          _fotoPath2 = action;
+        }
+      });
     }
   }
 
@@ -187,8 +250,8 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
       _showError('Pilih Aset Valve terlebih dahulu');
       return;
     }
-    if (_fotoPath == null) {
-      _showError('Foto bukti wajib diambil');
+    if (_fotoPath == null || _fotoPath2 == null) {
+      _showError('Kedua foto (Bukti 1 dan Bukti 2) wajib diambil');
       return;
     }
     if (_jumlahPutaran <= 0) {
@@ -218,10 +281,37 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
         'longitude': gpsState.longitude,
       };
 
+      if (widget.editLog != null) {
+        // Edit flow
+        final editLog = widget.editLog!;
+        editLog.payloadFields.addAll(payloadFields);
+        editLog.payloadFields['is_edited'] = true;
+        if (_fotoPath != null) editLog.fotoPath = _fotoPath!;
+        editLog.fotoPath2 = _fotoPath2;
+        
+        if (editLog.payloadFields['server_id'] != null) {
+          // If synced, endpoint becomes PUT like logic
+          editLog.endpoint = '/log-valve/${editLog.payloadFields['server_id']}';
+          // Force pending again
+          editLog.status = QueueStatus.pending;
+          editLog.retryCount = 0;
+        }
+        await editLog.save();
+        await ref.read(syncControllerProvider.notifier).forceSyncNow();
+        
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Log valve berhasil diupdate!'), backgroundColor: AppColors.statusNormal),
+        );
+        Navigator.pop(context); // go back to history
+        return;
+      }
+
       final queuedLog = QueuedLog(
         idempotencyKey: idempotencyKey,
         payloadFields: payloadFields,
         fotoPath: _fotoPath ?? '',
+        fotoPath2: _fotoPath2,
         endpoint: '/log-valve',
       );
 
@@ -253,6 +343,7 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
         _jumlahPutaran = 0.0;
         _keteranganController.clear();
         _fotoPath = null;
+        _fotoPath2 = null;
         _isTimeManuallyPicked = false;
         _waktuKegiatan = DateTime.now();
         _isSubmitting = false;
@@ -537,7 +628,7 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
                     ),
                     const SizedBox(height: 20),
 
-                    _buildSectionLabel('Jumlah Putaran Saat Ini *'),
+                    _buildSectionLabel('Jumlah Putaran Buka/ Tutup *'),
                     const SizedBox(height: 8),
                     FractionalCounterInput(
                       value: _jumlahPutaran,
@@ -592,19 +683,43 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Button Ambil Foto (karena foto wajib, kita modif dari tombol simpan)
-                    OutlinedButton.icon(
-                      onPressed: (gpsState is GpsSuccess && _selectedAset != null)
-                          ? () => _handleAmbilFoto(gpsState)
-                          : () {
-                              _showError('Pilih GPS dan Aset Valve dulu.');
-                            },
-                      icon: Icon(_fotoPath != null ? Icons.check_circle : Icons.camera_alt),
-                      label: Text(_fotoPath != null ? 'Foto Diambil' : 'Ambil Foto Bukti'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: _fotoPath != null ? AppColors.statusNormal : AppColors.primary,
-                        side: BorderSide(color: _fotoPath != null ? AppColors.statusNormal : AppColors.primary),
-                      ),
+                    // 2 Buttons Ambil Foto
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: (gpsState is GpsSuccess && _selectedAset != null)
+                                ? () => _handleAmbilFoto(gpsState, 1)
+                                : () {
+                                    _showError('Pilih GPS dan Aset Valve dulu.');
+                                  },
+                            icon: Icon(_fotoPath != null ? Icons.check_circle : Icons.camera_alt),
+                            label: Text(_fotoPath != null ? 'Bukti 1 \u2713' : 'Bukti 1'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: _fotoPath != null ? AppColors.statusNormal : AppColors.primary,
+                              side: BorderSide(color: _fotoPath != null ? AppColors.statusNormal : AppColors.primary),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: (gpsState is GpsSuccess && _selectedAset != null)
+                                ? () => _handleAmbilFoto(gpsState, 2)
+                                : () {
+                                    _showError('Pilih GPS dan Aset Valve dulu.');
+                                  },
+                            icon: Icon(_fotoPath2 != null ? Icons.check_circle : Icons.camera_alt),
+                            label: Text(_fotoPath2 != null ? 'Bukti 2 \u2713' : 'Bukti 2'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: _fotoPath2 != null ? AppColors.statusNormal : AppColors.primary,
+                              side: BorderSide(color: _fotoPath2 != null ? AppColors.statusNormal : AppColors.primary),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 24),
 
@@ -620,6 +735,7 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
                                 _selectedAset = null;
                                 _keteranganController.clear();
                                 _fotoPath = null;
+                                _fotoPath2 = null;
                               });
                             },
                             icon: const Icon(Icons.refresh, color: AppColors.textSecondary),

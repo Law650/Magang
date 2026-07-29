@@ -95,10 +95,13 @@ class GpsStatusWidget extends StatelessWidget {
                     ],
                   ),
                 ),
-                const Icon(
-                  Icons.my_location_rounded,
+                IconButton(
+                  onPressed: onRetry,
+                  icon: const Icon(Icons.refresh_rounded),
                   color: AppColors.statusNormal,
-                  size: 18,
+                  tooltip: 'Ulangi / Refresh Lokasi',
+                  iconSize: 20,
+                  splashRadius: 24,
                 ),
               ],
             ),

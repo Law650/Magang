@@ -22,6 +22,7 @@ class _TambahAsetPageState extends ConsumerState<TambahAsetPage> {
   final _latController = TextEditingController();
   final _lngController = TextEditingController();
   double _kapasitasFull = 0.0;
+  String _kondisiAwal = 'Full Bukaan';
   bool _isLoading = false;
 
   @override
@@ -72,6 +73,7 @@ class _TambahAsetPageState extends ConsumerState<TambahAsetPage> {
         'jalur': _jalurController.text.trim(),
         'jenis_pipa': _jenisPipaController.text.trim(),
         'kapasitas_full': _kapasitasFull,
+        'kondisi_awal': _kondisiAwal,
         'latitude': lat,
         'longitude': lng,
       });
@@ -91,9 +93,16 @@ class _TambahAsetPageState extends ConsumerState<TambahAsetPage> {
       }
     } catch (e) {
       if (mounted) {
+        String errMsg = e.toString();
+        if (errMsg.contains('Duplicate entry') || errMsg.contains('Integrity constraint violation')) {
+          errMsg = 'Jalur atau aset dengan nama ini sudah ada. Silakan gunakan nama lain.';
+        } else if (errMsg.startsWith('Exception: ')) {
+          errMsg = errMsg.substring(11);
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal menyimpan: $e'),
+            content: Text(errMsg),
             backgroundColor: AppColors.statusKritis,
           ),
         );
@@ -172,6 +181,33 @@ class _TambahAsetPageState extends ConsumerState<TambahAsetPage> {
                         hintText: 'Cth: GV-99',
                       ),
                       validator: (val) => (val == null || val.trim().isEmpty) ? 'Wajib diisi' : null,
+                    ),
+                    const SizedBox(height: 20),
+
+                    _buildSectionLabel('Kondisi GV Saat Ini *'),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: AppColors.cardBorder),
+                        borderRadius: BorderRadius.circular(12),
+                        color: AppColors.background,
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          isExpanded: true,
+                          value: _kondisiAwal,
+                          items: ['Full Bukaan', 'Full Tutupan']
+                              .map((k) => DropdownMenuItem(
+                                    value: k,
+                                    child: Text(k),
+                                  ))
+                              .toList(),
+                          onChanged: (val) {
+                            if (val != null) setState(() => _kondisiAwal = val);
+                          },
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 20),
 

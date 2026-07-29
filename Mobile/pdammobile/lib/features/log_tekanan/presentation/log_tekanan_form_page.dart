@@ -21,7 +21,8 @@ import 'rekap_tekanan_page.dart';
 import 'tambah_daerah_page.dart';
 
 class LogTekananFormPage extends ConsumerStatefulWidget {
-  const LogTekananFormPage({super.key});
+  final QueuedLog? editLog;
+  const LogTekananFormPage({super.key, this.editLog});
 
   @override
   ConsumerState<LogTekananFormPage> createState() => _LogTekananFormPageState();
@@ -30,7 +31,11 @@ class LogTekananFormPage extends ConsumerStatefulWidget {
 class _LogTekananFormPageState extends ConsumerState<LogTekananFormPage> {
   final _formKey = GlobalKey<FormState>();
   final _namaTeknisiController = TextEditingController();
+  final _keteranganController = TextEditingController();
+  final _latitudeController = TextEditingController();
+  final _longitudeController = TextEditingController();
 
+  bool _isTimeManuallyPicked = false;
   Lokasi? _selectedLokasi;
   DateTime _waktuPengecekan = DateTime.now();
   String? _fotoPath;
@@ -43,17 +48,55 @@ class _LogTekananFormPageState extends ConsumerState<LogTekananFormPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final name = ref.read(technicianNameProvider);
-      if (name != null) {
-        _namaTeknisiController.text = name;
+      if (widget.editLog != null) {
+        _populateEditData();
+      } else {
+        final name = ref.read(technicianNameProvider);
+        if (name != null) {
+          _namaTeknisiController.text = name;
+        }
+        ref.read(gpsServiceProvider.notifier).captureLocation(context);
       }
-      ref.read(gpsServiceProvider.notifier).captureLocation(context);
     });
+  }
+
+  void _populateEditData() {
+    final log = widget.editLog!;
+    final map = log.payloadFields;
+    
+    _namaTeknisiController.text = map['nama_teknisi'] ?? '';
+    _keteranganController.text = map['keterangan'] ?? '';
+    
+    // Reconstruct selected Lokasi to populate the dropdown
+    if (map['lokasi_id'] != null) {
+      _selectedLokasi = Lokasi(
+        id: (map['lokasi_id'] as num).toInt(),
+        namaLokasi: map['nama_lokasi'] ?? 'Lokasi',
+        latitude: map['latitude'] != null ? double.tryParse(map['latitude'].toString()) : null,
+        longitude: map['longitude'] != null ? double.tryParse(map['longitude'].toString()) : null,
+      );
+    }
+    _tekananAir = (map['nilai_tekanan'] as num?)?.toDouble() ?? 0.0;
+    
+    final aliran = map['status_aliran']?.toString().toLowerCase() ?? 'mengalir';
+    _aliranIndex = aliran == 'tidak_mengalir' ? 1 : 0;
+    
+    if (map['waktu_pengecekan'] != null) {
+      _waktuPengecekan = DateTime.parse(map['waktu_pengecekan']);
+      _isTimeManuallyPicked = true;
+    }
+    
+    _fotoPath = log.fotoPath.isNotEmpty ? log.fotoPath : null;
+    
+    setState(() {});
   }
 
   @override
   void dispose() {
     _namaTeknisiController.dispose();
+    _keteranganController.dispose();
+    _latitudeController.dispose();
+    _longitudeController.dispose();
     super.dispose();
   }
 
@@ -73,6 +116,7 @@ class _LogTekananFormPageState extends ConsumerState<LogTekananFormPage> {
     if (time == null || !mounted) return;
 
     setState(() {
+      _isTimeManuallyPicked = true;
       _waktuPengecekan = DateTime(
         date.year,
         date.month,
@@ -227,12 +271,38 @@ class _LogTekananFormPageState extends ConsumerState<LogTekananFormPage> {
         'lokasi_id': _selectedLokasi!.id,
         'nama_lokasi': _selectedLokasi!.namaLokasi,
         'nama_teknisi': _namaTeknisiController.text.trim(),
-        'waktu_pengecekan': _waktuPengecekan.toIso8601String(),
+        'waktu_pengecekan': (_isTimeManuallyPicked ? _waktuPengecekan : DateTime.now()).toIso8601String(),
         'nilai_tekanan': _tekananAir,
         'status_aliran': _aliranIndex == 0 ? 'mengalir' : 'tidak_mengalir',
-        'latitude': gpsState.latitude,
-        'longitude': gpsState.longitude,
+        'keterangan': _keteranganController.text.trim(),
+        'latitude': _latitudeController.text.isNotEmpty ? double.tryParse(_latitudeController.text) : gpsState.latitude,
+        'longitude': _longitudeController.text.isNotEmpty ? double.tryParse(_longitudeController.text) : gpsState.longitude,
       };
+
+      if (widget.editLog != null) {
+        // Edit flow
+        final editLog = widget.editLog!;
+        editLog.payloadFields.addAll(payloadFields);
+        editLog.payloadFields['is_edited'] = true;
+        if (_fotoPath != null) editLog.fotoPath = _fotoPath!;
+        
+        if (editLog.payloadFields['server_id'] != null) {
+          // If synced, endpoint becomes PUT like logic
+          editLog.endpoint = '/log-tekanan/${editLog.payloadFields['server_id']}';
+          // Force pending again
+          editLog.status = QueueStatus.pending;
+          editLog.retryCount = 0;
+        }
+        await editLog.save();
+        await ref.read(syncControllerProvider.notifier).forceSyncNow();
+        
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Log tekanan berhasil diupdate!'), backgroundColor: AppColors.statusNormal),
+        );
+        Navigator.pop(context);
+        return;
+      }
 
       final queuedLog = QueuedLog(
         idempotencyKey: idempotencyKey,
@@ -264,6 +334,10 @@ class _LogTekananFormPageState extends ConsumerState<LogTekananFormPage> {
         _selectedLokasi = null;
         _tekananAir = 0.0;
         _aliranIndex = 0;
+        _keteranganController.clear();
+        _latitudeController.clear();
+        _longitudeController.clear();
+        _isTimeManuallyPicked = false;
         _waktuPengecekan = DateTime.now();
         _fotoPath = null;
         _isSubmitting = false;
@@ -446,6 +520,66 @@ class _LogTekananFormPageState extends ConsumerState<LogTekananFormPage> {
                     ),
                     const SizedBox(height: 20),
 
+                    if (_selectedLokasi != null &&
+                        (_selectedLokasi!.latitude == null || _selectedLokasi!.latitude == 0) &&
+                        (_selectedLokasi!.longitude == null || _selectedLokasi!.longitude == 0)) ...[
+                      _buildSectionLabel('Koordinat Lokasi (Manual) *'),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _latitudeController,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                              decoration: const InputDecoration(hintText: 'Latitude'),
+                              validator: (val) => (val == null || val.isEmpty) ? 'Wajib diisi' : null,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _longitudeController,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                              decoration: const InputDecoration(hintText: 'Longitude'),
+                              validator: (val) => (val == null || val.isEmpty) ? 'Wajib diisi' : null,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Koordinat lokasi belum ada. Silakan isi manual atau gunakan GPS.',
+                              style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textHint),
+                            ),
+                          ),
+                          TextButton.icon(
+                            onPressed: () {
+                              if (gpsState is GpsSuccess) {
+                                _latitudeController.text = gpsState.latitude.toString();
+                                _longitudeController.text = gpsState.longitude.toString();
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Lokasi GPS belum tersedia, silakan tunggu sebentar.')),
+                                );
+                              }
+                            },
+                            icon: const Icon(Icons.my_location, size: 16),
+                            label: const Text('Isi Otomatis'),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+
                     _buildSectionLabel('Tekanan Air (Bar) *'),
                     const SizedBox(height: 8),
                     CounterInput(
@@ -496,6 +630,18 @@ class _LogTekananFormPageState extends ConsumerState<LogTekananFormPage> {
                     ),
                     const SizedBox(height: 24),
 
+                    _buildSectionLabel('Keterangan / Catatan (Opsional)'),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _keteranganController,
+                      style: theme.textTheme.bodyLarge,
+                      maxLines: 3,
+                      decoration: const InputDecoration(
+                        hintText: 'Isi catatan jika ada...',
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
                     // Button Ambil Foto (karena foto wajib, kita modif dari tombol simpan)
                     OutlinedButton.icon(
                       onPressed: (gpsState is GpsSuccess && _selectedLokasi != null)
@@ -522,6 +668,8 @@ class _LogTekananFormPageState extends ConsumerState<LogTekananFormPage> {
                                 _tekananAir = 0.0;
                                 _selectedLokasi = null;
                                 _fotoPath = null;
+                                _latitudeController.clear();
+                                _longitudeController.clear();
                               });
                             },
                             icon: const Icon(Icons.refresh, color: AppColors.textSecondary),

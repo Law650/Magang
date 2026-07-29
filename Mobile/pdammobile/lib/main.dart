@@ -61,7 +61,7 @@ class PdamMobileApp extends ConsumerWidget {
     final hasName = technicianName != null && technicianName.isNotEmpty;
 
     return MaterialApp(
-      title: 'PDAM Mobile — Petugas Lapangan',
+      title: 'Tirta Flow — Petugas Lapangan',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       home: hasName ? const MainLayout() : const LoginPage(),

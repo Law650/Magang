@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <!-- Matching bg-gradient-to-br from-cyan-500 to-blue-600 -->
+    <gradient
+        android:angle="315"
+        android:startColor="#06b6d4"
+        android:endColor="#2563eb"
+        android:type="linear" />
+</shape>

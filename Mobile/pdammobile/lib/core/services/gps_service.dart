@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
@@ -40,7 +41,15 @@ final gpsServiceProvider =
 );
 
 class GpsServiceNotifier extends StateNotifier<GpsState> {
+  StreamSubscription<Position>? _positionStreamSubscription;
+
   GpsServiceNotifier() : super(const GpsLoading());
+
+  @override
+  void dispose() {
+    _positionStreamSubscription?.cancel();
+    super.dispose();
+  }
 
   /// Memulai proses penangkapan koordinat GPS.
   ///
@@ -93,18 +102,59 @@ class GpsServiceNotifier extends StateNotifier<GpsState> {
         return;
       }
 
-      // 3. Ambil posisi presisi tinggi
-      final position = await Geolocator.getCurrentPosition(
+      // 3. Ambil posisi dengan menyaring akurasi terbaik (cocok untuk HP spesifikasi rendah)
+      _positionStreamSubscription?.cancel();
+      
+      Position? bestPosition;
+      final completer = Completer<Position?>();
+      
+      _positionStreamSubscription = Geolocator.getPositionStream(
         locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 15),
+          accuracy: LocationAccuracy.best,
+          distanceFilter: 0,
         ),
-      );
+      ).listen((Position position) {
+        if (bestPosition == null || position.accuracy < bestPosition!.accuracy) {
+          bestPosition = position;
+        }
 
-      state = GpsSuccess(
-        latitude: position.latitude,
-        longitude: position.longitude,
-      );
+        // Target akurasi yang ideal (di bawah 20 meter), bisa langsung selesai
+        if (bestPosition!.accuracy <= 20.0) {
+          if (!completer.isCompleted) {
+            completer.complete(bestPosition);
+          }
+        }
+      }, onError: (e) {
+        if (!completer.isCompleted) {
+          completer.completeError(e);
+        }
+      });
+
+      try {
+        // Tunggu maksimal 15 detik
+        await completer.future.timeout(const Duration(seconds: 15));
+      } catch (e) {
+        if (e is TimeoutException) {
+          // Timeout terjadi, biarkan berlanjut untuk menggunakan bestPosition yang berhasil dikumpulkan
+        } else {
+          rethrow;
+        }
+      } finally {
+        _positionStreamSubscription?.cancel();
+      }
+
+      if (bestPosition == null) {
+        throw Exception("Gagal mendapatkan sinyal GPS. Pastikan Anda berada di luar ruangan.");
+      } else if (bestPosition!.accuracy > 100.0) {
+        throw Exception("Akurasi terlalu lemah (${bestPosition!.accuracy.toStringAsFixed(0)}m). Nyalakan GPS Akurasi Tinggi & cari area terbuka.");
+      }
+
+      if (mounted) {
+        state = GpsSuccess(
+          latitude: bestPosition!.latitude,
+          longitude: bestPosition!.longitude,
+        );
+      }
     } catch (e) {
       state = GpsError(
         'Gagal mendapatkan lokasi: ${e.toString().length > 80 ? '${e.toString().substring(0, 80)}...' : e.toString()}',

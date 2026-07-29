@@ -61,6 +61,21 @@ class SyncRepository {
         }
       }
 
+      if (entry.fotoPath2 != null && entry.fotoPath2!.isNotEmpty) {
+        final fotoFile2 = File(entry.fotoPath2!);
+        if (fotoFile2.existsSync()) {
+          formMap['foto_eviden_2'] = await MultipartFile.fromFile(
+            entry.fotoPath2!,
+            filename: '${entry.idempotencyKey}_2.jpg',
+            contentType: DioMediaType('image', 'jpeg'),
+          );
+        } else {
+          debugPrint(
+            '[SyncRepository] File foto 2 tidak ditemukan: ${entry.fotoPath2}',
+          );
+        }
+      }
+
       final formData = FormData.fromMap(formMap);
 
       // 4. Kirim ke server dengan idempotency key
@@ -74,11 +89,16 @@ class SyncRepository {
         ),
       );
 
-      // 5. Cek response sukses (2xx)
       if (response.statusCode != null &&
           response.statusCode! >= 200 &&
           response.statusCode! < 300) {
         entry.status = QueueStatus.success;
+        
+        // Simpan server ID untuk keperluan Edit
+        if (response.data is Map<String, dynamic> && response.data['data'] != null) {
+          entry.payloadFields['server_id'] = response.data['data']['id'];
+        }
+        
         await entry.save();
         debugPrint(
           '[SyncRepository] ✓ Berhasil sync: ${entry.idempotencyKey}',

@@ -11,6 +11,7 @@ import '../../../core/services/gps_service.dart';
 import '../../../core/widgets/ui_components.dart';
 import '../../identity/presentation/login_page.dart';
 import '../../log_valve/data/aset_repository.dart';
+import '../../riwayat/presentation/riwayat_page.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../core/models/queued_log.dart';
@@ -49,8 +50,18 @@ class HomePage extends ConsumerWidget {
     final totalLog = syncState.pendingCount + syncState.successCount + syncState.failedCount;
     final progress = totalLog == 0 ? 0.0 : syncState.successCount / totalLog;
     
-    final recentLogs = ref.read(syncControllerProvider.notifier).getAllLogs().reversed.take(3).toList();
-
+    final hour = DateTime.now().hour;
+    String greeting = 'Halo';
+    if (hour < 11) {
+      greeting = 'Selamat Pagi';
+    } else if (hour < 15) {
+      greeting = 'Selamat Siang';
+    } else if (hour < 18) {
+      greeting = 'Selamat Sore';
+    } else {
+      greeting = 'Selamat Malam';
+    }
+    
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -59,7 +70,7 @@ class HomePage extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Halo, $technicianName',
+              '$greeting, $technicianName',
               style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 20),
             ),
             Row(
@@ -139,7 +150,14 @@ class HomePage extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: AppColors.surface,
                   borderRadius: BorderRadius.circular(20),
-                  boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))],
+                  boxShadow: [
+                    BoxShadow(
+                      color: isOnline ? AppColors.primary.withValues(alpha: 0.15) : AppColors.statusKritis.withValues(alpha: 0.15),
+                      blurRadius: 12,
+                      spreadRadius: 1,
+                      offset: const Offset(0, 4),
+                    )
+                  ],
                 ),
                 child: Column(
                   children: [
@@ -158,7 +176,27 @@ class HomePage extends ConsumerWidget {
                       child: ElevatedButton.icon(
                         onPressed: syncState.isSyncing || !isOnline
                             ? null
-                            : () => ref.read(syncControllerProvider.notifier).forceSyncNow(),
+                            : () async {
+                                final currentPending = ref.read(syncControllerProvider).pendingCount;
+                                if (currentPending == 0) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Tidak ada data yang perlu disinkronisasi', style: TextStyle(color: Colors.white)), backgroundColor: Colors.orange),
+                                  );
+                                  return;
+                                }
+                                await ref.read(syncControllerProvider.notifier).forceSyncNow();
+                                if (!context.mounted) return;
+                                final newState = ref.read(syncControllerProvider);
+                                if (newState.lastError != null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(newState.lastError!), backgroundColor: AppColors.statusKritis),
+                                  );
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Data berhasil disinkronisasi!'), backgroundColor: AppColors.statusNormal),
+                                  );
+                                }
+                              },
                         icon: syncState.isSyncing
                             ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                             : const Icon(Icons.sync_rounded),
@@ -202,7 +240,7 @@ class HomePage extends ConsumerWidget {
                   final asetAsync = ref.watch(asetValveListProvider);
                   return asetAsync.when(
                     data: (asetList) => Column(
-                      children: _buildNearbyAssets(gpsState, asetList),
+                      children: _buildNearbyAssets(context, gpsState, asetList),
                     ),
                     loading: () => const Center(child: CircularProgressIndicator()),
                     error: (_, __) => const SizedBox(),
@@ -210,58 +248,6 @@ class HomePage extends ConsumerWidget {
                 },
               ),
               const SizedBox(height: 24),
-
-              // Aktivitas Terakhir
-              Text('Aktivitas Terakhir', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 12),
-              
-              if (recentLogs.isEmpty)
-                const Center(child: Text('Belum ada aktivitas', style: TextStyle(color: AppColors.textHint)))
-              else
-                ...recentLogs.map((log) {
-                  final isValve = log.endpoint.contains('/log-valve');
-                  final title = isValve 
-                      ? 'Cek Valve ${log.payloadFields['nama_lokasi'] ?? ''}'
-                      : 'Ukur Tekanan ${log.payloadFields['nama_lokasi'] ?? ''}';
-                  
-                  String subtitle = '';
-                  Color iconColor = AppColors.primary;
-                  if (isValve) {
-                    final aksi = log.payloadFields['aksi_kerja']?.toString() ?? 'Buka';
-                    final putaran = log.payloadFields['jumlah_putaran']?.toString() ?? '0';
-                    subtitle = '$aksi ($putaran putaran)';
-                    iconColor = aksi.toLowerCase() == 'tutup' ? AppColors.statusKritis : AppColors.primary;
-                  } else {
-                    final tekanan = log.payloadFields['nilai_tekanan']?.toString() ?? '0';
-                    final status = log.payloadFields['status']?.toString() ?? '';
-                    subtitle = '$tekanan Bar ($status)';
-                    iconColor = AppColors.accentGreen;
-                  }
-                  
-                  // Extract time
-                  String time = '';
-                  if (log.payloadFields['waktu_pengecekan'] != null) {
-                    try {
-                      final dt = DateTime.parse(log.payloadFields['waktu_pengecekan']).toLocal();
-                      time = DateFormat('HH:mm').format(dt);
-                    } catch (_) {}
-                  } else if (log.idempotencyKey.isNotEmpty) {
-                      final parts = log.idempotencyKey.split('_');
-                      if (parts.length > 1) {
-                         try {
-                           final dt = DateTime.fromMillisecondsSinceEpoch(int.parse(parts.last));
-                           time = DateFormat('HH:mm').format(dt);
-                         } catch(_) {}
-                      }
-                  }
-                  
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8.0),
-                    child: _buildActivityItem(title, subtitle, time, iconColor),
-                  );
-                }),
-              
-              const SizedBox(height: 32),
             ],
           ),
         ),
@@ -293,7 +279,7 @@ class HomePage extends ConsumerWidget {
 
   /// Membangun daftar aset terdekat berdasarkan lokasi GPS pengguna saat ini.
   /// Menggunakan rumus Haversine untuk menghitung jarak akurat di permukaan bumi.
-  List<Widget> _buildNearbyAssets(GpsState gpsState, List<AsetValve> asetList) {
+  List<Widget> _buildNearbyAssets(BuildContext context, GpsState gpsState, List<AsetValve> asetList) {
     // Jika GPS belum aktif atau gagal mendapatkan lokasi, tampilkan pesan peringatan
     if (gpsState is! GpsSuccess) {
       return [
@@ -343,8 +329,8 @@ class HomePage extends ConsumerWidget {
     // Mengurutkan aset dari yang jaraknya paling dekat ke paling jauh
     assetsWithDistance.sort((a, b) => (a['distanceKm'] as double).compareTo(b['distanceKm'] as double));
     
-    // Ambil maksimal 2 aset terdekat saja untuk ditampilkan di dashboard
-    final nearby = assetsWithDistance.take(2).toList();
+    // Ambil maksimal 5 aset terdekat saja untuk ditampilkan di dashboard
+    final nearby = assetsWithDistance.take(5).toList();
     
     return nearby.map((data) {
       final aset = data['aset'] as AsetValve;
@@ -353,13 +339,20 @@ class HomePage extends ConsumerWidget {
       
       return Padding(
         padding: const EdgeInsets.only(bottom: 8.0),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
+        child: Material(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => RiwayatPage(initialAset: aset)));
+            },
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.cardBorder),
-          ),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.cardBorder),
+              ),
           child: Row(
             children: [
               Container(
@@ -387,6 +380,8 @@ class HomePage extends ConsumerWidget {
               ),
             ],
           ),
+        ),
+        ),
         ),
       );
     }).toList();
@@ -442,37 +437,6 @@ class HomePage extends ConsumerWidget {
         const SizedBox(height: 4),
         Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
       ],
-    );
-  }
-
-  Widget _buildActivityItem(String title, String subtitle, String time, Color iconColor) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.cardBorder),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: iconColor.withValues(alpha: 0.1), shape: BoxShape.circle),
-            child: Icon(Icons.assignment, color: iconColor, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                Text(subtitle, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-              ],
-            ),
-          ),
-          Text(time, style: const TextStyle(color: AppColors.textHint, fontSize: 12)),
-        ],
-      ),
     );
   }
 

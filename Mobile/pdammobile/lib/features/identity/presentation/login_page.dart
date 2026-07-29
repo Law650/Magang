@@ -104,30 +104,23 @@ class _LoginPageState extends ConsumerState<LoginPage>
                     children: [
                       // ── Icon / Logo ───────────────────────────────
                       Container(
-                        width: 96,
-                        height: 96,
+                        width: 160,
+                        height: 160,
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [
-                              AppColors.primary,
-                              AppColors.primaryDark,
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(24),
+                          shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.3),
+                              color: Colors.black.withValues(alpha: 0.1),
                               blurRadius: 20,
                               offset: const Offset(0, 8),
                             ),
                           ],
                         ),
-                        child: const Icon(
-                          Icons.water_drop_rounded,
-                          size: 48,
-                          color: Colors.white,
+                        child: ClipOval(
+                          child: Image.asset(
+                            'assets/images/TIRTAFLOWBGPUTIH.png',
+                            fit: BoxFit.cover,
+                          ),
                         ),
                       ),
 
@@ -135,7 +128,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
 
                       // ── Title ─────────────────────────────────────
                       Text(
-                        'PDAM Mobile',
+                        'Tirta Flow',
                         style: theme.textTheme.headlineLarge,
                       ),
                       const SizedBox(height: 8),
@@ -263,7 +256,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
 
                       // ── Footer Info ───────────────────────────────
                       Text(
-                        'Monitoring Aset & Distribusi Air',
+                        'Sistem Informasi Setting Gate Valve dan Tekanan Air',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: AppColors.textHint,
                           fontSize: 12,

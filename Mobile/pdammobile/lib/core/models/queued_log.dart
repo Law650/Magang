@@ -32,7 +32,10 @@ class QueuedLog extends HiveObject {
 
   /// Path absolut file foto bukti yang sudah di-watermark.
   /// Bisa kosong jika foto tidak wajib pada form tertentu.
-  final String fotoPath;
+  String fotoPath;
+
+  /// Path absolut file foto bukti kedua (misal posisi bawah valve).
+  String? fotoPath2;
 
   /// Status sinkronisasi entry ini.
   /// Lihat [QueueStatus] untuk nilai yang valid.
@@ -43,7 +46,7 @@ class QueuedLog extends HiveObject {
   int retryCount;
 
   /// Target endpoint API relatif (e.g. `/log-valve`, `/log-tekanan`).
-  final String endpoint;
+  String endpoint;
 
   /// Waktu pembuatan entry — digunakan untuk FIFO ordering.
   final DateTime createdAt;
@@ -52,6 +55,7 @@ class QueuedLog extends HiveObject {
     required this.idempotencyKey,
     required this.payloadFields,
     required this.fotoPath,
+    this.fotoPath2,
     required this.endpoint,
     this.status = QueueStatus.pending,
     this.retryCount = 0,
@@ -95,13 +99,14 @@ class QueuedLogAdapter extends TypeAdapter<QueuedLog> {
       status: fields[3] as String,
       retryCount: fields[4] as int,
       createdAt: fields[6] as DateTime,
+      fotoPath2: fields.containsKey(7) ? fields[7] as String? : null,
     );
   }
 
   @override
   void write(BinaryWriter writer, QueuedLog obj) {
     writer
-      ..writeByte(7) // Jumlah field
+      ..writeByte(8) // Jumlah field
       ..writeByte(0)
       ..write(obj.idempotencyKey)
       ..writeByte(1)
@@ -115,6 +120,8 @@ class QueuedLogAdapter extends TypeAdapter<QueuedLog> {
       ..writeByte(5)
       ..write(obj.endpoint)
       ..writeByte(6)
-      ..write(obj.createdAt);
+      ..write(obj.createdAt)
+      ..writeByte(7)
+      ..write(obj.fotoPath2);
   }
 }

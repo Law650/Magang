@@ -74,9 +74,16 @@ class _TambahDaerahPageState extends ConsumerState<TambahDaerahPage> {
       }
     } catch (e) {
       if (mounted) {
+        String errMsg = e.toString();
+        if (errMsg.contains('Duplicate entry') || errMsg.contains('Integrity constraint violation')) {
+          errMsg = 'Nama daerah ini sudah ada. Silakan gunakan nama lain.';
+        } else if (errMsg.startsWith('Exception: ')) {
+          errMsg = errMsg.substring(11);
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal menyimpan: $e'),
+            content: Text(errMsg),
             backgroundColor: AppColors.statusKritis,
           ),
         );
@@ -110,8 +117,8 @@ class _TambahDaerahPageState extends ConsumerState<TambahDaerahPage> {
                     TextFormField(
                       controller: _namaLokasiController,
                       decoration: const InputDecoration(
-                        labelText: 'Nama Daerah / Jalur',
-                        hintText: 'Contoh: Jl. Pemuda',
+                        labelText: 'Nama Daerah Tekanan',
+                        hintText: 'Contoh: Jl. Ahmad Yani',
                       ),
                       validator: (v) =>
                           v == null || v.trim().isEmpty ? 'Wajib diisi' : null,
