@@ -19,6 +19,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property float|null $latitude
  * @property float|null $longitude
  * @property string|null $foto_eviden
+ * @property string|null $foto_eviden_2
+ * @property bool $is_edited
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  */
@@ -37,6 +39,8 @@ class LogValve extends Model
         'latitude',
         'longitude',
         'foto_eviden',
+        'foto_eviden_2',
+        'is_edited',
     ];
 
     /**
@@ -51,8 +55,8 @@ class LogValve extends Model
             'jumlah_putaran' => 'decimal:2',
             'snapshot_sisa_bukaan' => 'decimal:2',
             'snapshot_total_tutupan' => 'decimal:2',
-            'latitude' => 'decimal:6',
-            'longitude' => 'decimal:6',
+            'latitude' => 'decimal:8',
+            'longitude' => 'decimal:8',
         ];
     }
 
@@ -81,4 +85,36 @@ class LogValve extends Model
             'name' => 'Teknisi Tidak Diketahui',
         ]);
     }
+
+    /**
+     * Menghitung jarak antara koordinat log dengan koordinat aset master (dalam satuan Meter).
+     * Menggunakan metode Haversine.
+     *
+     * @return float|null
+     */
+    public function getJarakDariMasterAttribute(): ?float
+    {
+        if (!$this->latitude || !$this->longitude || 
+            !$this->asetValve || !$this->asetValve->lokasi || 
+            !$this->asetValve->lokasi->latitude || !$this->asetValve->lokasi->longitude) {
+            return null;
+        }
+
+        $lat1 = (float) $this->latitude;
+        $lon1 = (float) $this->longitude;
+        $lat2 = (float) $this->asetValve->lokasi->latitude;
+        $lon2 = (float) $this->asetValve->lokasi->longitude;
+
+        $earthRadius = 6371000; // Radius bumi dalam meter
+
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLon = deg2rad($lon2 - $lon1);
+
+        $a = sin($dLat / 2) * sin($dLat / 2) + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLon / 2) * sin($dLon / 2);
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        return $earthRadius * $c; // Jarak dalam meter
+    }
+
+
 }

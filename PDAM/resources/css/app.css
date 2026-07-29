@@ -69,3 +69,15 @@ nav[role="navigation"] span[aria-disabled="true"] {
 .animate-spin-slow {
     animation: spin-slow 3s linear infinite;
 }
+
+/* 
+ * FIX BUG PETA MENUTUPI SIDEBAR
+ * Memaksa Leaflet container untuk membuat stacking context baru.
+ * Ini "mengurung" semua z-index tinggi milik Leaflet (seperti zoom control z-1000) 
+ * agar tidak bisa bocor keluar dan menutupi Sidebar yang memiliki z-50.
+ */
+.leaflet-container {
+    isolation: isolate;
+    z-index: 1; /* Memberikan nilai z-index rendah yang valid di konteks root */
+}
+

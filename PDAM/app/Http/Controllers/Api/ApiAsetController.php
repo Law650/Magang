@@ -47,6 +47,10 @@ class ApiAsetController extends Controller
                 'latitude' => $aset->lokasi->latitude ? (float) $aset->lokasi->latitude : null,
                 'longitude' => $aset->lokasi->longitude ? (float) $aset->lokasi->longitude : null,
                 'nama_teknisi' => $aset->lastLogValve ? $aset->lastLogValve->nama_teknisi : null,
+                'foto_eviden' => $aset->lastLogValve && $aset->lastLogValve->foto_eviden 
+                    ? asset('storage/' . $aset->lastLogValve->foto_eviden) : null,
+                'foto_eviden_2' => $aset->lastLogValve && $aset->lastLogValve->foto_eviden_2 
+                    ? asset('storage/' . $aset->lastLogValve->foto_eviden_2) : null,
             ]),
         ]);
     }
@@ -86,6 +90,7 @@ class ApiAsetController extends Controller
             'jalur' => 'required|string|max:150',
             'jenis_pipa' => 'required|string|max:150',
             'kapasitas_full' => 'required|numeric|min:0',
+            'kondisi_awal' => 'nullable|string|in:Full Bukaan,Full Tutupan',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
         ]);
@@ -114,11 +119,14 @@ class ApiAsetController extends Controller
             ->first();
 
         if (!$aset) {
+            $kondisiAwal = $validated['kondisi_awal'] ?? 'Full Bukaan';
+            $totalTutupan = ($kondisiAwal === 'Full Tutupan') ? $validated['kapasitas_full'] : 0.00;
+
             $aset = AsetValve::create([
                 'lokasi_id' => $lokasi->id,
                 'nama_aset' => $validated['jenis_pipa'],
                 'kapasitas_full_putaran' => $validated['kapasitas_full'],
-                'total_tutupan_saat_ini' => 0.00,
+                'total_tutupan_saat_ini' => $totalTutupan,
             ]);
         }
 

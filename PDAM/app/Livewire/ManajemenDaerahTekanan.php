@@ -58,10 +58,16 @@ class ManajemenDaerahTekanan extends Component
         if ($this->latitude === '') $this->latitude = null;
         if ($this->longitude === '') $this->longitude = null;
 
+        $uniqueRule = $this->editingId
+            ? 'unique:lokasis,nama_lokasi,' . $this->editingId
+            : 'unique:lokasis,nama_lokasi';
+
         $validated = $this->validate([
-            'nama_lokasi' => ['required', 'string', 'max:150'],
+            'nama_lokasi' => ['required', 'string', 'max:150', $uniqueRule],
             'latitude' => ['nullable', 'numeric'],
             'longitude' => ['nullable', 'numeric'],
+        ], [
+            'nama_lokasi.unique' => 'Nama daerah tekanan ini sudah ada di sistem.',
         ]);
 
         if ($this->editingId) {

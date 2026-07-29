@@ -18,6 +18,10 @@ class ManajemenAset extends Component
     public string $nama_aset = '';
     public string $nama_lokasi = '';
     public string $kapasitas_full_putaran = '';
+    public string $latitude = '';
+    public string $longitude = '';
+    public string $kondisi_awal = 'buka_full';
+    public string $custom_tutupan = '';
 
     /**
      * Reset pagination when search changes.
@@ -47,6 +51,8 @@ class ManajemenAset extends Component
         $this->nama_aset = $aset->nama_aset;
         $this->nama_lokasi = $aset->lokasi->nama_lokasi;
         $this->kapasitas_full_putaran = (string) $aset->kapasitas_full_putaran;
+        $this->latitude = (string) ($aset->lokasi->latitude ?? '');
+        $this->longitude = (string) ($aset->lokasi->longitude ?? '');
 
         $this->dispatch('open-modal');
     }
@@ -60,12 +66,24 @@ class ManajemenAset extends Component
             'nama_aset' => ['required', 'string', 'max:150'],
             'nama_lokasi' => ['required', 'string', 'max:150'],
             'kapasitas_full_putaran' => ['required', 'numeric', 'min:0.01', 'regex:/^\d+(\.\d{1,2})?$/'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'kondisi_awal' => ['nullable', 'in:buka_full,tutup_full,custom'],
+            'custom_tutupan' => ['nullable', 'numeric', 'min:0'],
         ]);
+
+        $latVal = $validated['latitude'] !== '' && $validated['latitude'] !== null ? $validated['latitude'] : null;
+        $lngVal = $validated['longitude'] !== '' && $validated['longitude'] !== null ? $validated['longitude'] : null;
 
         $lokasi = Lokasi::firstOrCreate(
             ['nama_lokasi' => $validated['nama_lokasi'], 'jenis' => 'valve'],
-            ['latitude' => null, 'longitude' => null]
+            ['latitude' => $latVal, 'longitude' => $lngVal]
         );
+
+        // Update coordinates if they were provided
+        if ($latVal !== null || $lngVal !== null) {
+            $lokasi->update(['latitude' => $latVal, 'longitude' => $lngVal]);
+        }
 
         if ($this->editingId) {
             $aset = AsetValve::findOrFail($this->editingId);
@@ -75,10 +93,22 @@ class ManajemenAset extends Component
                 'kapasitas_full_putaran' => $validated['kapasitas_full_putaran'],
             ]);
         } else {
+            $totalTutupan = 0;
+            if ($this->kondisi_awal === 'tutup_full') {
+                $totalTutupan = $validated['kapasitas_full_putaran'];
+            } elseif ($this->kondisi_awal === 'custom' && $this->custom_tutupan !== '') {
+                $totalTutupan = (float) $this->custom_tutupan;
+                // clamp totalTutupan so it doesn't exceed kapasitas
+                if ($totalTutupan > (float) $validated['kapasitas_full_putaran']) {
+                    $totalTutupan = (float) $validated['kapasitas_full_putaran'];
+                }
+            }
+
             AsetValve::create([
                 'lokasi_id' => $lokasi->id,
                 'nama_aset' => $validated['nama_aset'],
                 'kapasitas_full_putaran' => $validated['kapasitas_full_putaran'],
+                'total_tutupan_saat_ini' => $totalTutupan,
             ]);
         }
 
@@ -103,6 +133,10 @@ class ManajemenAset extends Component
         $this->nama_aset = '';
         $this->nama_lokasi = '';
         $this->kapasitas_full_putaran = '';
+        $this->latitude = '';
+        $this->longitude = '';
+        $this->kondisi_awal = 'buka_full';
+        $this->custom_tutupan = '';
         $this->resetValidation();
     }
 

@@ -34,6 +34,7 @@ class LogTekanan extends Model
         'latitude',
         'longitude',
         'foto_eviden',
+        'is_edited',
     ];
 
     /**
@@ -46,8 +47,8 @@ class LogTekanan extends Model
         return [
             'waktu_pengecekan' => 'datetime',
             'nilai_tekanan' => 'decimal:2',
-            'latitude' => 'decimal:6',
-            'longitude' => 'decimal:6',
+            'latitude' => 'decimal:8',
+            'longitude' => 'decimal:8',
         ];
     }
 

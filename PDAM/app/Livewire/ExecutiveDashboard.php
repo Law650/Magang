@@ -107,6 +107,8 @@ class ExecutiveDashboard extends Component
             return [
                 'id' => $lokasi->id,
                 'nama_lokasi' => $lokasi->nama_lokasi,
+                'latitude' => $lokasi->latitude,
+                'longitude' => $lokasi->longitude,
                 'status' => $latestLog->status,
                 'nilai_tekanan' => $latestLog->nilai_tekanan,
                 'status_aliran' => $latestLog->status_aliran,
@@ -133,6 +135,8 @@ class ExecutiveDashboard extends Component
                 'id' => $valve->id,
                 'nama_aset' => $valve->nama_aset,
                 'lokasi' => $valve->lokasi->nama_lokasi,
+                'latitude' => $valve->lokasi->latitude,
+                'longitude' => $valve->lokasi->longitude,
                 'kapasitas_full' => (float) $valve->kapasitas_full_putaran,
                 'total_tutupan' => (float) $valve->total_tutupan_saat_ini,
                 'sisa_bukaan' => $valve->sisa_bukaan,
@@ -147,10 +151,51 @@ class ExecutiveDashboard extends Component
      */
     private function getRecentActivities()
     {
-        return LogValve::with('asetValve')
+        $valveLogs = LogValve::with('asetValve.lokasi')
             ->orderBy('waktu_kegiatan', 'desc')
             ->limit(10)
-            ->get();
+            ->get()
+            ->toBase()
+            ->map(fn ($log) => [
+                'type' => 'valve',
+                'id' => $log->id,
+                'nama_teknisi' => $log->nama_teknisi,
+                'aksi_kerja' => $log->aksi_kerja,
+                'jumlah_putaran' => $log->jumlah_putaran,
+                'nama_aset' => $log->asetValve->nama_aset ?? '-',
+                'lokasi' => $log->asetValve->lokasi->nama_lokasi ?? '-',
+                'keterangan' => $log->keterangan,
+                'waktu' => $log->waktu_kegiatan,
+                'lat_master' => $log->asetValve->lokasi->latitude ?? null,
+                'lng_master' => $log->asetValve->lokasi->longitude ?? null,
+                'lat_input' => $log->latitude,
+                'lng_input' => $log->longitude,
+                'jarak_meter' => $log->jarak_dari_master,
+                'foto_eviden' => $log->foto_eviden ? \Illuminate\Support\Facades\Storage::url($log->foto_eviden) : null,
+                'foto_eviden_2' => $log->foto_eviden_2 ? \Illuminate\Support\Facades\Storage::url($log->foto_eviden_2) : null,
+            ]);
+
+        $tekananLogs = LogTekanan::with('lokasi')
+            ->orderBy('waktu_pengecekan', 'desc')
+            ->limit(10)
+            ->get()
+            ->toBase()
+            ->map(fn ($log) => [
+                'type' => 'tekanan',
+                'id' => $log->id,
+                'nama_teknisi' => $log->nama_teknisi,
+                'nilai_tekanan' => $log->nilai_tekanan,
+                'status' => $log->status,
+                'lokasi' => $log->lokasi->nama_lokasi ?? '-',
+                'keterangan' => $log->keterangan,
+                'waktu' => $log->waktu_pengecekan,
+                'foto_eviden' => $log->foto_eviden ? \Illuminate\Support\Facades\Storage::url($log->foto_eviden) : null,
+            ]);
+
+        return $valveLogs->merge($tekananLogs)
+            ->sortByDesc('waktu')
+            ->take(10)
+            ->values();
     }
 
     public function render(): mixed

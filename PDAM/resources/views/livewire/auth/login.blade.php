@@ -26,13 +26,11 @@
 
             {{-- Logo & Branding --}}
             <div class="text-center mb-8">
-                <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/30 mb-4">
-                    <svg class="w-9 h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
-                    </svg>
+                <div class="inline-flex items-center justify-center mb-4">
+                    <img src="/images/TIRTAFLOWBGPUTIH.png" alt="Tirta Flow" style="width: 80px; height: 80px;" class="rounded-full border-4 border-slate-800 object-cover shadow-xl shadow-black/50">
                 </div>
-                <h1 class="text-2xl font-bold text-white tracking-tight">PDAM Monitor</h1>
-                <p class="text-sm text-slate-400 mt-1">Sistem Informasi Manajemen Aset & Distribusi Air</p>
+                <h1 class="text-2xl font-bold text-white tracking-tight">Tirta Flow</h1>
+                <p class="text-sm text-slate-400 mt-1">Sistem Informasi Setting Pipa Gate Valve dan Tekanan Air</p>
             </div>
 
             {{-- Divider --}}

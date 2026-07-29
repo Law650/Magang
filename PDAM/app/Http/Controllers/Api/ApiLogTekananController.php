@@ -45,6 +45,17 @@ class ApiLogTekananController extends Controller
         // Klasifikasi status otomatis
         $status = LogTekanan::klasifikasiStatus((float) $validated['nilai_tekanan']);
 
+        // Update koordinat master Lokasi jika sebelumnya kosong
+        $lokasi = Lokasi::find($validated['lokasi_id']);
+        if ($lokasi && isset($validated['latitude']) && isset($validated['longitude'])) {
+            if (empty($lokasi->latitude) || empty($lokasi->longitude) || $lokasi->latitude == 0) {
+                $lokasi->update([
+                    'latitude' => $validated['latitude'],
+                    'longitude' => $validated['longitude'],
+                ]);
+            }
+        }
+
         $log = LogTekanan::create([
             'lokasi_id' => $validated['lokasi_id'],
             'user_id' => $request->user()?->id,
@@ -103,6 +114,46 @@ class ApiLogTekananController extends Controller
         return response()->json([
             'success' => true,
             'data' => $rekap,
+        ]);
+    }
+
+    /**
+     * Update data log tekanan (fitur edit dari riwayat).
+     */
+    public function update(Request $request, $id): JsonResponse
+    {
+        $log = LogTekanan::findOrFail($id);
+
+        $validated = $request->validate([
+            'nilai_tekanan' => ['nullable', 'numeric', 'min:0'],
+            'status_aliran' => ['nullable', 'string', 'in:mengalir,tidak_mengalir'],
+            'kekeruhan' => ['nullable', 'string', 'in:jernih,keruh'],
+            'keterangan' => ['nullable', 'string'],
+            'foto_eviden' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:5120'],
+        ]);
+
+        if (isset($validated['nilai_tekanan'])) {
+            $validated['status'] = LogTekanan::klasifikasiStatus((float) $validated['nilai_tekanan']);
+        }
+
+        if ($request->hasFile('foto_eviden')) {
+            if ($log->foto_eviden) {
+                Storage::disk('public')->delete($log->foto_eviden);
+            }
+            $file = $request->file('foto_eviden');
+            $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+            $folder = 'log-tekanan/' . now()->format('Y/m');
+            $validated['foto_eviden'] = $file->storeAs($folder, $filename, 'public');
+        }
+
+        $validated['is_edited'] = true;
+
+        $log->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Log tekanan berhasil diperbarui.',
+            'data' => $log->fresh()->load('lokasi'),
         ]);
     }
 }

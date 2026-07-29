@@ -61,6 +61,7 @@ class LogValveExport implements FromQuery, WithHeadings, WithMapping, WithStyles
             $log->jumlah_putaran,
             $log->snapshot_sisa_bukaan,
             $log->snapshot_total_tutupan,
+            $log->status_radius,
             $log->keterangan ?? '-',
         ];
     }
@@ -86,6 +87,7 @@ class LogValveExport implements FromQuery, WithHeadings, WithMapping, WithStyles
                 'Jumlah Putaran',
                 'Sisa Bukaan',
                 'Total Tutupan',
+                'Status Radius',
                 'Keterangan',
             ]
         ];
@@ -129,9 +131,9 @@ class LogValveExport implements FromQuery, WithHeadings, WithMapping, WithStyles
                 $sheet = $event->sheet->getDelegate();
                 
                 // Merge title cells
-                $sheet->mergeCells('A1:I1');
-                $sheet->mergeCells('A2:I2');
-                $sheet->mergeCells('A3:I3');
+                $sheet->mergeCells('A1:J1');
+                $sheet->mergeCells('A2:J2');
+                $sheet->mergeCells('A3:J3');
                 
                 $sheet->getStyle('A1:A3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
@@ -139,7 +141,7 @@ class LogValveExport implements FromQuery, WithHeadings, WithMapping, WithStyles
                 $highestRow = $sheet->getHighestRow();
                 
                 if ($highestRow >= 5) {
-                    $cellRange = 'A5:I' . $highestRow;
+                    $cellRange = 'A5:J' . $highestRow;
                     
                     // Apply borders
                     $sheet->getStyle($cellRange)->applyFromArray([
@@ -155,6 +157,7 @@ class LogValveExport implements FromQuery, WithHeadings, WithMapping, WithStyles
                     $sheet->getStyle('A6:A' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
                     $sheet->getStyle('E6:E' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
                     $sheet->getStyle('F6:H' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+                    $sheet->getStyle('I6:I' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
                 }
             },
         ];

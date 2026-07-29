@@ -32,6 +32,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Transaksi / Log
     Route::post('/log-valve', [ApiLogValveController::class, 'store']);
+    Route::post('/log-valve/{id}', [ApiLogValveController::class, 'update']); // Use POST to support form-data for files, with _method=PUT from mobile or just POST for update
     Route::get('/log-tekanan/rekap', [ApiLogTekananController::class, 'rekap']);
     Route::post('/log-tekanan', [ApiLogTekananController::class, 'store']);
+    Route::post('/log-tekanan/{id}', [ApiLogTekananController::class, 'update']);
 });

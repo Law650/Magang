@@ -32,6 +32,7 @@ class ApiLogValveController extends Controller
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'foto_eviden' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:5120'],
+            'foto_eviden_2' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:5120'],
             'kapasitas_full' => ['nullable', 'numeric', 'min:0.01'],
         ]);
 
@@ -47,7 +48,15 @@ class ApiLogValveController extends Controller
             $fotoPath = $file->storeAs($folder, $filename, 'public');
         }
 
-        $log = DB::transaction(function () use ($validated, $fotoPath, $request) {
+        $fotoPath2 = null;
+        if ($request->hasFile('foto_eviden_2')) {
+            $file = $request->file('foto_eviden_2');
+            $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+            $folder = 'log-valve/' . now()->format('Y/m');
+            $fotoPath2 = $file->storeAs($folder, $filename, 'public');
+        }
+
+        $log = DB::transaction(function () use ($validated, $fotoPath, $fotoPath2, $request) {
             $aset = AsetValve::lockForUpdate()->findOrFail($validated['aset_id']);
             
             // Allow updating kapasitas_full from mobile
@@ -87,6 +96,7 @@ class ApiLogValveController extends Controller
                 'latitude' => $validated['latitude'] ?? null,
                 'longitude' => $validated['longitude'] ?? null,
                 'foto_eviden' => $fotoPath,
+                'foto_eviden_2' => $fotoPath2,
             ]);
         });
 
@@ -95,5 +105,63 @@ class ApiLogValveController extends Controller
             'message' => 'Log valve berhasil disimpan.',
             'data' => $log->load('asetValve.lokasi'),
         ], 201);
+    }
+
+    /**
+     * Update data log valve (fitur edit dari riwayat).
+     */
+    public function update(Request $request, $id): JsonResponse
+    {
+        $log = LogValve::findOrFail($id);
+
+        $validated = $request->validate([
+            'aksi_kerja' => ['nullable', 'in:buka,tutup,Buka,Tutup'],
+            'jumlah_putaran' => ['nullable', 'numeric', 'min:0.01'],
+            'keterangan' => ['nullable', 'string'],
+            'foto_eviden' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:5120'],
+            'foto_eviden_2' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:5120'],
+        ]);
+
+        if (isset($validated['aksi_kerja'])) {
+            $validated['aksi_kerja'] = strtolower($validated['aksi_kerja']);
+        }
+
+        if ($request->hasFile('foto_eviden')) {
+            // Delete old if exists
+            if ($log->foto_eviden) {
+                Storage::disk('public')->delete($log->foto_eviden);
+            }
+            $file = $request->file('foto_eviden');
+            $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+            $folder = 'log-valve/' . now()->format('Y/m');
+            $validated['foto_eviden'] = $file->storeAs($folder, $filename, 'public');
+        }
+
+        if ($request->hasFile('foto_eviden_2')) {
+            if ($log->foto_eviden_2) {
+                Storage::disk('public')->delete($log->foto_eviden_2);
+            }
+            $file = $request->file('foto_eviden_2');
+            $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+            $folder = 'log-valve/' . now()->format('Y/m');
+            $validated['foto_eviden_2'] = $file->storeAs($folder, $filename, 'public');
+        }
+
+        $validated['is_edited'] = true;
+
+        DB::transaction(function () use ($log, $validated) {
+            // Jika ada perubahan aksi atau putaran, kita perlu merevisi data aset (ini bisa kompleks jika bukan log terakhir)
+            // Untuk penyederhanaan (karena ini log), kita update log-nya saja dan mungkin menyesuaikan snapshot_total_tutupan jika memungkinkan,
+            // Namun yang aman adalah membiarkan total_tutupan aset sesuai update manual di tempat lain jika historisnya berubah.
+            // Saat ini kita update isi log saja.
+            
+            $log->update($validated);
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Log valve berhasil diperbarui.',
+            'data' => $log->fresh()->load('asetValve.lokasi'),
+        ]);
     }
 }

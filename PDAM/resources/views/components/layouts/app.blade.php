@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Sistem Informasi Manajemen Aset & Monitoring Distribusi Air PDAM">
-    <title>{{ $title ?? 'Dashboard' }} — PDAM Monitor</title>
-
+    <title>{{ $title ?? 'Dashboard' }} — Tirta Flow</title>
+    <link rel="icon" href="/images/TIRTAFLOWBGPUTIH.png" type="image/png">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 
@@ -55,19 +55,15 @@
         {{-- Sidebar --}}
         <aside
             :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
-            :style="!sidebarOpen && window.innerWidth >= 1024 ? 'margin-left: -16rem;' : ''"
-            class="fixed inset-y-0 left-0 z-50 w-64 shrink-0 bg-slate-900/95 backdrop-blur-xl border-r border-slate-800/50 flex flex-col transition-all duration-300 ease-in-out lg:static lg:inset-0"
+            :style="(!sidebarOpen && window.innerWidth >= 1024 ? 'margin-left: -16rem;' : '') + ' z-index: 99999 !important;'"
+            class="fixed inset-y-0 left-0 w-64 shrink-0 bg-slate-900/95 backdrop-blur-xl border-r border-slate-800/50 flex flex-col transition-all duration-300 ease-in-out lg:static lg:inset-0"
         >
             {{-- Logo --}}
             <div class="flex items-center gap-3 px-6 py-5 border-b border-slate-800/50">
-                <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/25">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
-                    </svg>
-                </div>
+                <img src="/images/TIRTAFLOWBGPUTIH.png" alt="Tirta Flow" class="w-10 h-10 rounded-xl object-cover shadow-lg">
                 <div>
-                    <h1 class="text-base font-bold text-white leading-tight">PDAM Monitor</h1>
-                    <p class="text-xs text-slate-400">Sistem Monitoring Aset</p>
+                    <h1 class="text-base font-bold text-white leading-tight">Tirta Flow</h1>
+                    <p class="text-xs text-slate-400">Sistem Informasi Setting Pipa</p>
                 </div>
             </div>
 
@@ -162,14 +158,15 @@
             x-transition:leave-start="opacity-100"
             x-transition:leave-end="opacity-0"
             @click="sidebarOpen = false"
-            class="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
+            style="z-index: 99998 !important;"
+            class="fixed inset-0 bg-black/60 backdrop-blur-sm lg:hidden"
         ></div>
 
         {{-- Main content area --}}
-        <div class="flex flex-col flex-1 min-w-0 overflow-hidden">
+        <div class="flex flex-col flex-1 min-w-0 overflow-hidden relative z-0">
 
             {{-- Topbar --}}
-            <header class="sticky top-0 z-30 flex items-center justify-between px-4 sm:px-6 h-16 bg-slate-900/80 backdrop-blur-xl border-b border-slate-800/50">
+            <header style="z-index: 99997 !important;" class="sticky top-0 flex items-center justify-between px-4 sm:px-6 h-16 bg-slate-900/80 backdrop-blur-xl border-b border-slate-800/50">
                 {{-- Mobile menu button --}}
                 <button @click="sidebarOpen = !sidebarOpen" class="p-2 -ml-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

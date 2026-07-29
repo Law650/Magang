@@ -58,3 +58,18 @@ Route::middleware(['auth', 'check.active'])->group(function () {
         Route::get('/manajemen-pengguna', ManajemenPengguna::class)->name('manajemen-pengguna');
     });
 });
+
+/*
+|--------------------------------------------------------------------------
+| Storage Route Fallback (Fix Docker Windows 403 Forbidden)
+|--------------------------------------------------------------------------
+*/
+Route::get('/storage/{path}', function ($path) {
+    $filePath = storage_path('app/public/' . $path);
+    
+    if (!file_exists($filePath)) {
+        abort(404);
+    }
+    
+    return response()->file($filePath);
+})->where('path', '.*')->name('storage.local');

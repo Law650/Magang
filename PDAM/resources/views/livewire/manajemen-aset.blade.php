@@ -103,6 +103,7 @@
                     <tr class="border-b border-slate-800/50">
                         <th class="px-5 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Nama Aset</th>
                         <th class="px-5 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Lokasi</th>
+                        <th class="px-5 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">Koordinat</th>
                         <th class="px-5 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">Kapasitas Full</th>
                         <th class="px-5 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Tutupan</th>
                         <th class="px-5 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider min-w-48">Sisa Bukaan</th>
@@ -119,6 +120,20 @@
                                 <span class="inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-800/50 text-xs font-medium text-slate-300">
                                     {{ $aset->lokasi->nama_lokasi }}
                                 </span>
+                            </td>
+                            <td class="px-5 py-4 text-center">
+                                @if($aset->lokasi->latitude && $aset->lokasi->longitude)
+                                    <div class="flex flex-col items-center gap-1">
+                                        <span class="text-xs text-slate-400 font-mono">{{ $aset->lokasi->latitude }}, {{ $aset->lokasi->longitude }}</span>
+                                        <a href="https://www.google.com/maps/search/?api=1&query={{ $aset->lokasi->latitude }},{{ $aset->lokasi->longitude }}" target="_blank"
+                                           class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 text-xs font-medium transition-colors">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                            Maps
+                                        </a>
+                                    </div>
+                                @else
+                                    <span class="text-xs text-slate-600">-</span>
+                                @endif
                             </td>
                             <td class="px-5 py-4 text-center text-slate-300">{{ \App\Helpers\FormatHelper::putaran($aset->kapasitas_full_putaran) }}</td>
                             <td class="px-5 py-4 text-center text-slate-300">{{ \App\Helpers\FormatHelper::putaran($aset->total_tutupan_saat_ini) }}</td>
@@ -165,7 +180,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-5 py-12 text-center">
+                            <td colspan="7" class="px-5 py-12 text-center">
                                 <svg class="w-12 h-12 text-slate-700 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
                                 </svg>
@@ -265,6 +280,50 @@
                             @enderror
                         </div>
 
+                        {{-- Titik Koordinat (Latitude & Longitude) --}}
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-1.5">
+                                <span class="flex items-center gap-1.5">
+                                    <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    </svg>
+                                    Titik Koordinat
+                                </span>
+                            </label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <input
+                                        type="number"
+                                        wire:model="latitude"
+                                        step="0.0000001"
+                                        min="-90"
+                                        max="90"
+                                        placeholder="Latitude (cth: -7.2575)"
+                                        class="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-500/40 transition"
+                                    >
+                                    @error('latitude')
+                                        <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                                <div>
+                                    <input
+                                        type="number"
+                                        wire:model="longitude"
+                                        step="0.0000001"
+                                        min="-180"
+                                        max="180"
+                                        placeholder="Longitude (cth: 112.7521)"
+                                        class="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-500/40 transition"
+                                    >
+                                    @error('longitude')
+                                        <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                            </div>
+                            <p class="mt-1.5 text-xs text-slate-500">Opsional. Masukkan koordinat GPS untuk menandai lokasi di peta.</p>
+                        </div>
+
                         {{-- Kapasitas Full Putaran --}}
                         <div>
                             <label class="block text-sm font-medium text-slate-300 mb-1.5">Kapasitas Full Putaran</label>
@@ -280,6 +339,40 @@
                                 <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
                             @enderror
                         </div>
+
+                        {{-- Kondisi Awal (Hanya saat tambah) --}}
+                        @if(!$editingId)
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-2">Kondisi Saat Ini (Posisi Valve)</label>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <label class="flex items-center gap-2 p-3 rounded-xl border border-slate-700/50 bg-slate-800/30 cursor-pointer hover:bg-slate-800 transition">
+                                    <input type="radio" wire:model.live="kondisi_awal" value="buka_full" class="text-cyan-500 bg-slate-900 border-slate-700 focus:ring-cyan-500/40">
+                                    <span class="text-sm text-slate-300">Buka Full</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-3 rounded-xl border border-slate-700/50 bg-slate-800/30 cursor-pointer hover:bg-slate-800 transition">
+                                    <input type="radio" wire:model.live="kondisi_awal" value="tutup_full" class="text-cyan-500 bg-slate-900 border-slate-700 focus:ring-cyan-500/40">
+                                    <span class="text-sm text-slate-300">Tutup Full</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-3 rounded-xl border border-slate-700/50 bg-slate-800/30 cursor-pointer hover:bg-slate-800 transition">
+                                    <input type="radio" wire:model.live="kondisi_awal" value="custom" class="text-cyan-500 bg-slate-900 border-slate-700 focus:ring-cyan-500/40">
+                                    <span class="text-sm text-slate-300">Sebagian</span>
+                                </label>
+                            </div>
+                            @if($kondisi_awal === 'custom')
+                                <div class="mt-3">
+                                    <input
+                                        type="number"
+                                        wire:model="custom_tutupan"
+                                        step="0.01"
+                                        min="0"
+                                        placeholder="Berapa putaran tertutup? (cth: 5.5)"
+                                        class="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-500/40 transition"
+                                    >
+                                    <p class="mt-1.5 text-xs text-slate-400">Masukkan nilai putaran <b>yang sedang tertutup</b> saat ini.</p>
+                                </div>
+                            @endif
+                        </div>
+                        @endif
 
                         {{-- Actions --}}
                         <div class="flex items-center justify-end gap-3 pt-2">

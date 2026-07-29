@@ -81,7 +81,7 @@
     </div>
 
     {{-- GV Map --}}
-    <div class="relative z-10 rounded-2xl bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-slate-700/40 overflow-hidden">
+    <div class="relative z-0 rounded-2xl bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-slate-700/40 overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-700/40 flex items-center justify-between">
             <div>
                 <h3 class="text-base font-semibold text-white">Peta Gate Valve</h3>
@@ -249,7 +249,7 @@
     </div>
 
     {{-- Tekanan Map --}}
-    <div class="relative z-10 rounded-2xl bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-slate-700/40 overflow-hidden">
+    <div class="relative z-0 rounded-2xl bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-slate-700/40 overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-700/40 flex items-center justify-between">
             <div>
                 <h3 class="text-base font-semibold text-white">Peta Tekanan Air</h3>
@@ -375,7 +375,7 @@
                                     <span class="font-medium text-white">{{ $m['nama'] }}</span>
                                 </div>
                             </td>
-                            <td class="px-6 py-3.5 text-center"><span class="text-slate-400 font-mono text-xs">{{ number_format($m['lat'], 4) }}, {{ number_format($m['lng'], 4) }}</span></td>
+                            <td class="px-6 py-3.5 text-center"><span class="text-slate-400 font-mono text-xs">{{ $m['lat'] }}, {{ $m['lng'] }}</span></td>
                             <td class="px-6 py-3.5 text-center font-mono {{ match($m['status']) { 'normal' => 'text-emerald-400', 'rendah' => 'text-amber-400', 'kritis' => 'text-red-400', default => 'text-slate-400' } }}">{{ $m['tekanan'] !== null ? number_format($m['tekanan'], 2) . ' Bar' : '-' }}</td>
                             <td class="px-6 py-3.5 text-center"><span class="inline-flex px-2.5 py-0.5 rounded-md text-xs font-medium border {{ $stStyle }}">{{ $stLabel }}</span></td>
                             <td class="px-6 py-3.5 text-center"><span class="inline-flex px-2.5 py-0.5 rounded-md text-xs font-medium border {{ $aliranStyle }}">{{ $aliranLabel }}</span></td>
