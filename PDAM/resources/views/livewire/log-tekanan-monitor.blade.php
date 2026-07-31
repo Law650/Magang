@@ -202,6 +202,22 @@
                 class="w-full pl-10 pr-4 py-2.5 bg-slate-900/50 border border-slate-700/50 rounded-xl text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-500/40 transition"
             >
         </div>
+        {{-- Date Filters --}}
+        <div class="flex items-center gap-2">
+            <input 
+                type="date" 
+                wire:model.live="startDate"
+                class="px-3 py-2.5 bg-slate-900/50 border border-slate-700/50 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-500/40 transition"
+                title="Tanggal Mulai"
+            >
+            <span class="text-slate-500">-</span>
+            <input 
+                type="date" 
+                wire:model.live="endDate"
+                class="px-3 py-2.5 bg-slate-900/50 border border-slate-700/50 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-500/40 transition"
+                title="Tanggal Akhir"
+            >
+        </div>
 
         {{-- Pills Filter --}}
         <div class="flex items-center gap-1 p-1 bg-slate-900/50 border border-slate-700/50 rounded-xl">
@@ -212,7 +228,7 @@
         </div>
 
         {{-- Export Button --}}
-        <a href="{{ route('export.log-tekanan', ['search' => $search, 'filter' => $filterStatus]) }}"
+        <a href="{{ route('export.log-tekanan', ['search' => $search, 'filter' => $filterStatus, 'start_date' => $startDate, 'end_date' => $endDate]) }}"
            target="_blank" download
            class="flex items-center justify-center gap-2 px-5 py-2.5 bg-slate-800/80 border border-slate-700/50 text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-700/80 hover:text-white transition-all duration-200"
         >
@@ -231,6 +247,7 @@
                     <tr class="border-b border-slate-800/50">
                         <th class="px-5 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Waktu</th>
                         <th class="px-5 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Nama Daerah</th>
+                        {{-- <th class="px-5 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">No. SR</th> --}}
                         <th class="px-5 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">Tekanan (Bar)</th>
                         <th class="px-5 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">Aliran</th>
                         <th class="px-5 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</th>
@@ -249,6 +266,9 @@
                             <td class="px-5 py-4">
                                 <span class="font-medium text-white">{{ $log->lokasi->nama_lokasi ?? '-' }}</span>
                             </td>
+                            {{-- <td class="px-5 py-4">
+                                <span class="text-slate-300">{{ $log->no_sr ?? '-' }}</span>
+                            </td> --}}
                             <td class="px-5 py-4 text-center font-mono text-slate-300 font-semibold">{{ $log->nilai_tekanan }}</td>
                             <td class="px-5 py-4 text-center">
                                 @if($log->status_aliran === 'mengalir')

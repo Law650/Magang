@@ -602,7 +602,7 @@
                         {{-- Avatar --}}
                         @if($activity['type'] === 'valve')
                             <div class="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-full
-                                {{ $activity['aksi_kerja'] === 'buka' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400' }}
+                                {{ ($activity['aksi_kerja'] === 'buka' && (float)$activity['jumlah_putaran'] == 0) ? 'bg-blue-500/15 text-blue-400' : ($activity['aksi_kerja'] === 'buka' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400') }}
                                 text-xs font-bold">
                                 {{ strtoupper(substr($activity['nama_teknisi'] ?? '-', 0, 2)) }}
                             </div>
@@ -617,10 +617,14 @@
                                 <span class="font-medium text-white text-sm">{{ $activity['nama_teknisi'] ?? '-' }}</span>
                                 @if($activity['type'] === 'valve')
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium
-                                        {{ $activity['aksi_kerja'] === 'buka'
-                                            ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
-                                            : 'bg-amber-500/15 text-amber-400 border border-amber-500/20' }}">
-                                        {{ $activity['aksi_kerja'] === 'buka' ? '↑ Buka' : '↓ Tutup' }}
+                                        {{ ($activity['aksi_kerja'] === 'buka' && (float)$activity['jumlah_putaran'] == 0)
+                                            ? 'bg-blue-500/15 text-blue-400 border border-blue-500/20'
+                                            : ($activity['aksi_kerja'] === 'buka'
+                                                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
+                                                : 'bg-amber-500/15 text-amber-400 border border-amber-500/20') }}">
+                                        {{ ($activity['aksi_kerja'] === 'buka' && (float)$activity['jumlah_putaran'] == 0) 
+                                            ? '• Cek' 
+                                            : ($activity['aksi_kerja'] === 'buka' ? '↑ Buka' : '↓ Tutup') }}
                                     </span>
                                     <span class="text-xs text-slate-500">{{ $activity['jumlah_putaran'] }} putaran</span>
                                 @else
@@ -713,8 +717,8 @@
                                                 <p class="text-xs text-slate-500 mb-2 uppercase tracking-wider font-semibold">Aksi Kerja</p>
                                                 <div class="flex items-center gap-3">
                                                     <span class="inline-flex items-center px-3 py-1.5 rounded-md text-sm font-bold shadow-sm"
-                                                          :class="selectedActivity?.aksi_kerja === 'buka' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/15 text-amber-400 border border-amber-500/20'"
-                                                          x-text="selectedActivity?.aksi_kerja === 'buka' ? '↑ Buka' : '↓ Tutup'">
+                                                          :class="(selectedActivity?.aksi_kerja === 'buka' && parseFloat(selectedActivity?.jumlah_putaran) === 0) ? 'bg-blue-500/15 text-blue-400 border border-blue-500/20' : (selectedActivity?.aksi_kerja === 'buka' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/15 text-amber-400 border border-amber-500/20')"
+                                                          x-text="(selectedActivity?.aksi_kerja === 'buka' && parseFloat(selectedActivity?.jumlah_putaran) === 0) ? '• Cek' : (selectedActivity?.aksi_kerja === 'buka' ? '↑ Buka' : '↓ Tutup')">
                                                     </span>
                                                     <span class="text-white font-mono text-lg font-medium" x-text="selectedActivity?.jumlah_putaran + ' Putaran'"></span>
                                                 </div>
@@ -742,12 +746,18 @@
                                                         <p class="text-slate-300 font-mono text-xs sm:text-sm" x-text="selectedActivity?.lat_input ? (selectedActivity.lat_input + ', ' + selectedActivity.lng_input) : 'Tidak Ada Data'"></p>
                                                     </div>
                                                 </div>
-                                                <div class="flex items-center justify-between p-4 rounded-xl bg-slate-900/60 shadow-inner">
+                                                {{-- <div class="flex items-center justify-between p-4 rounded-xl bg-slate-900/60 shadow-inner">
                                                     <div>
                                                         <p class="text-xs text-slate-500 font-medium tracking-wider mb-0.5">Jarak Aktual</p>
                                                         <p class="text-white font-mono text-xl sm:text-2xl font-bold" x-text="selectedActivity?.jarak_meter !== null ? parseFloat(selectedActivity.jarak_meter).toFixed(2) + ' Meter' : '-'"></p>
                                                     </div>
-                                                </div>
+                                                    <div>
+                                                        <span class="inline-flex px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold uppercase tracking-wider shadow-lg"
+                                                              :class="selectedActivity?.status_radius === 'Di Dalam Radius' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'"
+                                                              x-text="selectedActivity?.status_radius || 'Tidak Diketahui'">
+                                                        </span>
+                                                    </div>
+                                                </div> --}}
                                             </div>
                                         </div>
                                     </div>

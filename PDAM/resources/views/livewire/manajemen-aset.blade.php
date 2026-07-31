@@ -230,10 +230,10 @@
                     x-transition:leave="transition ease-in duration-200"
                     x-transition:leave-start="opacity-100 scale-100"
                     x-transition:leave-end="opacity-0 scale-95"
-                    class="relative w-full max-w-lg bg-slate-900 border border-slate-700/50 rounded-2xl shadow-2xl shadow-black/50"
+                    class="relative w-full max-w-lg flex flex-col max-h-[90vh] bg-slate-900 border border-slate-700/50 rounded-2xl shadow-2xl shadow-black/50"
                 >
                     {{-- Header --}}
-                    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800/50">
+                    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800/50 shrink-0">
                         <h3 class="text-lg font-bold text-white">
                             {{ $editingId ? 'Edit Aset' : 'Tambah Aset Baru' }}
                         </h3>
@@ -245,7 +245,7 @@
                     </div>
 
                     {{-- Form --}}
-                    <form wire:submit.prevent="save" class="p-6 space-y-5">
+                    <form wire:submit.prevent="save" class="p-6 space-y-5 overflow-y-auto">
                         {{-- Nama Aset --}}
                         <div>
                             <label class="block text-sm font-medium text-slate-300 mb-1.5">Nama Aset</label>
@@ -327,14 +327,65 @@
                         {{-- Kapasitas Full Putaran --}}
                         <div>
                             <label class="block text-sm font-medium text-slate-300 mb-1.5">Kapasitas Full Putaran</label>
-                            <input
-                                type="number"
-                                wire:model="kapasitas_full_putaran"
-                                step="0.01"
-                                min="0.01"
-                                placeholder="Contoh: 58.50"
-                                class="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-500/40 transition"
-                            >
+                            
+                            {{-- Input Angka Bulat --}}
+                            <div class="mb-3">
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Angka Bulat</label>
+                                <input
+                                    type="number"
+                                    wire:model.live="kapasitas_full_putaran"
+                                    step="1"
+                                    min="0"
+                                    placeholder="Contoh: 58"
+                                    class="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-500/40 transition"
+                                >
+                            </div>
+
+                            {{-- Quick Buttons Pecahan --}}
+                            <div class="mb-3">
+                                <label class="block text-xs font-medium text-slate-400 mb-1.5">Tambahan Pecahan</label>
+                                <div class="flex flex-wrap gap-2">
+                                    @foreach([
+                                        ['0', '0 (Bulat)'],
+                                        ['0.125', '⅛'],
+                                        ['0.25', '¼'],
+                                        ['0.375', '⅜'],
+                                        ['0.5', '½'],
+                                        ['0.625', '⅝'],
+                                        ['0.75', '¾'],
+                                        ['0.875', '⅞'],
+                                    ] as [$val, $label])
+                                        <button
+                                            type="button"
+                                            wire:click="$set('kapasitas_full_pecahan', '{{ $val }}')"
+                                            class="px-4 py-2 rounded-lg text-sm font-bold border transition-all duration-200
+                                                {{ $kapasitas_full_pecahan === $val
+                                                    ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-sm shadow-cyan-500/10'
+                                                    : 'bg-slate-800/50 text-slate-400 border-slate-700/50 hover:bg-slate-700/50 hover:text-white' }}"
+                                        >
+                                            {{ $label }}
+                                        </button>
+                                    @endforeach
+                                </div>
+                            </div>
+
+                            {{-- Preview Nilai Gabungan --}}
+                            @if($kapasitas_full_putaran !== '')
+                                @php
+                                    $previewKapasitas = (float) $kapasitas_full_putaran + (float) $kapasitas_full_pecahan;
+                                    $pecahanMapKap = ['0' => '', '0.125' => ' ⅛', '0.25' => ' ¼', '0.375' => ' ⅜', '0.5' => ' ½', '0.625' => ' ⅝', '0.75' => ' ¾', '0.875' => ' ⅞'];
+                                    $pecahanLabelKap = $pecahanMapKap[$kapasitas_full_pecahan] ?? '';
+                                    $displayKapasitas = $kapasitas_full_putaran . $pecahanLabelKap;
+                                @endphp
+                                <div class="flex items-center gap-3 p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
+                                    <svg class="w-5 h-5 text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    <div>
+                                        <p class="text-xs text-slate-400">Kapasitas Full Putaran:</p>
+                                        <p class="text-sm font-bold text-emerald-300">{{ $displayKapasitas }} putaran <span class="text-slate-500 font-normal">(= {{ $previewKapasitas }})</span></p>
+                                    </div>
+                                </div>
+                            @endif
+
                             @error('kapasitas_full_putaran')
                                 <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
                             @enderror
@@ -359,16 +410,67 @@
                                 </label>
                             </div>
                             @if($kondisi_awal === 'custom')
-                                <div class="mt-3">
-                                    <input
-                                        type="number"
-                                        wire:model="custom_tutupan"
-                                        step="0.01"
-                                        min="0"
-                                        placeholder="Berapa putaran tertutup? (cth: 5.5)"
-                                        class="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-500/40 transition"
-                                    >
-                                    <p class="mt-1.5 text-xs text-slate-400">Masukkan nilai putaran <b>yang sedang tertutup</b> saat ini.</p>
+                                <div class="mt-3 space-y-3">
+                                    {{-- Input Angka Bulat --}}
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-400 mb-1">Angka Bulat Putaran</label>
+                                        <input
+                                            type="number"
+                                            wire:model.live="custom_tutupan_bulat"
+                                            step="1"
+                                            min="0"
+                                            placeholder="Contoh: 23"
+                                            class="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-500/40 transition"
+                                        >
+                                    </div>
+
+                                    {{-- Quick Buttons Pecahan --}}
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-400 mb-1.5">Tambahan Pecahan</label>
+                                        <div class="flex flex-wrap gap-2">
+                                            @foreach([
+                                                ['0', '0 (Bulat)'],
+                                                ['0.125', '⅛'],
+                                                ['0.25', '¼'],
+                                                ['0.375', '⅜'],
+                                                ['0.5', '½'],
+                                                ['0.625', '⅝'],
+                                                ['0.75', '¾'],
+                                                ['0.875', '⅞'],
+                                            ] as [$val, $label])
+                                                <button
+                                                    type="button"
+                                                    wire:click="$set('custom_tutupan_pecahan', '{{ $val }}')"
+                                                    class="px-4 py-2 rounded-lg text-sm font-bold border transition-all duration-200
+                                                        {{ $custom_tutupan_pecahan === $val
+                                                            ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-sm shadow-cyan-500/10'
+                                                            : 'bg-slate-800/50 text-slate-400 border-slate-700/50 hover:bg-slate-700/50 hover:text-white' }}"
+                                                >
+                                                    {{ $label }}
+                                                </button>
+                                            @endforeach
+                                        </div>
+                                    </div>
+
+                                    {{-- Preview Nilai Gabungan --}}
+                                    @if($custom_tutupan_bulat !== '')
+                                        @php
+                                            $previewTotal = (float) $custom_tutupan_bulat + (float) $custom_tutupan_pecahan;
+                                            // Format pecahan untuk tampilan
+                                            $pecahanMap = ['0' => '', '0.125' => ' ⅛', '0.25' => ' ¼', '0.375' => ' ⅜', '0.5' => ' ½', '0.625' => ' ⅝', '0.75' => ' ¾', '0.875' => ' ⅞'];
+                                            $pecahanLabel = $pecahanMap[$custom_tutupan_pecahan] ?? '';
+                                            $displayFraksi = $custom_tutupan_bulat . $pecahanLabel;
+                                        @endphp
+                                        <div class="flex items-center gap-3 p-3 rounded-xl bg-cyan-500/5 border border-cyan-500/20">
+                                            <svg class="w-5 h-5 text-cyan-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                            <div>
+                                                <p class="text-xs text-slate-400">Total putaran tertutup:</p>
+                                                <p class="text-sm font-bold text-cyan-300">{{ $displayFraksi }} putaran <span class="text-slate-500 font-normal">(= {{ $previewTotal }})</span></p>
+                                            </div>
+                                        </div>
+                                    @endif
+
+                                    <p class="text-xs text-slate-400">Masukkan nilai putaran <b>yang sedang tertutup</b> saat ini.</p>
                                 </div>
                             @endif
                         </div>

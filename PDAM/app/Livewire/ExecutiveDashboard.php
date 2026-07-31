@@ -170,7 +170,8 @@ class ExecutiveDashboard extends Component
                 'lng_master' => $log->asetValve->lokasi->longitude ?? null,
                 'lat_input' => $log->latitude,
                 'lng_input' => $log->longitude,
-                'jarak_meter' => $log->jarak_dari_master,
+                // 'jarak_meter' => $log->jarak_dari_master,
+                // 'status_radius' => $log->status_radius,
                 'foto_eviden' => $log->foto_eviden ? \Illuminate\Support\Facades\Storage::url($log->foto_eviden) : null,
                 'foto_eviden_2' => $log->foto_eviden_2 ? \Illuminate\Support\Facades\Storage::url($log->foto_eviden_2) : null,
             ]);

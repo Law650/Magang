@@ -24,11 +24,15 @@ class LogTekananExport implements FromQuery, WithHeadings, WithMapping, WithStyl
 
     private $search;
     private $filter;
+    private $startDate;
+    private $endDate;
 
-    public function __construct(string $search = '', string $filter = '')
+    public function __construct(string $search = '', string $filter = '', string $startDate = '', string $endDate = '')
     {
         $this->search = $search;
         $this->filter = $filter;
+        $this->startDate = $startDate;
+        $this->endDate = $endDate;
     }
 
     public function query()
@@ -44,6 +48,14 @@ class LogTekananExport implements FromQuery, WithHeadings, WithMapping, WithStyl
             $query->whereHas('lokasi', fn ($q) => $q->where('nama_lokasi', 'like', $searchTerm));
         }
 
+        if ($this->startDate !== '') {
+            $query->whereDate('waktu_pengecekan', '>=', $this->startDate);
+        }
+
+        if ($this->endDate !== '') {
+            $query->whereDate('waktu_pengecekan', '<=', $this->endDate);
+        }
+
         return $query->orderBy('waktu_pengecekan', 'desc');
     }
 
@@ -52,6 +64,7 @@ class LogTekananExport implements FromQuery, WithHeadings, WithMapping, WithStyl
         return [
             $log->waktu_pengecekan->format('d/m/Y H:i'),
             $log->lokasi->nama_lokasi ?? '-',
+            // $log->no_sr ?? '-',
             $log->nilai_tekanan,
             ucfirst($log->status),
         ];
@@ -66,12 +79,15 @@ class LogTekananExport implements FromQuery, WithHeadings, WithMapping, WithStyl
             ['Waktu Cetak: ' . now()->format('d F Y H:i')],
             // Row 3: Filter Info
             ['Filter Status: ' . ($this->filter ? ucfirst($this->filter) : 'Semua') . ' | Pencarian: ' . ($this->search ?: '-')],
-            // Row 4: Empty line
+            // Row 4: Filter Waktu
+            ['Periode: ' . ($this->startDate ? \Carbon\Carbon::parse($this->startDate)->format('d M Y') : 'Awal') . ' s/d ' . ($this->endDate ? \Carbon\Carbon::parse($this->endDate)->format('d M Y') : 'Akhir')],
+            // Row 5: Empty line
             [],
-            // Row 5: Column Headers
+            // Row 6: Column Headers
             [
                 'Waktu Pengecekan',
                 'Lokasi',
+                // 'No. SR',
                 'Nilai Tekanan (Bar)',
                 'Status',
             ]
@@ -89,7 +105,7 @@ class LogTekananExport implements FromQuery, WithHeadings, WithMapping, WithStyl
     {
         return [
             // Style for Column Headers
-            5    => [
+            6    => [
                 'font' => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF']],
                 'fill' => [
                     'fillType' => Fill::FILL_SOLID,
@@ -104,6 +120,7 @@ class LogTekananExport implements FromQuery, WithHeadings, WithMapping, WithStyl
             1 => ['font' => ['bold' => true, 'size' => 14]],
             2 => ['font' => ['italic' => true]],
             3 => ['font' => ['italic' => true]],
+            4 => ['font' => ['italic' => true]],
         ];
     }
 
@@ -117,14 +134,15 @@ class LogTekananExport implements FromQuery, WithHeadings, WithMapping, WithStyl
                 $sheet->mergeCells('A1:D1');
                 $sheet->mergeCells('A2:D2');
                 $sheet->mergeCells('A3:D3');
+                $sheet->mergeCells('A4:D4');
                 
-                $sheet->getStyle('A1:A3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                $sheet->getStyle('A1:A4')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
                 // Get highest row
                 $highestRow = $sheet->getHighestRow();
                 
-                if ($highestRow >= 5) {
-                    $cellRange = 'A5:D' . $highestRow;
+                if ($highestRow >= 6) {
+                    $cellRange = 'A6:D' . $highestRow;
                     
                     // Apply borders
                     $sheet->getStyle($cellRange)->applyFromArray([
@@ -137,11 +155,11 @@ class LogTekananExport implements FromQuery, WithHeadings, WithMapping, WithStyl
                     ]);
                     
                     // Alignment for data columns
-                    $sheet->getStyle('A6:A' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-                    $sheet->getStyle('C6:D' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                    $sheet->getStyle('A7:A' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                    $sheet->getStyle('C7:D' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
                     // Add color coding to Status column based on GD
-                    for ($row = 6; $row <= $highestRow; $row++) {
+                    for ($row = 7; $row <= $highestRow; $row++) {
                         $status = $sheet->getCell('D' . $row)->getValue();
                         
                         $color = 'FF64748B'; // Default Slate

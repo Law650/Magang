@@ -26,18 +26,23 @@ class ApiLogValveController extends Controller
             'aset_id' => ['required', 'exists:aset_valves,id'],
             'nama_teknisi' => ['required', 'string', 'max:150'],
             'waktu_kegiatan' => ['required', 'date'],
-            'aksi_kerja' => ['required', 'in:buka,tutup,Buka,Tutup'],
-            'jumlah_putaran' => ['required', 'numeric', 'min:0.01'],
+            'aksi_kerja' => ['required', 'in:buka,tutup,cek,Buka,Tutup,Cek'],
+            'jumlah_putaran' => ['required', 'numeric', 'min:0'],
             'keterangan' => ['nullable', 'string'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'foto_eviden' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:5120'],
             'foto_eviden_2' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:5120'],
-            'kapasitas_full' => ['nullable', 'numeric', 'min:0.01'],
+            'kapasitas_full' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         // Normalize aksi_kerja ke lowercase
         $validated['aksi_kerja'] = strtolower($validated['aksi_kerja']);
+        
+        // Map 'cek' ke 'buka' agar tidak error di kolom ENUM MySQL, karena putaran = 0 tidak akan merubah status
+        if ($validated['aksi_kerja'] === 'cek') {
+            $validated['aksi_kerja'] = 'buka';
+        }
 
         // Handle foto upload
         $fotoPath = null;
@@ -82,6 +87,17 @@ class ApiLogValveController extends Controller
                 'total_tutupan_saat_ini' => round($totalTutupan, 2),
             ]);
 
+            // Jika lokasi belum memiliki koordinat, otomatis update koordinat master
+            if (isset($validated['latitude']) && isset($validated['longitude'])) {
+                $lokasi = $aset->lokasi;
+                if (empty($lokasi->latitude) || empty($lokasi->longitude)) {
+                    $lokasi->update([
+                        'latitude' => $validated['latitude'],
+                        'longitude' => $validated['longitude'],
+                    ]);
+                }
+            }
+
             // Simpan log dengan snapshot
             return LogValve::create([
                 'aset_valve_id' => $aset->id,
@@ -115,8 +131,8 @@ class ApiLogValveController extends Controller
         $log = LogValve::findOrFail($id);
 
         $validated = $request->validate([
-            'aksi_kerja' => ['nullable', 'in:buka,tutup,Buka,Tutup'],
-            'jumlah_putaran' => ['nullable', 'numeric', 'min:0.01'],
+            'aksi_kerja' => ['nullable', 'in:buka,tutup,cek,Buka,Tutup,Cek'],
+            'jumlah_putaran' => ['nullable', 'numeric', 'min:0'],
             'keterangan' => ['nullable', 'string'],
             'foto_eviden' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:5120'],
             'foto_eviden_2' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:5120'],
@@ -124,6 +140,9 @@ class ApiLogValveController extends Controller
 
         if (isset($validated['aksi_kerja'])) {
             $validated['aksi_kerja'] = strtolower($validated['aksi_kerja']);
+            if ($validated['aksi_kerja'] === 'cek') {
+                $validated['aksi_kerja'] = 'buka';
+            }
         }
 
         if ($request->hasFile('foto_eviden')) {

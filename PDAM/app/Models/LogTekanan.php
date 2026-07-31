@@ -31,6 +31,7 @@ class LogTekanan extends Model
         'kekeruhan',
         'keterangan',
         'waktu_pengecekan',
+        'no_sr',
         'latitude',
         'longitude',
         'foto_eviden',

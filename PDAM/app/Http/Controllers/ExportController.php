@@ -17,10 +17,12 @@ class ExportController extends Controller
     {
         $search = $request->query('search', '');
         $filter = $request->query('filter', '');
+        $startDate = $request->query('start_date', '');
+        $endDate = $request->query('end_date', '');
         
         $filename = 'laporan_log_valve_' . now()->format('Y-m-d_His') . '.xlsx';
 
-        return Excel::download(new LogValveExport($search, $filter), $filename);
+        return Excel::download(new LogValveExport($search, $filter, $startDate, $endDate), $filename);
     }
 
     /**
@@ -30,9 +32,11 @@ class ExportController extends Controller
     {
         $search = $request->query('search', '');
         $filter = $request->query('filter', '');
+        $startDate = $request->query('start_date', '');
+        $endDate = $request->query('end_date', '');
         
         $filename = 'laporan_log_tekanan_' . now()->format('Y-m-d_His') . '.xlsx';
 
-        return Excel::download(new LogTekananExport($search, $filter), $filename);
+        return Excel::download(new LogTekananExport($search, $filter, $startDate, $endDate), $filename);
     }
 }

@@ -23,11 +23,15 @@ class LogValveExport implements FromQuery, WithHeadings, WithMapping, WithStyles
 
     private $search;
     private $filter;
+    private $startDate;
+    private $endDate;
 
-    public function __construct(string $search = '', string $filter = '')
+    public function __construct(string $search = '', string $filter = '', string $startDate = '', string $endDate = '')
     {
         $this->search = $search;
         $this->filter = $filter;
+        $this->startDate = $startDate;
+        $this->endDate = $endDate;
     }
 
     public function query()
@@ -35,7 +39,13 @@ class LogValveExport implements FromQuery, WithHeadings, WithMapping, WithStyles
         $query = LogValve::query()->with(['asetValve.lokasi']);
 
         if ($this->filter !== '') {
-            $query->where('aksi_kerja', $this->filter);
+            if ($this->filter === 'cek') {
+                $query->where('aksi_kerja', 'buka')->where('jumlah_putaran', 0);
+            } elseif ($this->filter === 'buka') {
+                $query->where('aksi_kerja', 'buka')->where('jumlah_putaran', '>', 0);
+            } else {
+                $query->where('aksi_kerja', $this->filter);
+            }
         }
 
         if ($this->search !== '') {
@@ -45,6 +55,14 @@ class LogValveExport implements FromQuery, WithHeadings, WithMapping, WithStyles
                     ->orWhereHas('asetValve', fn ($q) => $q->where('nama_aset', 'like', $searchTerm))
                     ->orWhereHas('asetValve.lokasi', fn ($q) => $q->where('nama_lokasi', 'like', $searchTerm));
             });
+        }
+
+        if ($this->startDate !== '') {
+            $query->whereDate('waktu_kegiatan', '>=', $this->startDate);
+        }
+
+        if ($this->endDate !== '') {
+            $query->whereDate('waktu_kegiatan', '<=', $this->endDate);
         }
 
         return $query->orderBy('waktu_kegiatan', 'desc');
@@ -57,11 +75,11 @@ class LogValveExport implements FromQuery, WithHeadings, WithMapping, WithStyles
             $log->nama_teknisi,
             $log->asetValve->nama_aset,
             $log->asetValve->lokasi->nama_lokasi ?? '-',
-            ucfirst($log->aksi_kerja),
+            ($log->aksi_kerja === 'buka' && (float)$log->jumlah_putaran == 0) ? 'Cek' : ucfirst($log->aksi_kerja),
             $log->jumlah_putaran,
             $log->snapshot_sisa_bukaan,
             $log->snapshot_total_tutupan,
-            $log->status_radius,
+            // $log->status_radius, // Fitur dinonaktifkan sementara
             $log->keterangan ?? '-',
         ];
     }
@@ -75,9 +93,11 @@ class LogValveExport implements FromQuery, WithHeadings, WithMapping, WithStyles
             ['Waktu Cetak: ' . now()->format('d F Y H:i')],
             // Row 3: Filter Info
             ['Filter Aksi: ' . ($this->filter ? ucfirst($this->filter) : 'Semua') . ' | Pencarian: ' . ($this->search ?: '-')],
-            // Row 4: Empty line
+            // Row 4: Filter Waktu
+            ['Periode: ' . ($this->startDate ? \Carbon\Carbon::parse($this->startDate)->format('d M Y') : 'Awal') . ' s/d ' . ($this->endDate ? \Carbon\Carbon::parse($this->endDate)->format('d M Y') : 'Akhir')],
+            // Row 5: Empty line
             [],
-            // Row 5: Column Headers
+            // Row 6: Column Headers
             [
                 'Waktu Kegiatan',
                 'Nama Teknisi',
@@ -87,7 +107,7 @@ class LogValveExport implements FromQuery, WithHeadings, WithMapping, WithStyles
                 'Jumlah Putaran',
                 'Sisa Bukaan',
                 'Total Tutupan',
-                'Status Radius',
+                // 'Status Radius', // Fitur dinonaktifkan sementara
                 'Keterangan',
             ]
         ];
@@ -106,7 +126,7 @@ class LogValveExport implements FromQuery, WithHeadings, WithMapping, WithStyles
     {
         return [
             // Style for Column Headers
-            5    => [
+            6    => [
                 'font' => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF']],
                 'fill' => [
                     'fillType' => Fill::FILL_SOLID,
@@ -121,6 +141,7 @@ class LogValveExport implements FromQuery, WithHeadings, WithMapping, WithStyles
             1 => ['font' => ['bold' => true, 'size' => 14]],
             2 => ['font' => ['italic' => true]],
             3 => ['font' => ['italic' => true]],
+            4 => ['font' => ['italic' => true]],
         ];
     }
 
@@ -131,17 +152,18 @@ class LogValveExport implements FromQuery, WithHeadings, WithMapping, WithStyles
                 $sheet = $event->sheet->getDelegate();
                 
                 // Merge title cells
-                $sheet->mergeCells('A1:J1');
-                $sheet->mergeCells('A2:J2');
-                $sheet->mergeCells('A3:J3');
+                $sheet->mergeCells('A1:I1');
+                $sheet->mergeCells('A2:I2');
+                $sheet->mergeCells('A3:I3');
+                $sheet->mergeCells('A4:I4');
                 
-                $sheet->getStyle('A1:A3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                $sheet->getStyle('A1:A4')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
                 // Get highest row and column
                 $highestRow = $sheet->getHighestRow();
                 
-                if ($highestRow >= 5) {
-                    $cellRange = 'A5:J' . $highestRow;
+                if ($highestRow >= 6) {
+                    $cellRange = 'A6:I' . $highestRow;
                     
                     // Apply borders
                     $sheet->getStyle($cellRange)->applyFromArray([
@@ -154,10 +176,10 @@ class LogValveExport implements FromQuery, WithHeadings, WithMapping, WithStyles
                     ]);
                     
                     // Alignment for data columns
-                    $sheet->getStyle('A6:A' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-                    $sheet->getStyle('E6:E' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-                    $sheet->getStyle('F6:H' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-                    $sheet->getStyle('I6:I' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                    $sheet->getStyle('A7:A' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                    $sheet->getStyle('E7:E' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                    $sheet->getStyle('F7:H' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+                    // $sheet->getStyle('I7:I' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
                 }
             },
         ];

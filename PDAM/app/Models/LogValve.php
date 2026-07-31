@@ -94,6 +94,10 @@ class LogValve extends Model
      */
     public function getJarakDariMasterAttribute(): ?float
     {
+        // FITUR DINONAKTIFKAN SEMENTARA
+        return null;
+        
+        /*
         if (!$this->latitude || !$this->longitude || 
             !$this->asetValve || !$this->asetValve->lokasi || 
             !$this->asetValve->lokasi->latitude || !$this->asetValve->lokasi->longitude) {
@@ -114,7 +118,27 @@ class LogValve extends Model
         $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
 
         return $earthRadius * $c; // Jarak dalam meter
+        */
     }
 
-
+    /**
+     * Mendapatkan status radius (Maks 8 meter).
+     *
+     * @return string
+     */
+    public function getStatusRadiusAttribute(): string
+    {
+        // FITUR DINONAKTIFKAN SEMENTARA
+        return '-';
+        
+        /*
+        $jarak = $this->jarak_dari_master;
+        
+        if ($jarak === null) {
+            return 'Tidak Diketahui';
+        }
+        
+        return $jarak > 8 ? 'Di Luar Radius' : 'Di Dalam Radius';
+        */
+    }
 }

@@ -18,10 +18,12 @@ class ManajemenAset extends Component
     public string $nama_aset = '';
     public string $nama_lokasi = '';
     public string $kapasitas_full_putaran = '';
+    public string $kapasitas_full_pecahan = '0';
     public string $latitude = '';
     public string $longitude = '';
     public string $kondisi_awal = 'buka_full';
-    public string $custom_tutupan = '';
+    public string $custom_tutupan_bulat = '';
+    public string $custom_tutupan_pecahan = '0';
 
     /**
      * Reset pagination when search changes.
@@ -50,7 +52,14 @@ class ManajemenAset extends Component
         $this->editingId = $aset->id;
         $this->nama_aset = $aset->nama_aset;
         $this->nama_lokasi = $aset->lokasi->nama_lokasi;
-        $this->kapasitas_full_putaran = (string) $aset->kapasitas_full_putaran;
+        
+        // Pisahkan kapasitas full ke bulat + pecahan
+        $kapFull = (float) $aset->kapasitas_full_putaran;
+        $kapBulat = (int) floor($kapFull);
+        $kapPecahan = round($kapFull - $kapBulat, 3);
+        $this->kapasitas_full_putaran = (string) $kapBulat;
+        $this->kapasitas_full_pecahan = (string) $kapPecahan;
+        
         $this->latitude = (string) ($aset->lokasi->latitude ?? '');
         $this->longitude = (string) ($aset->lokasi->longitude ?? '');
 
@@ -65,12 +74,17 @@ class ManajemenAset extends Component
         $validated = $this->validate([
             'nama_aset' => ['required', 'string', 'max:150'],
             'nama_lokasi' => ['required', 'string', 'max:150'],
-            'kapasitas_full_putaran' => ['required', 'numeric', 'min:0.01', 'regex:/^\d+(\.\d{1,2})?$/'],
+            'kapasitas_full_putaran' => ['required', 'integer', 'min:0'],
+            'kapasitas_full_pecahan' => ['nullable', 'in:0,0.125,0.25,0.375,0.5,0.625,0.75,0.875'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'kondisi_awal' => ['nullable', 'in:buka_full,tutup_full,custom'],
-            'custom_tutupan' => ['nullable', 'numeric', 'min:0'],
+            'custom_tutupan_bulat' => ['nullable', 'integer', 'min:0'],
+            'custom_tutupan_pecahan' => ['nullable', 'in:0,0.125,0.25,0.375,0.5,0.625,0.75,0.875'],
         ]);
+
+        // Gabungkan kapasitas full: bulat + pecahan
+        $kapasitasFull = (float) $validated['kapasitas_full_putaran'] + (float) ($this->kapasitas_full_pecahan);
 
         $latVal = $validated['latitude'] !== '' && $validated['latitude'] !== null ? $validated['latitude'] : null;
         $lngVal = $validated['longitude'] !== '' && $validated['longitude'] !== null ? $validated['longitude'] : null;
@@ -90,24 +104,24 @@ class ManajemenAset extends Component
             $aset->update([
                 'lokasi_id' => $lokasi->id,
                 'nama_aset' => $validated['nama_aset'],
-                'kapasitas_full_putaran' => $validated['kapasitas_full_putaran'],
+                'kapasitas_full_putaran' => $kapasitasFull,
             ]);
         } else {
             $totalTutupan = 0;
             if ($this->kondisi_awal === 'tutup_full') {
-                $totalTutupan = $validated['kapasitas_full_putaran'];
-            } elseif ($this->kondisi_awal === 'custom' && $this->custom_tutupan !== '') {
-                $totalTutupan = (float) $this->custom_tutupan;
+                $totalTutupan = $kapasitasFull;
+            } elseif ($this->kondisi_awal === 'custom' && $this->custom_tutupan_bulat !== '') {
+                $totalTutupan = (float) $this->custom_tutupan_bulat + (float) $this->custom_tutupan_pecahan;
                 // clamp totalTutupan so it doesn't exceed kapasitas
-                if ($totalTutupan > (float) $validated['kapasitas_full_putaran']) {
-                    $totalTutupan = (float) $validated['kapasitas_full_putaran'];
+                if ($totalTutupan > $kapasitasFull) {
+                    $totalTutupan = $kapasitasFull;
                 }
             }
 
             AsetValve::create([
                 'lokasi_id' => $lokasi->id,
                 'nama_aset' => $validated['nama_aset'],
-                'kapasitas_full_putaran' => $validated['kapasitas_full_putaran'],
+                'kapasitas_full_putaran' => $kapasitasFull,
                 'total_tutupan_saat_ini' => $totalTutupan,
             ]);
         }
@@ -133,10 +147,12 @@ class ManajemenAset extends Component
         $this->nama_aset = '';
         $this->nama_lokasi = '';
         $this->kapasitas_full_putaran = '';
+        $this->kapasitas_full_pecahan = '0';
         $this->latitude = '';
         $this->longitude = '';
         $this->kondisi_awal = 'buka_full';
-        $this->custom_tutupan = '';
+        $this->custom_tutupan_bulat = '';
+        $this->custom_tutupan_pecahan = '0';
         $this->resetValidation();
     }
 

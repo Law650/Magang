@@ -81,16 +81,33 @@
                 class="w-full pl-10 pr-4 py-2.5 bg-slate-900/50 border border-slate-700/50 rounded-xl text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-500/40 transition"
             >
         </div>
+        {{-- Date Filters --}}
+        <div class="flex items-center gap-2">
+            <input 
+                type="date" 
+                wire:model.live="startDate"
+                class="px-3 py-2.5 bg-slate-900/50 border border-slate-700/50 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-500/40 transition"
+                title="Tanggal Mulai"
+            >
+            <span class="text-slate-500">-</span>
+            <input 
+                type="date" 
+                wire:model.live="endDate"
+                class="px-3 py-2.5 bg-slate-900/50 border border-slate-700/50 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-500/40 transition"
+                title="Tanggal Akhir"
+            >
+        </div>
 
         {{-- Pills Filter --}}
         <div class="flex items-center gap-1 p-1 bg-slate-900/50 border border-slate-700/50 rounded-xl">
             <button wire:click="setFilter('')" class="px-4 py-2 text-xs font-semibold rounded-lg transition-all duration-200 {{ $filterAksi === '' ? 'bg-cyan-500 text-white shadow-sm' : 'text-slate-400 hover:text-white' }}">Semua</button>
             <button wire:click="setFilter('buka')" class="px-4 py-2 text-xs font-semibold rounded-lg transition-all duration-200 {{ $filterAksi === 'buka' ? 'bg-emerald-500 text-white shadow-sm' : 'text-slate-400 hover:text-white' }}">Buka</button>
             <button wire:click="setFilter('tutup')" class="px-4 py-2 text-xs font-semibold rounded-lg transition-all duration-200 {{ $filterAksi === 'tutup' ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-400 hover:text-white' }}">Tutup</button>
+            <button wire:click="setFilter('cek')" class="px-4 py-2 text-xs font-semibold rounded-lg transition-all duration-200 {{ $filterAksi === 'cek' ? 'bg-blue-500 text-white shadow-sm' : 'text-slate-400 hover:text-white' }}">Cek</button>
         </div>
 
         {{-- Export Button --}}
-        <a href="{{ route('export.log-valve', ['search' => $search, 'filter' => $filterAksi]) }}"
+        <a href="{{ route('export.log-valve', ['search' => $search, 'filter' => $filterAksi, 'start_date' => $startDate, 'end_date' => $endDate]) }}"
            target="_blank" download
            class="flex items-center justify-center gap-2 px-5 py-2.5 bg-slate-800/80 border border-slate-700/50 text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-700/80 hover:text-white transition-all duration-200"
         >
@@ -130,10 +147,11 @@
                                 'lokasi' => $log->asetValve->lokasi->nama_lokasi ?? '-',
                                 'latitude' => $log->latitude,
                                 'longitude' => $log->longitude,
-                                'aksi' => $log->aksi_kerja,
+                                'aksi' => ($log->aksi_kerja === 'buka' && (float)$log->jumlah_putaran == 0) ? 'cek' : $log->aksi_kerja,
                                 'putaran' => \App\Helpers\FormatHelper::putaran($log->jumlah_putaran),
                                 'sisa_bukaan' => \App\Helpers\FormatHelper::putaran($log->snapshot_sisa_bukaan),
                                 'total_tutupan' => \App\Helpers\FormatHelper::putaran($log->snapshot_total_tutupan),
+                                // 'status_radius' => $log->status_radius,
                                 'foto_1' => $log->foto_eviden ? Storage::url($log->foto_eviden) : null,
                                 'foto_2' => $log->foto_eviden_2 ? Storage::url($log->foto_eviden_2) : null,
                             ]) }}; showDetailModal = true;">
@@ -152,7 +170,12 @@
                                 </span>
                             </td>
                             <td class="px-5 py-4 text-center">
-                                @if ($log->aksi_kerja === 'buka')
+                                @if ($log->aksi_kerja === 'buka' && (float)$log->jumlah_putaran == 0)
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-500/10 text-xs font-semibold text-blue-400 border border-blue-500/20">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                        Cek
+                                    </span>
+                                @elseif ($log->aksi_kerja === 'buka')
                                     <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 text-xs font-semibold text-emerald-400 border border-emerald-500/20">
                                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
                                         Buka
@@ -178,6 +201,9 @@
                                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                                                 Maps
                                             </a>
+                                            {{-- <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium {{ $log->status_radius === 'Di Dalam Radius' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400' }}" title="Jarak Aktual: {{ $log->jarak_dari_master ? number_format($log->jarak_dari_master, 2) . ' m' : '-' }}">
+                                                {{ $log->status_radius }}
+                                            </span> --}}
                                         </div>
                                     </div>
                                 @else
@@ -274,7 +300,7 @@
                                     <div class="grid grid-cols-2 gap-4">
                                         <div>
                                             <p class="text-xs text-slate-400 mb-1">Aksi Kerja</p>
-                                            <span :class="selectedLog?.aksi === 'buka' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'" class="inline-flex px-2.5 py-1 rounded-md text-xs font-semibold border" x-text="selectedLog?.aksi === 'buka' ? 'Buka' : 'Tutup'"></span>
+                                            <span :class="selectedLog?.aksi === 'buka' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : (selectedLog?.aksi === 'tutup' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20')" class="inline-flex px-2.5 py-1 rounded-md text-xs font-semibold border" x-text="selectedLog?.aksi === 'buka' ? 'Buka' : (selectedLog?.aksi === 'tutup' ? 'Tutup' : 'Cek')"></span>
                                         </div>
                                         <div>
                                             <p class="text-xs text-slate-400 mb-1">Jumlah Putaran</p>
@@ -303,7 +329,10 @@
                                             <p class="text-slate-300 font-mono text-sm" x-text="selectedLog?.longitude || '-'"></p>
                                         </div>
                                     </div>
-
+                                    {{-- <div class="flex justify-between items-center mt-2 pt-2 border-t border-slate-700/50">
+                                        <p class="text-xs text-slate-400">Status Radius</p>
+                                        <span :class="selectedLog?.status_radius === 'Di Dalam Radius' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-red-500/20 text-red-400 border-red-500/30'" class="inline-flex px-2 py-1 rounded-md text-xs font-semibold border" x-text="selectedLog?.status_radius || 'Tidak Diketahui'"></span>
+                                    </div> --}}
                                 </div>
                             </div>
 

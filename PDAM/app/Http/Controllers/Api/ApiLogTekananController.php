@@ -31,6 +31,7 @@ class ApiLogTekananController extends Controller
             'status_aliran' => ['nullable', 'string', 'in:mengalir,tidak_mengalir'],
             'kekeruhan' => ['nullable', 'string', 'in:jernih,keruh'],
             'keterangan' => ['nullable', 'string'],
+            'no_sr' => ['nullable', 'string'],
         ]);
 
         // Handle foto upload
@@ -65,6 +66,7 @@ class ApiLogTekananController extends Controller
             'status_aliran' => $validated['status_aliran'] ?? null,
             'kekeruhan' => $validated['kekeruhan'] ?? null,
             'waktu_pengecekan' => $validated['waktu_pengecekan'],
+            'no_sr' => $validated['no_sr'] ?? null,
             'keterangan' => $validated['keterangan'] ?? null,
             'latitude' => $validated['latitude'] ?? null,
             'longitude' => $validated['longitude'] ?? null,
@@ -104,6 +106,7 @@ class ApiLogTekananController extends Controller
                     'status_aliran' => $latestLog->status_aliran,
                     'kekeruhan' => $latestLog->kekeruhan,
                     'keterangan' => $latestLog->keterangan,
+                    'no_sr' => $latestLog->no_sr,
                     'waktu_pengecekan' => $latestLog->waktu_pengecekan,
                     'nama_teknisi' => $latestLog->nama_teknisi,
                     'foto_eviden' => $latestLog->foto_eviden ? asset('storage/' . $latestLog->foto_eviden) : null,
@@ -129,6 +132,7 @@ class ApiLogTekananController extends Controller
             'status_aliran' => ['nullable', 'string', 'in:mengalir,tidak_mengalir'],
             'kekeruhan' => ['nullable', 'string', 'in:jernih,keruh'],
             'keterangan' => ['nullable', 'string'],
+            'no_sr' => ['nullable', 'string'],
             'foto_eviden' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:5120'],
         ]);
 

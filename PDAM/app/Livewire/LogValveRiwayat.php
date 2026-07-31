@@ -12,11 +12,23 @@ class LogValveRiwayat extends Component
 
     public string $search = '';
     public string $filterAksi = '';
+    public string $startDate = '';
+    public string $endDate = '';
 
     /**
      * Reset pagination when filters change.
      */
     public function updatedSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedStartDate(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedEndDate(): void
     {
         $this->resetPage();
     }
@@ -45,7 +57,13 @@ class LogValveRiwayat extends Component
         $query = LogValve::with(['asetValve.lokasi']);
 
         if ($this->filterAksi !== '') {
-            $query->where('aksi_kerja', $this->filterAksi);
+            if ($this->filterAksi === 'cek') {
+                $query->where('aksi_kerja', 'buka')->where('jumlah_putaran', 0);
+            } elseif ($this->filterAksi === 'buka') {
+                $query->where('aksi_kerja', 'buka')->where('jumlah_putaran', '>', 0);
+            } else {
+                $query->where('aksi_kerja', $this->filterAksi);
+            }
         }
 
         if ($this->search !== '') {
@@ -55,6 +73,14 @@ class LogValveRiwayat extends Component
                     ->orWhereHas('asetValve', fn ($q) => $q->where('nama_aset', 'like', $searchTerm))
                     ->orWhereHas('asetValve.lokasi', fn ($q) => $q->where('nama_lokasi', 'like', $searchTerm));
             });
+        }
+
+        if ($this->startDate !== '') {
+            $query->whereDate('waktu_kegiatan', '>=', $this->startDate);
+        }
+
+        if ($this->endDate !== '') {
+            $query->whereDate('waktu_kegiatan', '<=', $this->endDate);
         }
 
         return $query;
@@ -69,8 +95,9 @@ class LogValveRiwayat extends Component
         // Stats based on filtered data
         $statsQuery = $this->buildQuery();
         $totalLog = $statsQuery->count();
-        $jumlahBuka = (clone $statsQuery)->where('aksi_kerja', 'buka')->count();
+        $jumlahBuka = (clone $statsQuery)->where('aksi_kerja', 'buka')->where('jumlah_putaran', '>', 0)->count();
         $jumlahTutup = (clone $statsQuery)->where('aksi_kerja', 'tutup')->count();
+        $jumlahCek = (clone $statsQuery)->where('aksi_kerja', 'buka')->where('jumlah_putaran', 0)->count();
         $rataPutaran = round((clone $statsQuery)->avg('jumlah_putaran') ?? 0, 2);
 
         return view('livewire.log-valve-riwayat', [
@@ -78,6 +105,7 @@ class LogValveRiwayat extends Component
             'totalLog' => $totalLog,
             'jumlahBuka' => $jumlahBuka,
             'jumlahTutup' => $jumlahTutup,
+            'jumlahCek' => $jumlahCek,
             'rataPutaran' => $rataPutaran,
         ])->layout('components.layouts.app', ['title' => 'Log Aktivitas Valve']);
     }

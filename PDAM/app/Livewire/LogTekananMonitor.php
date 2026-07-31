@@ -12,11 +12,23 @@ class LogTekananMonitor extends Component
 
     public string $search = '';
     public string $filterStatus = '';
+    public string $startDate = '';
+    public string $endDate = '';
 
     /**
      * Reset pagination when filters change.
      */
     public function updatedSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedStartDate(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedEndDate(): void
     {
         $this->resetPage();
     }
@@ -53,6 +65,14 @@ class LogTekananMonitor extends Component
             $query->where(function ($q) use ($searchTerm) {
                 $q->whereHas('lokasi', fn ($q) => $q->where('nama_lokasi', 'like', $searchTerm));
             });
+        }
+
+        if ($this->startDate !== '') {
+            $query->whereDate('waktu_pengecekan', '>=', $this->startDate);
+        }
+
+        if ($this->endDate !== '') {
+            $query->whereDate('waktu_pengecekan', '<=', $this->endDate);
         }
 
         return $query;
