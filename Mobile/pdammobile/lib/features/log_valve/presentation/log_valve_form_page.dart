@@ -31,13 +31,15 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
   final _formKey = GlobalKey<FormState>();
   final _namaTeknisiController = TextEditingController();
   final _keteranganController = TextEditingController();
+  final _latController = TextEditingController();
+  final _lngController = TextEditingController();
 
   bool _isTimeManuallyPicked = false;
   String? _selectedNamaLokasi;
   AsetValve? _selectedAset;
   double _kapasitasFull = 0.0;
   double _bukaanSaatIni = 0.0;
-  int _aksiKerjaIndex = 0; // 0: Buka, 1: Tutup
+  int _aksiKerjaIndex = 0; // 0: Buka, 1: Tutup, 2: Cek (Update Koordinat & Foto)
   DateTime _waktuKegiatan = DateTime.now();
   String? _fotoPath;
   String? _fotoPath2;
@@ -91,7 +93,7 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
     _jumlahPutaran = (map['jumlah_putaran'] as num?)?.toDouble() ?? 0.0;
     
     final aksi = map['aksi_kerja']?.toString().toLowerCase() ?? 'buka';
-    _aksiKerjaIndex = aksi == 'tutup' ? 1 : 0;
+    _aksiKerjaIndex = aksi == 'tutup' ? 1 : (aksi == 'cek' ? 2 : 0);
     
     if (map['waktu_kegiatan'] != null) {
       _waktuKegiatan = DateTime.parse(map['waktu_kegiatan']);
@@ -107,11 +109,14 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
   void dispose() {
     _namaTeknisiController.dispose();
     _keteranganController.dispose();
+    _latController.dispose();
+    _lngController.dispose();
     super.dispose();
   }
 
   void _validateActionToggle() {
-    if (_aksiKerjaIndex == 0 && _bukaanSaatIni >= _kapasitasFull) {
+    if (_aksiKerjaIndex == 2) return;
+    if (_aksiKerjaIndex == 0 && _bukaanSaatIni >= _kapasitasFull && _kapasitasFull > 0) {
       setState(() => _aksiKerjaIndex = 1);
     } else if (_aksiKerjaIndex == 1 && _bukaanSaatIni <= 0) {
       setState(() => _aksiKerjaIndex = 0);
@@ -136,12 +141,14 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
       _bukaanSaatIni = _selectedAset!.sisaBukaan ?? 0.0;
       
       // Sesuaikan nilai default input jumlah putaran dan aksi kerja
-      if (_bukaanSaatIni >= _kapasitasFull && _kapasitasFull > 0) {
-        _aksiKerjaIndex = 1; // Paksa Tutup jika Full Buka
-      } else if (_bukaanSaatIni <= 0) {
-        _aksiKerjaIndex = 0; // Paksa Buka jika Full Tutup
+      if (_aksiKerjaIndex != 2) {
+        if (_bukaanSaatIni >= _kapasitasFull && _kapasitasFull > 0) {
+          _aksiKerjaIndex = 1; // Paksa Tutup jika Full Buka
+        } else if (_bukaanSaatIni <= 0) {
+          _aksiKerjaIndex = 0; // Paksa Buka jika Full Tutup
+        }
       }
-      _jumlahPutaran = 0.0;
+
     } else {
       // Urutkan berdasarkan waktu_kegiatan (terbaru di atas)
       valveLogs.sort((a, b) {
@@ -162,6 +169,8 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
           
       _bukaanSaatIni = newBukaan.clamp(0.0, _kapasitasFull);
     }
+    
+    _jumlahPutaran = 0.0; // Reset ke 0 saat pilih valve baru
     _validateActionToggle();
   }
 
@@ -254,7 +263,7 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
       _showError('Kedua foto (Bukti 1 dan Bukti 2) wajib diambil');
       return;
     }
-    if (_jumlahPutaran <= 0) {
+    if (_aksiKerjaIndex != 2 && _jumlahPutaran <= 0) {
       _showError('Jumlah putaran harus lebih dari 0');
       return;
     }
@@ -274,11 +283,15 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
         'waktu_kegiatan': (_isTimeManuallyPicked ? _waktuKegiatan : DateTime.now()).toIso8601String(),
         'kapasitas_full': _kapasitasFull,
         'bukaan_saat_ini': _bukaanSaatIni,
-        'aksi_kerja': _aksiKerjaIndex == 0 ? 'Buka' : 'Tutup',
-        'jumlah_putaran': _jumlahPutaran,
+        'aksi_kerja': _aksiKerjaIndex == 0 ? 'Buka' : (_aksiKerjaIndex == 1 ? 'Tutup' : 'Cek'),
+        'jumlah_putaran': _aksiKerjaIndex == 2 ? 0.0 : _jumlahPutaran,
         'keterangan': _keteranganController.text.trim(),
-        'latitude': gpsState.latitude,
-        'longitude': gpsState.longitude,
+        'latitude': _aksiKerjaIndex == 2 && _latController.text.isNotEmpty 
+            ? (double.tryParse(_latController.text) ?? gpsState.latitude) 
+            : gpsState.latitude,
+        'longitude': _aksiKerjaIndex == 2 && _lngController.text.isNotEmpty 
+            ? (double.tryParse(_lngController.text) ?? gpsState.longitude) 
+            : gpsState.longitude,
       };
 
       if (widget.editLog != null) {
@@ -339,7 +352,7 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
         _selectedAset = null;
         _kapasitasFull = 0.0;
         _bukaanSaatIni = 0.0;
-        _aksiKerjaIndex = 0;
+        if (_aksiKerjaIndex != 2) _aksiKerjaIndex = 0;
         _jumlahPutaran = 0.0;
         _keteranganController.clear();
         _fotoPath = null;
@@ -505,7 +518,8 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
                     ),
                     const SizedBox(height: 20),
 
-                    _buildSectionLabel('Pilih Jenis Pipa GV *'),
+                    if (_selectedNamaLokasi != null) ...[
+                      _buildSectionLabel('Pilih Jenis Pipa GV *'),
                     const SizedBox(height: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -575,7 +589,7 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
                     const SizedBox(height: 4),
                     Center(
                       child: Text(
-                        'Mendukung desimal · Auto-isi dari data valve (dapat diubah manual)',
+                        'Max Putaran GV',
                         style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textHint, fontSize: 11),
                       ),
                     ),
@@ -614,63 +628,159 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
 
                     _buildSectionLabel('Aksi Lapangan *'),
                     const SizedBox(height: 8),
-                    CustomToggleButton(
-                      option1Text: 'Buka',
-                      option1Icon: Icons.arrow_upward,
-                      option1Color: AppColors.accentGreen,
-                      option2Text: 'Tutup',
-                      option2Icon: Icons.arrow_downward,
-                      option2Color: AppColors.statusKritis,
-                      selectedIndex: _aksiKerjaIndex,
-                      disableOption1: _bukaanSaatIni >= _kapasitasFull && _kapasitasFull > 0,
-                      disableOption2: _bukaanSaatIni <= 0,
-                      onChanged: (idx) => setState(() => _aksiKerjaIndex = idx),
-                    ),
-                    const SizedBox(height: 20),
-
-                    _buildSectionLabel('Jumlah Putaran Buka/ Tutup *'),
-                    const SizedBox(height: 8),
-                    FractionalCounterInput(
-                      value: _jumlahPutaran,
-                      onChanged: (val) => setState(() => _jumlahPutaran = val),
-                    ),
-                    const SizedBox(height: 4),
-                    Center(
-                      child: Text(
-                        'Mendukung desimal (Contoh: 1/4 putaran = 0.25, 1/2 putaran = 0.5, 3/4 putaran = 0.75. 1 putaran = 1.0)',
-                        style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textHint),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Expanded(child: _buildSectionLabel('Estimasi Total Akumulasi Putaran')),
-                        Text(' (Otomatis dihitung)', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textHint, fontSize: 10)),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                       decoration: BoxDecoration(
-                        color: AppColors.background,
+                        color: AppColors.surface,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: AppColors.cardBorder),
                       ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        _selectedAset != null && _jumlahPutaran > 0 
-                            ? 'Sisa Bukaan: ${(_bukaanSaatIni + (_aksiKerjaIndex == 0 ? _jumlahPutaran : -_jumlahPutaran)).clamp(0.0, _kapasitasFull)} Putaran' 
-                            : '— Pilih valve & masukkan putaran —',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: _selectedAset != null && _jumlahPutaran > 0 ? AppColors.textPrimary : AppColors.textHint,
-                          fontWeight: _selectedAset != null && _jumlahPutaran > 0 ? FontWeight.bold : FontWeight.normal,
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<int>(
+                          isExpanded: true,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          value: _aksiKerjaIndex,
+                          items: [
+                            DropdownMenuItem(
+                              value: 0,
+                              enabled: !(_bukaanSaatIni >= _kapasitasFull && _kapasitasFull > 0),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.arrow_upward, color: AppColors.accentGreen, size: 20),
+                                  const SizedBox(width: 8),
+                                  const Text('Buka Valve', style: TextStyle(color: AppColors.textPrimary)),
+                                ],
+                              ),
+                            ),
+                            DropdownMenuItem(
+                              value: 1,
+                              enabled: !(_bukaanSaatIni <= 0),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.arrow_downward, color: AppColors.statusKritis, size: 20),
+                                  const SizedBox(width: 8),
+                                  const Text('Tutup Valve', style: TextStyle(color: AppColors.textPrimary)),
+                                ],
+                              ),
+                            ),
+                            DropdownMenuItem(
+                              value: 2,
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.location_on, color: AppColors.primary, size: 20),
+                                  const SizedBox(width: 8),
+                                  const Text('Cek (Update Koordinat & Foto)', style: TextStyle(color: AppColors.textPrimary)),
+                                ],
+                              ),
+                            ),
+                          ],
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() {
+                                _aksiKerjaIndex = val;
+                                _jumlahPutaran = 0.0; // Reset ke 0 saat ganti aksi
+                              });
+                            }
+                          },
                         ),
                       ),
                     ),
                     const SizedBox(height: 20),
+
+                    if (_aksiKerjaIndex != 2) ...[
+                      _buildSectionLabel('Jumlah Putaran Buka/ Tutup *'),
+                      const SizedBox(height: 8),
+                      FractionalCounterInput(
+                        value: _jumlahPutaran,
+                        max: _kapasitasFull > 0 
+                            ? (_aksiKerjaIndex == 0 ? (_kapasitasFull - _bukaanSaatIni) : _bukaanSaatIni) 
+                            : 9999.0,
+                        onChanged: (val) => setState(() => _jumlahPutaran = val),
+                      ),
+                      const SizedBox(height: 4),
+                      Center(
+                        child: Text(
+                          'Mendukung desimal (Contoh: 1/4 putaran = 0.25, 1/2 putaran = 0.5, 3/4 putaran = 0.75. 1 putaran = 1.0)',
+                          style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textHint),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+
+                    if (_aksiKerjaIndex != 2) ...[
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Expanded(child: _buildSectionLabel('Estimasi Total Akumulasi Putaran')),
+                          Text(' (Otomatis dihitung)', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textHint, fontSize: 10)),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        decoration: BoxDecoration(
+                          color: AppColors.background,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.cardBorder),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          _selectedAset != null && _jumlahPutaran > 0 
+                              ? 'Sisa Bukaan: ${(_bukaanSaatIni + (_aksiKerjaIndex == 0 ? _jumlahPutaran : -_jumlahPutaran)).clamp(0.0, _kapasitasFull)} Putaran' 
+                              : '— Pilih valve & masukkan putaran —',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: _selectedAset != null && _jumlahPutaran > 0 ? AppColors.textPrimary : AppColors.textHint,
+                            fontWeight: _selectedAset != null && _jumlahPutaran > 0 ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+
+                    if (_aksiKerjaIndex == 2 && (_selectedAset == null || _selectedAset!.latitude == null || _selectedAset!.longitude == null)) ...[
+                      _buildSectionLabel('Titik Koordinat (Latitude & Longitude)'),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _latController,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                              decoration: const InputDecoration(hintText: 'Cth: -6.9090'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _lngController,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                              decoration: const InputDecoration(hintText: 'Cth: 109.3816'),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            if (gpsState is GpsSuccess) {
+                              _latController.text = gpsState.latitude.toString();
+                              _lngController.text = gpsState.longitude.toString();
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Sinyal GPS belum stabil atau aktif.')),
+                              );
+                              ref.read(gpsServiceProvider.notifier).captureLocation(context);
+                            }
+                          },
+                          icon: const Icon(Icons.my_location),
+                          label: const Text('Gunakan Lokasi Saat Ini'),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
 
                     _buildSectionLabel('Keterangan / Catatan Kondisi (Opsional)'),
                     const SizedBox(height: 8),
@@ -759,6 +869,7 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
                         ),
                       ],
                     ),
+                    ],
                   ],
                 ),
               ),

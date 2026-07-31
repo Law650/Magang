@@ -12,6 +12,7 @@ import '../../../core/models/queued_log.dart';
 import '../../../core/widgets/gps_status_widget.dart';
 import '../../../core/widgets/ui_components.dart';
 import '../../../core/utils/watermark_utils.dart';
+import '../../../core/utils/geo_utils.dart';
 import '../../../core/widgets/searchable_bottom_sheet.dart';
 import '../../camera/presentation/strict_camera_page.dart';
 import '../../camera/presentation/preview_watermark_page.dart';
@@ -31,6 +32,7 @@ class LogTekananFormPage extends ConsumerStatefulWidget {
 class _LogTekananFormPageState extends ConsumerState<LogTekananFormPage> {
   final _formKey = GlobalKey<FormState>();
   final _namaTeknisiController = TextEditingController();
+  final _noSrController = TextEditingController();
   final _keteranganController = TextEditingController();
   final _latitudeController = TextEditingController();
   final _longitudeController = TextEditingController();
@@ -65,6 +67,7 @@ class _LogTekananFormPageState extends ConsumerState<LogTekananFormPage> {
     final map = log.payloadFields;
     
     _namaTeknisiController.text = map['nama_teknisi'] ?? '';
+    _noSrController.text = map['no_sr'] ?? '';
     _keteranganController.text = map['keterangan'] ?? '';
     
     // Reconstruct selected Lokasi to populate the dropdown
@@ -94,6 +97,7 @@ class _LogTekananFormPageState extends ConsumerState<LogTekananFormPage> {
   @override
   void dispose() {
     _namaTeknisiController.dispose();
+    _noSrController.dispose();
     _keteranganController.dispose();
     _latitudeController.dispose();
     _longitudeController.dispose();
@@ -191,6 +195,7 @@ class _LogTekananFormPageState extends ConsumerState<LogTekananFormPage> {
 
     Uint8List? rawBytes;
     if (source == 'camera') {
+      if (!mounted) return;
       rawBytes = await Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => const StrictCameraPage()),
@@ -255,6 +260,22 @@ class _LogTekananFormPageState extends ConsumerState<LogTekananFormPage> {
       _showError('Pilih Lokasi terlebih dahulu');
       return;
     }
+    
+    if (_latitudeController.text.isNotEmpty) {
+      final lat = double.tryParse(_latitudeController.text);
+      if (lat == null || !GeoUtils.isValidLatitude(lat)) {
+        _showError('Latitude tidak valid. Harus antara -90.0 hingga 90.0');
+        return;
+      }
+    }
+    if (_longitudeController.text.isNotEmpty) {
+      final lng = double.tryParse(_longitudeController.text);
+      if (lng == null || !GeoUtils.isValidLongitude(lng)) {
+        _showError('Longitude tidak valid. Harus antara -180.0 hingga 180.0');
+        return;
+      }
+    }
+
     if (_fotoPath == null) {
       _showError('Foto bukti wajib diambil');
       return;
@@ -274,6 +295,7 @@ class _LogTekananFormPageState extends ConsumerState<LogTekananFormPage> {
         'waktu_pengecekan': (_isTimeManuallyPicked ? _waktuPengecekan : DateTime.now()).toIso8601String(),
         'nilai_tekanan': _tekananAir,
         'status_aliran': _aliranIndex == 0 ? 'mengalir' : 'tidak_mengalir',
+        'no_sr': _noSrController.text.trim(),
         'keterangan': _keteranganController.text.trim(),
         'latitude': _latitudeController.text.isNotEmpty ? double.tryParse(_latitudeController.text) : gpsState.latitude,
         'longitude': _longitudeController.text.isNotEmpty ? double.tryParse(_longitudeController.text) : gpsState.longitude,
@@ -334,6 +356,7 @@ class _LogTekananFormPageState extends ConsumerState<LogTekananFormPage> {
         _selectedLokasi = null;
         _tekananAir = 0.0;
         _aliranIndex = 0;
+        _noSrController.clear();
         _keteranganController.clear();
         _latitudeController.clear();
         _longitudeController.clear();
@@ -629,6 +652,19 @@ class _LogTekananFormPageState extends ConsumerState<LogTekananFormPage> {
                       onChanged: (idx) => setState(() => _aliranIndex = idx),
                     ),
                     const SizedBox(height: 24),
+
+                    /*
+                    _buildSectionLabel('Nomor Sambung Rumah (No. SR)'),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _noSrController,
+                      style: theme.textTheme.bodyLarge,
+                      decoration: const InputDecoration(
+                        hintText: 'Contoh: SR-12345 (Opsional)',
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    */
 
                     _buildSectionLabel('Keterangan / Catatan (Opsional)'),
                     const SizedBox(height: 8),

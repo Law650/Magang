@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/providers/technician_provider.dart';
@@ -12,6 +13,8 @@ import '../../../core/widgets/ui_components.dart';
 import '../../identity/presentation/login_page.dart';
 import '../../log_valve/data/aset_repository.dart';
 import '../../riwayat/presentation/riwayat_page.dart';
+import '../../log_tekanan/data/rekap_tekanan_provider.dart';
+import '../../log_tekanan/presentation/rekap_tekanan_page.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../core/models/queued_log.dart';
@@ -230,8 +233,8 @@ class HomePage extends ConsumerWidget {
               ),
               const SizedBox(height: 24),
               
-              // Aset Terdekat
-              Text('Aset Terdekat', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+              // Aset GV Terdekat
+              Text('Aset GV Terdekat', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
               Text('Berdasarkan posisi GPS Anda saat ini', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary)),
               const SizedBox(height: 12),
@@ -241,6 +244,25 @@ class HomePage extends ConsumerWidget {
                   return asetAsync.when(
                     data: (asetList) => Column(
                       children: _buildNearbyAssets(context, gpsState, asetList),
+                    ),
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (_, __) => const SizedBox(),
+                  );
+                },
+              ),
+              const SizedBox(height: 24),
+              
+              // Aset Tekanan Terdekat
+              Text('Aset Tekanan Terdekat', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Text('Berdasarkan posisi GPS Anda saat ini', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary)),
+              const SizedBox(height: 12),
+              Consumer(
+                builder: (context, ref, child) {
+                  final rekapAsync = ref.watch(rekapTekananProvider);
+                  return rekapAsync.when(
+                    data: (rekapList) => Column(
+                      children: _buildNearbyPressureAssets(context, gpsState, rekapList),
                     ),
                     loading: () => const Center(child: CircularProgressIndicator()),
                     error: (_, __) => const SizedBox(),
@@ -313,12 +335,9 @@ class HomePage extends ConsumerWidget {
     for (var aset in asetList) {
       if (aset.latitude == null || aset.longitude == null) continue;
       
-      // Rumus Haversine: Menghitung jarak melengkung antara dua titik koordinat (dalam satuan kilometer)
-      const p = 0.017453292519943295; // Nilai Math.PI / 180
-      final a = 0.5 - math.cos((aset.latitude! - userLat) * p)/2 + 
-                math.cos(userLat * p) * math.cos(aset.latitude! * p) * 
-                (1 - math.cos((aset.longitude! - userLng) * p))/2;
-      final distanceKm = 12742 * math.asin(math.sqrt(a)); // 12742 adalah Diameter bumi (2 * Radius 6371 km)
+      // Menggunakan Geolocator untuk menghitung jarak akurat dalam satuan meter, lalu dikonversi ke kilometer
+      final distanceMeters = Geolocator.distanceBetween(userLat, userLng, aset.latitude!, aset.longitude!);
+      final distanceKm = distanceMeters / 1000.0;
       
       assetsWithDistance.add({
         'aset': aset,
@@ -382,6 +401,104 @@ class HomePage extends ConsumerWidget {
           ),
         ),
         ),
+        ),
+      );
+    }).toList();
+  }
+
+  /// Membangun daftar aset tekanan terdekat berdasarkan lokasi GPS pengguna saat ini.
+  List<Widget> _buildNearbyPressureAssets(BuildContext context, GpsState gpsState, List<RekapTekanan> rekapList) {
+    if (gpsState is! GpsSuccess) {
+      return [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.cardBorder),
+          ),
+          child: const Row(
+            children: [
+              Icon(Icons.location_off, color: AppColors.textHint),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text('Aktifkan GPS untuk melihat aset terdekat.', style: TextStyle(color: AppColors.textSecondary)),
+              ),
+            ],
+          ),
+        )
+      ];
+    }
+    
+    final userLat = gpsState.latitude;
+    final userLng = gpsState.longitude;
+    
+    final List<Map<String, dynamic>> assetsWithDistance = [];
+    
+    for (var rekap in rekapList) {
+      final distanceMeters = Geolocator.distanceBetween(userLat, userLng, rekap.latitude, rekap.longitude);
+      final distanceKm = distanceMeters / 1000.0;
+      
+      assetsWithDistance.add({
+        'rekap': rekap,
+        'distanceKm': distanceKm,
+      });
+    }
+    
+    assetsWithDistance.sort((a, b) => (a['distanceKm'] as double).compareTo(b['distanceKm'] as double));
+    
+    final nearby = assetsWithDistance.take(5).toList();
+    
+    return nearby.map((data) {
+      final rekap = data['rekap'] as RekapTekanan;
+      final dist = data['distanceKm'] as double;
+      final distStr = dist < 1.0 ? '${(dist * 1000).toInt()} m' : '${dist.toStringAsFixed(1)} km';
+      
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 8.0),
+        child: Material(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => RiwayatPage(initialRekap: rekap)));
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.cardBorder),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(color: Colors.blue.withValues(alpha: 0.1), shape: BoxShape.circle),
+                    child: const Icon(Icons.water_drop, color: Colors.blue, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(rekap.namaLokasi, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                        Text('Tekanan: ${rekap.nilaiTekanan != null ? rekap.nilaiTekanan!.toStringAsFixed(2) + ' bar' : '-'}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      const Icon(Icons.place, size: 14, color: AppColors.primary),
+                      const SizedBox(height: 2),
+                      Text(distStr, style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       );
     }).toList();

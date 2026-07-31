@@ -365,12 +365,14 @@ class FractionalCounterInput extends StatefulWidget {
   final double value;
   final ValueChanged<double> onChanged;
   final bool readOnly;
+  final double? max;
 
   const FractionalCounterInput({
     super.key,
     required this.value,
     required this.onChanged,
     this.readOnly = false,
+    this.max,
   });
 
   @override
@@ -441,12 +443,25 @@ class _FractionalCounterInputState extends State<FractionalCounterInput> {
   }
 
   void _updateValue() {
-    widget.onChanged((_integerPart + _fractionPart));
+    double total = _integerPart + _fractionPart;
+    if (widget.max != null && total > widget.max!) {
+      total = widget.max!;
+      setState(() {
+        _parseValue(total);
+        _controller.text = _integerPart.toString();
+      });
+    }
+    widget.onChanged(total);
   }
 
   void _incrementInt() {
     if (widget.readOnly) return;
     _focusNode.unfocus();
+    
+    if (widget.max != null && (_integerPart + _fractionPart) >= widget.max!) {
+      return;
+    }
+    
     setState(() {
       _integerPart++;
       _controller.text = _integerPart.toString();

@@ -5,6 +5,7 @@ import '../../../core/services/gps_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/gps_status_widget.dart';
 import '../../../core/widgets/ui_components.dart';
+import '../../../core/utils/geo_utils.dart';
 import '../data/lokasi_repository.dart';
 
 class TambahDaerahPage extends ConsumerStatefulWidget {
@@ -39,6 +40,10 @@ class _TambahDaerahPageState extends ConsumerState<TambahDaerahPage> {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Format Latitude tidak valid.')));
         return;
       }
+      if (!GeoUtils.isValidLatitude(lat)) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Latitude harus berada antara -90.0 hingga 90.0')));
+        return;
+      }
     }
 
     double? lng;
@@ -46,6 +51,10 @@ class _TambahDaerahPageState extends ConsumerState<TambahDaerahPage> {
       lng = double.tryParse(_lngController.text.trim());
       if (lng == null) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Format Longitude tidak valid.')));
+        return;
+      }
+      if (!GeoUtils.isValidLongitude(lng)) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Longitude harus berada antara -180.0 hingga 180.0')));
         return;
       }
     }

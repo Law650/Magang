@@ -18,6 +18,7 @@ class AsetValve {
   final double? latitude;
   final double? longitude;
   final String? namaTeknisi;
+  final String? keterangan;
   final String? fotoEviden;
   final String? fotoEviden2;
 
@@ -31,6 +32,7 @@ class AsetValve {
     this.latitude,
     this.longitude,
     this.namaTeknisi,
+    this.keterangan,
     this.fotoEviden,
     this.fotoEviden2,
   });
@@ -53,6 +55,7 @@ class AsetValve {
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
       namaTeknisi: json['nama_teknisi'] as String?,
+      keterangan: json['keterangan'] as String?,
       fotoEviden: json['foto_eviden'] as String?,
       fotoEviden2: json['foto_eviden_2'] as String?,
     );
@@ -69,6 +72,7 @@ class AsetValve {
       'latitude': latitude,
       'longitude': longitude,
       'nama_teknisi': namaTeknisi,
+      'keterangan': keterangan,
       'foto_eviden': fotoEviden,
       'foto_eviden_2': fotoEviden2,
     };

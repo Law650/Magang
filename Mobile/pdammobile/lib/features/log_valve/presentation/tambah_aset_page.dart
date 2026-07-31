@@ -5,6 +5,7 @@ import '../../../core/services/gps_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/gps_status_widget.dart';
 import '../../../core/widgets/ui_components.dart';
+import '../../../core/utils/geo_utils.dart';
 import '../../log_tekanan/data/lokasi_repository.dart';
 import '../data/aset_repository.dart';
 
@@ -23,6 +24,7 @@ class _TambahAsetPageState extends ConsumerState<TambahAsetPage> {
   final _lngController = TextEditingController();
   double _kapasitasFull = 0.0;
   String _kondisiAwal = 'Full Bukaan';
+  double _customTutupan = 0.0;
   bool _isLoading = false;
 
   @override
@@ -47,11 +49,27 @@ class _TambahAsetPageState extends ConsumerState<TambahAsetPage> {
       return;
     }
 
+    if (_kondisiAwal == 'Sebagian') {
+      if (_customTutupan > _kapasitasFull) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Putaran tertutup tidak boleh melebihi kapasitas full bukaan!'),
+            backgroundColor: AppColors.statusKritis,
+          ),
+        );
+        return;
+      }
+    }
+
     double? lat;
     if (_latController.text.trim().isNotEmpty) {
       lat = double.tryParse(_latController.text.trim());
       if (lat == null) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Format Latitude tidak valid.')));
+        return;
+      }
+      if (!GeoUtils.isValidLatitude(lat)) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Latitude harus berada antara -90.0 hingga 90.0')));
         return;
       }
     }
@@ -61,6 +79,10 @@ class _TambahAsetPageState extends ConsumerState<TambahAsetPage> {
       lng = double.tryParse(_lngController.text.trim());
       if (lng == null) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Format Longitude tidak valid.')));
+        return;
+      }
+      if (!GeoUtils.isValidLongitude(lng)) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Longitude harus berada antara -180.0 hingga 180.0')));
         return;
       }
     }
@@ -74,6 +96,7 @@ class _TambahAsetPageState extends ConsumerState<TambahAsetPage> {
         'jenis_pipa': _jenisPipaController.text.trim(),
         'kapasitas_full': _kapasitasFull,
         'kondisi_awal': _kondisiAwal,
+        'custom_tutupan': _customTutupan,
         'latitude': lat,
         'longitude': lng,
       });
@@ -197,12 +220,11 @@ class _TambahAsetPageState extends ConsumerState<TambahAsetPage> {
                         child: DropdownButton<String>(
                           isExpanded: true,
                           value: _kondisiAwal,
-                          items: ['Full Bukaan', 'Full Tutupan']
-                              .map((k) => DropdownMenuItem(
-                                    value: k,
-                                    child: Text(k),
-                                  ))
-                              .toList(),
+                          items: const [
+                            DropdownMenuItem(value: 'Full Bukaan', child: Text('Full Bukaan (100% Terbuka)')),
+                            DropdownMenuItem(value: 'Full Tutupan', child: Text('Full Tutupan (100% Tertutup)')),
+                            DropdownMenuItem(value: 'Sebagian', child: Text('Sebagian (Ditutup Sebagian)')),
+                          ],
                           onChanged: (val) {
                             if (val != null) setState(() => _kondisiAwal = val);
                           },
@@ -210,6 +232,20 @@ class _TambahAsetPageState extends ConsumerState<TambahAsetPage> {
                       ),
                     ),
                     const SizedBox(height: 20),
+
+                    if (_kondisiAwal == 'Sebagian') ...[
+                      _buildSectionLabel('Berapa putaran yang tertutup? *'),
+                      const SizedBox(height: 8),
+                      FractionalCounterInput(
+                        value: _customTutupan,
+                        onChanged: (val) {
+                          setState(() {
+                            _customTutupan = val;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                    ],
 
                     _buildSectionLabel('Kapasitas Full Bukaan (Putaran) *'),
                     const SizedBox(height: 8),

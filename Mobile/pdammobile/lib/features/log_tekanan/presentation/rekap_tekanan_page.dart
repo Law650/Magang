@@ -24,7 +24,7 @@ class _RekapTekananPageState extends ConsumerState<RekapTekananPage> {
   }
 
   Future<void> _openMaps(BuildContext context, double lat, double lng) async {
-    final url = Uri.parse('https://maps.google.com/?q=$lat,$lng');
+    final url = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
     try {
       if (await canLaunchUrl(url)) {
         await launchUrl(url, mode: LaunchMode.externalApplication);
@@ -178,7 +178,6 @@ class _RekapTekananPageState extends ConsumerState<RekapTekananPage> {
                       borderRadius: BorderRadius.circular(16),
                       child: Image.network(
                         item.fotoEviden!,
-                        headers: const {'ngrok-skip-browser-warning': '69420'},
                         width: double.infinity,
                         height: 200,
                         fit: BoxFit.cover,
@@ -431,9 +430,23 @@ class _RekapTekananPageState extends ConsumerState<RekapTekananPage> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Expanded(
-                                child: Text(
-                                  item.namaLokasi,
-                                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item.namaLokasi,
+                                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                                    ),
+                                    /*
+                                    if (item.noSr != null && item.noSr!.isNotEmpty) ...[
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'No. SR: ${item.noSr}',
+                                        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontStyle: FontStyle.italic),
+                                      ),
+                                    ],
+                                    */
+                                  ],
                                 ),
                               ),
                               Row(

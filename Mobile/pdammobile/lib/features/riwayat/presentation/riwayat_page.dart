@@ -20,7 +20,8 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 class RiwayatPage extends ConsumerStatefulWidget {
   final AsetValve? initialAset;
-  const RiwayatPage({super.key, this.initialAset});
+  final RekapTekanan? initialRekap;
+  const RiwayatPage({super.key, this.initialAset, this.initialRekap});
 
   @override
   ConsumerState<RiwayatPage> createState() => _RiwayatPageState();
@@ -39,6 +40,9 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
       _kategoriFilter = 'Valve';
       _selectedLokasiName = widget.initialAset!.namaLokasi;
       _selectedAsetName = widget.initialAset!.namaAset;
+    } else if (widget.initialRekap != null) {
+      _kategoriFilter = 'Tekanan';
+      _selectedLokasiName = widget.initialRekap!.namaLokasi;
     }
     _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       final syncState = ref.read(syncControllerProvider);
@@ -107,7 +111,11 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
     if (_selectedAsetName != null) {
       final asetList = asetAsync.valueOrNull ?? [];
       for (final a in asetList) {
-        if (a.namaAset == _selectedAsetName) {
+        bool match = a.namaAset == _selectedAsetName;
+        if (_selectedLokasiName != null) {
+          match = match && a.namaLokasi == _selectedLokasiName;
+        }
+        if (match) {
           selectedAsetDb = a;
           break;
         }
@@ -428,6 +436,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
             'latitude': aset.latitude ?? 0.0,
             'longitude': aset.longitude ?? 0.0,
             'nama_teknisi': aset.namaTeknisi,
+            'keterangan': aset.keterangan,
             'foto_eviden': aset.fotoEviden,
             'foto_eviden_2': aset.fotoEviden2,
           },
@@ -469,6 +478,27 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
           Text(namaAset, style: theme.textTheme.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
           Text(namaLokasi, style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white70)),
           
+          if (aset.keterangan != null && aset.keterangan!.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.black26,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Keterangan:', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                  const SizedBox(height: 4),
+                  Text(aset.keterangan!, style: const TextStyle(color: Colors.white, fontSize: 13, fontStyle: FontStyle.italic)),
+                ],
+              ),
+            ),
+          ],
+          
           if (aset.fotoEviden != null) ...[
             const SizedBox(height: 16),
             Row(
@@ -480,7 +510,6 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                       aset.fotoEviden!,
                       height: 100,
                       fit: BoxFit.cover,
-                      headers: const {'ngrok-skip-browser-warning': '69420'},
                       errorBuilder: (_, __, ___) => Container(height: 100, color: Colors.black26, child: const Icon(Icons.broken_image, color: Colors.white54)),
                     ),
                   ),
@@ -494,8 +523,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                         aset.fotoEviden2!,
                         height: 100,
                         fit: BoxFit.cover,
-                        headers: const {'ngrok-skip-browser-warning': '69420'},
-                        errorBuilder: (_, __, ___) => Container(height: 100, color: Colors.black26, child: const Icon(Icons.broken_image, color: Colors.white54)),
+                          errorBuilder: (_, __, ___) => Container(height: 100, color: Colors.black26, child: const Icon(Icons.broken_image, color: Colors.white54)),
                       ),
                     ),
                   ),
@@ -597,6 +625,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
             'status_aliran': rekap.statusAliran,
             'kekeruhan': rekap.kekeruhan,
             'keterangan': rekap.keterangan,
+            'no_sr': rekap.noSr,
             'nama_teknisi': rekap.namaTeknisi ?? 'Sistem',
             'foto_eviden': rekap.fotoEviden,
           },
@@ -662,6 +691,50 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
           Text('Nama Lokasi / Jalur', style: theme.textTheme.bodySmall?.copyWith(color: Colors.white70)),
           Text(rekap.namaLokasi, style: theme.textTheme.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
           
+          /*
+          if (rekap.noSr != null && rekap.noSr!.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.black26,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('No. SR:', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                  const SizedBox(height: 4),
+                  Text(rekap.noSr!, style: const TextStyle(color: Colors.white, fontSize: 13, fontStyle: FontStyle.italic)),
+                ],
+              ),
+            ),
+          ],
+          */
+          
+          if (rekap.keterangan != null && rekap.keterangan!.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.black26,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Keterangan:', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                  const SizedBox(height: 4),
+                  Text(rekap.keterangan!, style: const TextStyle(color: Colors.white, fontSize: 13, fontStyle: FontStyle.italic)),
+                ],
+              ),
+            ),
+          ],
+          
           if (rekap.fotoEviden != null) ...[
             const SizedBox(height: 16),
             ClipRRect(
@@ -671,7 +744,6 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                 height: 120,
                 width: double.infinity,
                 fit: BoxFit.cover,
-                headers: const {'ngrok-skip-browser-warning': '69420'},
                 errorBuilder: (_, __, ___) => Container(height: 120, color: Colors.black26, child: const Icon(Icons.broken_image, color: Colors.white54)),
               ),
             ),
@@ -800,6 +872,27 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
             Text(namaAset, style: theme.textTheme.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
             Text(namaLokasi, style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white70)),
             
+            if (map['keterangan'] != null && map['keterangan'].toString().isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.black26,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Keterangan:', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                    const SizedBox(height: 4),
+                    Text(map['keterangan'].toString(), style: const TextStyle(color: Colors.white, fontSize: 13, fontStyle: FontStyle.italic)),
+                  ],
+                ),
+              ),
+            ],
+            
             if (log.fotoPath.isNotEmpty && File(log.fotoPath).existsSync()) ...[
               const SizedBox(height: 16),
               Row(
@@ -842,8 +935,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                         map['foto_eviden'].toString(),
                         height: 100,
                         fit: BoxFit.cover,
-                        headers: const {'ngrok-skip-browser-warning': '69420'},
-                        errorBuilder: (_, __, ___) => Container(height: 100, color: Colors.black26, child: const Icon(Icons.broken_image, color: Colors.white54)),
+                          errorBuilder: (_, __, ___) => Container(height: 100, color: Colors.black26, child: const Icon(Icons.broken_image, color: Colors.white54)),
                       ),
                     ),
                   ),
@@ -856,8 +948,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                           map['foto_eviden_2'].toString(),
                           height: 100,
                           fit: BoxFit.cover,
-                          headers: const {'ngrok-skip-browser-warning': '69420'},
-                          errorBuilder: (_, __, ___) => Container(height: 100, color: Colors.black26, child: const Icon(Icons.broken_image, color: Colors.white54)),
+                              errorBuilder: (_, __, ___) => Container(height: 100, color: Colors.black26, child: const Icon(Icons.broken_image, color: Colors.white54)),
                         ),
                       ),
                     ),
@@ -971,8 +1062,10 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
     
     // Detail untuk Valve
     final aksiKerjaRaw = map['aksi_kerja']?.toString().toLowerCase() ?? 'buka';
-    final aksiKerja = aksiKerjaRaw == 'tutup' ? 'Tutup' : 'Buka';
     final jumlahPutaran = (map['jumlah_putaran'] as num?)?.toDouble() ?? 0.0;
+    final isCek = (aksiKerjaRaw == 'buka' && jumlahPutaran == 0.0);
+    final aksiKerja = isCek ? 'Cek' : (aksiKerjaRaw == 'tutup' ? 'Tutup' : 'Buka');
+    
     final kapasitasFull = (map['kapasitas_full'] as num?)?.toDouble() ?? 58.0;
     final bukaanAwal = (map['bukaan_saat_ini'] as num?)?.toDouble() ?? kapasitasFull;
     
@@ -996,7 +1089,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
             const SizedBox(width: 12),
             // Avatar
             CircleAvatar(
-              backgroundColor: isValve ? (aksiKerja == 'Tutup' ? AppColors.statusKritis : Colors.blue) : AppColors.accentGreen,
+              backgroundColor: isValve ? (aksiKerja == 'Tutup' ? AppColors.statusKritis : (aksiKerja == 'Cek' ? Colors.blue : AppColors.statusNormal)) : AppColors.accentGreen,
               child: Text(initial, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
             const SizedBox(width: 12),
@@ -1038,21 +1131,23 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: (aksiKerja == 'Tutup' ? AppColors.statusKritis : AppColors.statusNormal).withValues(alpha: 0.1),
+                            color: (aksiKerja == 'Tutup' ? AppColors.statusKritis : (aksiKerja == 'Cek' ? Colors.blue : AppColors.statusNormal)).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
-                            '+$aksiKerja',
+                            aksiKerja == 'Cek' ? 'Cek' : '+$aksiKerja',
                             style: TextStyle(
-                              color: aksiKerja == 'Tutup' ? AppColors.statusKritis : AppColors.statusNormal, 
+                              color: aksiKerja == 'Tutup' ? AppColors.statusKritis : (aksiKerja == 'Cek' ? Colors.blue : AppColors.statusNormal), 
                               fontWeight: FontWeight.bold, fontSize: 12
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Text('+${_formatNumber(jumlahPutaran)} Put.', style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13, color: AppColors.textSecondary)),
+                        if (aksiKerja != 'Cek') ...[
+                          const SizedBox(width: 8),
+                          Text('+${_formatNumber(jumlahPutaran)} Put.', style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13, color: AppColors.textSecondary)),
+                        ],
                         const SizedBox(width: 12),
-                        Text('Sisa: ${_formatNumber(sisa)} Put.', style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13, fontWeight: FontWeight.bold)),
+                        Text('Posisi: ${_formatNumber(sisa)} Put.', style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13, fontWeight: FontWeight.bold)),
                       ],
                     )
                   else
@@ -1156,6 +1251,8 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                     children: [
                       _buildDetailRow('Nama Aset', namaAset),
                       _buildDetailRow('Jalur/Lokasi', namaLokasi),
+                      if (map['keterangan'] != null && map['keterangan'].toString().isNotEmpty)
+                        _buildDetailRow('Keterangan', map['keterangan'].toString()),
                       if (map['sisa_bukaan'] != null) ...[
                         _buildDetailRow('Putaran Saat Ini\n(Terbuka)', '${_formatNumber((map['sisa_bukaan'] as num).toDouble())} Putaran'),
                         _buildDetailRow('Sisa Putaran\n(yang bisa dibuka', '${_formatNumber(kapasitasFull - (map['sisa_bukaan'] as num).toDouble())} Putaran'),
@@ -1257,8 +1354,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                                   child: InteractiveViewer(
                                     child: Image.network(
                                       map['foto_eviden'].toString(),
-                                      headers: const {'ngrok-skip-browser-warning': '69420'},
-                                    ),
+                                                    ),
                                   ),
                                 ),
                               );
@@ -1267,8 +1363,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                               height: 200,
                               child: Image.network(
                                 map['foto_eviden'].toString(),
-                                headers: const {'ngrok-skip-browser-warning': '69420'},
-                                fit: BoxFit.cover,
+                                          fit: BoxFit.cover,
                                 errorBuilder: (_, __, ___) => Container(
                                   width: double.infinity,
                                   height: 200,
@@ -1295,8 +1390,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                                     child: InteractiveViewer(
                                       child: Image.network(
                                         map['foto_eviden_2'].toString(),
-                                        headers: const {'ngrok-skip-browser-warning': '69420'},
-                                      ),
+                                                        ),
                                     ),
                                   ),
                                 );
@@ -1305,8 +1399,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                                 height: 200,
                                 child: Image.network(
                                   map['foto_eviden_2'].toString(),
-                                  headers: const {'ngrok-skip-browser-warning': '69420'},
-                                  fit: BoxFit.cover,
+                                              fit: BoxFit.cover,
                                   errorBuilder: (_, __, ___) => Container(
                                     width: double.infinity,
                                     height: 200,
@@ -1442,6 +1535,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                       ] else ...[
                         _buildDetailRow('Tekanan', '${map['nilai_tekanan'] ?? 0.0} Bar'),
                         _buildDetailRow('Aliran', map['status_aliran']?.toString().toUpperCase() ?? '-'),
+                        // _buildDetailRow('No. SR', map['no_sr'] ?? '-'),
                         if (map['kekeruhan'] != null) _buildDetailRow('Kekeruhan', map['kekeruhan']!),
                       ],
                       
@@ -1499,8 +1593,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                             constraints: const BoxConstraints(maxHeight: 350),
                             child: Image.network(
                               map['foto_eviden'].toString(),
-                              headers: const {'ngrok-skip-browser-warning': '69420'},
-                              fit: BoxFit.contain,
+                                      fit: BoxFit.contain,
                               errorBuilder: (_, __, ___) => Container(
                                 width: double.infinity,
                                 height: 150,
@@ -1520,8 +1613,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                               constraints: const BoxConstraints(maxHeight: 350),
                               child: Image.network(
                                 map['foto_eviden_2'].toString(),
-                                headers: const {'ngrok-skip-browser-warning': '69420'},
-                                fit: BoxFit.contain,
+                                          fit: BoxFit.contain,
                                 errorBuilder: (_, __, ___) => Container(
                                   width: double.infinity,
                                   height: 150,
@@ -1645,7 +1737,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
   }
 
   Future<void> _openMaps(BuildContext context, double lat, double lng) async {
-    final url = Uri.parse('https://maps.google.com/?q=$lat,$lng');
+    final url = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
     try {
       if (await canLaunchUrl(url)) {
         await launchUrl(url, mode: LaunchMode.externalApplication);

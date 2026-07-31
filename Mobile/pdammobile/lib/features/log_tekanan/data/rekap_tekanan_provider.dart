@@ -16,6 +16,7 @@ class RekapTekanan {
   final String? statusAliran;
   final String? kekeruhan;
   final String? keterangan;
+  final String? noSr;
   final String? waktuPengecekan;
   final String? namaTeknisi;
   final String? fotoEviden;
@@ -30,6 +31,7 @@ class RekapTekanan {
     this.statusAliran,
     this.kekeruhan,
     this.keterangan,
+    this.noSr,
     this.waktuPengecekan,
     this.namaTeknisi,
     this.fotoEviden,
@@ -54,6 +56,7 @@ class RekapTekanan {
       statusAliran: latest?['status_aliran'],
       kekeruhan: latest?['kekeruhan'],
       keterangan: latest?['keterangan'],
+      noSr: latest?['no_sr'],
       waktuPengecekan: latest?['waktu_pengecekan'],
       namaTeknisi: latest?['nama_teknisi'],
       fotoEviden: latest?['foto_eviden'],
@@ -72,6 +75,7 @@ class RekapTekanan {
         'status_aliran': statusAliran,
         'kekeruhan': kekeruhan,
         'keterangan': keterangan,
+        'no_sr': noSr,
         'waktu_pengecekan': waktuPengecekan,
         'nama_teknisi': namaTeknisi,
         'foto_eviden': fotoEviden,

@@ -92,6 +92,15 @@ class GpsStatusWidget extends StatelessWidget {
                           fontFamily: 'monospace',
                         ),
                       ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '⚠️ WAJIB: Refresh koordinat jika berpindah lokasi!',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.orange[800],
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                        ),
+                      ),
                     ],
                   ),
                 ),
