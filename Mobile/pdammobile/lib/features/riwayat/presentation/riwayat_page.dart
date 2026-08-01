@@ -100,6 +100,37 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
     final valveLogs = filteredLogs.where((log) => log.endpoint.contains('/log-valve')).toList();
     QueuedLog? latestLog = valveLogs.isNotEmpty ? valveLogs.first : null;
     
+    // Prepare latest logs map to restrict editing (hanya bisa edit laporan terbaru)
+    final sortedAllLogs = List<QueuedLog>.from(allLogs)
+      ..sort((a, b) {
+        final tA = DateTime.tryParse(a.payloadFields['waktu_kegiatan']?.toString() ?? '') ?? a.createdAt;
+        final tB = DateTime.tryParse(b.payloadFields['waktu_kegiatan']?.toString() ?? '') ?? b.createdAt;
+        return tB.compareTo(tA);
+      });
+      
+    final latestValveKeys = <int>{};
+    final latestTekananKeys = <String>{};
+    final allowedToEditKeys = <String>{};
+    
+    for (final log in sortedAllLogs) {
+      if (log.idempotencyKey == 'db_mock') continue;
+      final map = log.payloadFields;
+      if (log.endpoint.contains('/log-valve')) {
+        final asetId = map['aset_id'] as int?;
+        if (asetId != null && !latestValveKeys.contains(asetId)) {
+          latestValveKeys.add(asetId);
+          allowedToEditKeys.add(log.idempotencyKey);
+        }
+      } else {
+        final loc = map['nama_lokasi']?.toString();
+        if (loc != null && !latestTekananKeys.contains(loc)) {
+          latestTekananKeys.add(loc);
+          allowedToEditKeys.add(log.idempotencyKey);
+        }
+      }
+    }
+
+    
     // Data rekap tekanan dari server untuk lokasi yang dipilih
     RekapTekanan? selectedRekap;
     if (_kategoriFilter == 'Tekanan' && _selectedLokasiName != null && _selectedAsetName == null) {
@@ -394,7 +425,15 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: filteredLogs.length,
                         separatorBuilder: (context, index) => const Divider(height: 1),
-                        itemBuilder: (context, index) => _buildHistoryItem(context, filteredLogs[index], filteredLogs.length - index),
+                        itemBuilder: (context, index) {
+                          final log = filteredLogs[index];
+                          return _buildHistoryItem(
+                            context, 
+                            log, 
+                            filteredLogs.length - index, 
+                            allowedToEditKeys.contains(log.idempotencyKey),
+                          );
+                        },
                       ),
               ),
             ],
@@ -631,7 +670,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
           },
         );
         // Kita bisa menggunakan _showDetailBottomSheet karena itu umum
-        _showDetailBottomSheet(context, dummyLog);
+        _showDetailBottomSheet(context, dummyLog, false);
       },
       borderRadius: BorderRadius.circular(16),
       child: Container(
@@ -1044,7 +1083,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
     );
   }
 
-  Widget _buildHistoryItem(BuildContext context, QueuedLog log, int indexNumber) {
+  Widget _buildHistoryItem(BuildContext context, QueuedLog log, int indexNumber, bool isLatest) {
     final theme = Theme.of(context);
     final dateFormat = DateFormat('dd MMM yyyy - HH:mm', 'id');
     final map = log.payloadFields;
@@ -1079,7 +1118,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
     final aliran = map['status_aliran'] ?? 'Normal';
 
     return InkWell(
-      onTap: () => _showDetailBottomSheet(context, log),
+      onTap: () => _showDetailBottomSheet(context, log, isLatest),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -1456,7 +1495,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
     );
   }
 
-  void _showDetailBottomSheet(BuildContext context, QueuedLog log) {
+  void _showDetailBottomSheet(BuildContext context, QueuedLog log, bool isLatest) {
     final map = log.payloadFields;
     final lat = (map['latitude'] as num?)?.toDouble() ?? 0.0;
     final lng = (map['longitude'] as num?)?.toDouble() ?? 0.0;
@@ -1554,11 +1593,25 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                       Expanded(
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(16),
-                          child: Container(
-                            constraints: const BoxConstraints(maxHeight: 350),
-                            child: Image.file(
-                              File(log.fotoPath),
-                              fit: BoxFit.contain,
+                          child: GestureDetector(
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) => Dialog(
+                                  backgroundColor: Colors.transparent,
+                                  insetPadding: const EdgeInsets.all(16),
+                                  child: InteractiveViewer(
+                                    child: Image.file(File(log.fotoPath)),
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              constraints: const BoxConstraints(maxHeight: 350),
+                              child: Image.file(
+                                File(log.fotoPath),
+                                fit: BoxFit.contain,
+                              ),
                             ),
                           ),
                         ),
@@ -1568,6 +1621,19 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                         Expanded(
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(16),
+                            child: GestureDetector(
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) => Dialog(
+                                  backgroundColor: Colors.transparent,
+                                  insetPadding: const EdgeInsets.all(16),
+                                  child: InteractiveViewer(
+                                    child: Image.file(File(log.fotoPath2!)),
+                                  ),
+                                ),
+                              );
+                            },
                             child: Container(
                               constraints: const BoxConstraints(maxHeight: 350),
                               child: Image.file(
@@ -1575,6 +1641,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                                 fit: BoxFit.contain,
                               ),
                             ),
+                          ),
                           ),
                         ),
                       ],
@@ -1589,16 +1656,30 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                       Expanded(
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(16),
-                          child: Container(
-                            constraints: const BoxConstraints(maxHeight: 350),
-                            child: Image.network(
-                              map['foto_eviden'].toString(),
-                                      fit: BoxFit.contain,
-                              errorBuilder: (_, __, ___) => Container(
-                                width: double.infinity,
-                                height: 150,
-                                color: Colors.grey[200],
-                                child: const Center(child: Icon(Icons.broken_image, color: Colors.grey, size: 40)),
+                          child: GestureDetector(
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) => Dialog(
+                                  backgroundColor: Colors.transparent,
+                                  insetPadding: const EdgeInsets.all(16),
+                                  child: InteractiveViewer(
+                                    child: Image.network(map['foto_eviden'].toString()),
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              constraints: const BoxConstraints(maxHeight: 350),
+                              child: Image.network(
+                                map['foto_eviden'].toString(),
+                                        fit: BoxFit.contain,
+                                errorBuilder: (_, __, ___) => Container(
+                                  width: double.infinity,
+                                  height: 150,
+                                  color: Colors.grey[200],
+                                  child: const Center(child: Icon(Icons.broken_image, color: Colors.grey, size: 40)),
+                                ),  
                               ),
                             ),
                           ),
@@ -1609,16 +1690,30 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                         Expanded(
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(16),
-                            child: Container(
-                              constraints: const BoxConstraints(maxHeight: 350),
-                              child: Image.network(
-                                map['foto_eviden_2'].toString(),
-                                          fit: BoxFit.contain,
-                                errorBuilder: (_, __, ___) => Container(
-                                  width: double.infinity,
-                                  height: 150,
-                                  color: Colors.grey[200],
-                                  child: const Center(child: Icon(Icons.broken_image, color: Colors.grey, size: 40)),
+                            child: GestureDetector(
+                              onTap: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => Dialog(
+                                    backgroundColor: Colors.transparent,
+                                    insetPadding: const EdgeInsets.all(16),
+                                    child: InteractiveViewer(
+                                      child: Image.network(map['foto_eviden_2'].toString()),
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                constraints: const BoxConstraints(maxHeight: 350),
+                                child: Image.network(
+                                  map['foto_eviden_2'].toString(),
+                                            fit: BoxFit.contain,
+                                  errorBuilder: (_, __, ___) => Container(
+                                    width: double.infinity,
+                                    height: 150,
+                                    color: Colors.grey[200],
+                                    child: const Center(child: Icon(Icons.broken_image, color: Colors.grey, size: 40)),
+                                  ),
                                 ),
                               ),
                             ),
@@ -1673,7 +1768,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                     ),
                   ),
                 ),
-                if (log.idempotencyKey != 'db_mock' && (log.status != 'success' || map['server_id'] != null)) ...[
+                if (isLatest && log.idempotencyKey != 'db_mock' && (log.status != 'success' || map['server_id'] != null)) ...[
                   const SizedBox(height: 12),
                   SizedBox(
                     width: double.infinity,

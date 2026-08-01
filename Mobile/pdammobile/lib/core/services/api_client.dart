@@ -3,10 +3,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiClient {
   // Server staging/production
-  static const String baseUrl = 'http://103.217.210.179:3430/api';
+  //static const String baseUrl = 'http://103.217.210.179:3430/api';
   
   // Server lokal (disesuaikan dengan IPv4 jaringan PC Anda saat ini)
-  //static const String baseUrl = 'https://untouched-creed-manly.ngrok-free.dev/api';
+  static const String baseUrl = 'https://untouched-creed-manly.ngrok-free.dev/api';
   // Jika menggunakan Android Emulator dan tidak bisa terhubung, bisa gunakan 'http://10.0.2.2:8000/api'
 
   late Dio _dio;

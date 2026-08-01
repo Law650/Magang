@@ -738,7 +738,7 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
                       const SizedBox(height: 20),
                     ],
 
-                    if (_aksiKerjaIndex == 2 && (_selectedAset == null || _selectedAset!.latitude == null || _selectedAset!.longitude == null)) ...[
+                    if (_aksiKerjaIndex == 2) ...[
                       _buildSectionLabel('Titik Koordinat (Latitude & Longitude)'),
                       const SizedBox(height: 8),
                       Row(

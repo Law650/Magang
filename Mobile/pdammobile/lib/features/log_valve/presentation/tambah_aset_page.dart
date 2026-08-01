@@ -259,7 +259,7 @@ class _TambahAsetPageState extends ConsumerState<TambahAsetPage> {
                     ),
                     const SizedBox(height: 20),
 
-                    _buildSectionLabel('Titik Koordinat (Latitude & Longitude)'),
+                    _buildSectionLabel('Titik Koordinat GV (Latitude & Longitude)'),
                     const SizedBox(height: 8),
                     Row(
                       children: [

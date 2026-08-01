@@ -176,16 +176,30 @@ class _RekapTekananPageState extends ConsumerState<RekapTekananPage> {
                     const SizedBox(height: 12),
                     ClipRRect(
                       borderRadius: BorderRadius.circular(16),
-                      child: Image.network(
-                        item.fotoEviden!,
-                        width: double.infinity,
-                        height: 200,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
+                      child: GestureDetector(
+                        onTap: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => Dialog(
+                              backgroundColor: Colors.transparent,
+                              insetPadding: const EdgeInsets.all(16),
+                              child: InteractiveViewer(
+                                child: Image.network(item.fotoEviden!),
+                              ),
+                            ),
+                          );
+                        },
+                        child: Image.network(
+                          item.fotoEviden!,
                           width: double.infinity,
                           height: 200,
-                          color: Colors.grey.withValues(alpha: 0.1),
-                          child: const Center(child: Icon(Icons.broken_image, color: Colors.grey, size: 40)),
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            width: double.infinity,
+                            height: 200,
+                            color: Colors.grey.withValues(alpha: 0.1),
+                            child: const Center(child: Icon(Icons.broken_image, color: Colors.grey, size: 40)),
+                          ),
                         ),
                       ),
                     ),
