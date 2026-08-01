@@ -1,4 +1,4 @@
-<div wire:poll.60s>
+<div wire:poll.10s>
     {{-- Page Header --}}
     <div class="mb-6">
         <h1 class="text-2xl font-bold text-white">Manajemen Daerah Tekanan</h1>

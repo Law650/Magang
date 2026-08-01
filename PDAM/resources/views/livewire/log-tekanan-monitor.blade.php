@@ -1,4 +1,4 @@
-<div wire:poll.30s>
+<div wire:poll.10s x-data="{ showDeleteModal: false, deleteType: null, deleteId: null, deleteMessage: '' }">
     {{-- Page Header --}}
     <div class="mb-6">
         <h1 class="text-2xl font-bold text-white">Monitoring Tekanan Air</h1>
@@ -208,6 +208,7 @@
                 type="date" 
                 wire:model.live="startDate"
                 class="px-3 py-2.5 bg-slate-900/50 border border-slate-700/50 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-500/40 transition"
+                style="color-scheme: dark;"
                 title="Tanggal Mulai"
             >
             <span class="text-slate-500">-</span>
@@ -215,6 +216,7 @@
                 type="date" 
                 wire:model.live="endDate"
                 class="px-3 py-2.5 bg-slate-900/50 border border-slate-700/50 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-500/40 transition"
+                style="color-scheme: dark;"
                 title="Tanggal Akhir"
             >
         </div>
@@ -226,6 +228,18 @@
             <button wire:click="setFilter('rendah')" class="px-4 py-2 text-xs font-semibold rounded-lg transition-all duration-200 {{ $filterStatus === 'rendah' ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-400 hover:text-white' }}">Rendah</button>
             <button wire:click="setFilter('kritis')" class="px-4 py-2 text-xs font-semibold rounded-lg transition-all duration-200 {{ $filterStatus === 'kritis' ? 'bg-red-500 text-white shadow-sm' : 'text-slate-400 hover:text-white' }}">Kritis</button>
         </div>
+
+        {{-- Delete Selected Button --}}
+        @if(count($selectedRows) > 0)
+            <button @click="deleteType = 'multiple'; deleteMessage = 'Apakah Anda yakin ingin menghapus {{ count($selectedRows) }} data terpilih?'; showDeleteModal = true;"
+                    class="flex items-center justify-center gap-2 px-5 py-2.5 bg-red-500/20 text-red-400 border border-red-500/50 text-sm font-medium rounded-xl hover:bg-red-500 hover:text-white transition-all duration-200"
+            >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+                Hapus Terpilih ({{ count($selectedRows) }})
+            </button>
+        @endif
 
         {{-- Export Button --}}
         <a href="{{ route('export.log-tekanan', ['search' => $search, 'filter' => $filterStatus, 'start_date' => $startDate, 'end_date' => $endDate]) }}"
@@ -245,6 +259,9 @@
             <table class="w-full text-sm">
                 <thead>
                     <tr class="border-b border-slate-800/50">
+                        <th class="px-5 py-3.5 text-center w-12">
+                            <input type="checkbox" wire:model.live="selectAll" class="rounded border-slate-700 bg-slate-800 text-cyan-500 focus:ring-cyan-500/50">
+                        </th>
                         <th class="px-5 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Waktu</th>
                         <th class="px-5 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Nama Daerah</th>
                         {{-- <th class="px-5 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">No. SR</th> --}}
@@ -253,11 +270,15 @@
                         <th class="px-5 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</th>
                         <th class="px-5 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">Koordinat</th>
                         <th class="px-5 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">Foto</th>
+                        <th class="px-5 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">Hapus</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-800/30">
                     @forelse ($logs as $log)
                         <tr wire:key="tekanan-{{ $log->id }}" class="hover:bg-slate-800/30 transition-colors duration-150">
+                            <td class="px-5 py-4 text-center">
+                                <input type="checkbox" wire:model.live="selectedRows" value="{{ $log->id }}" class="rounded border-slate-700 bg-slate-800 text-cyan-500 focus:ring-cyan-500/50">
+                            </td>
                             <td class="px-5 py-4 text-xs text-slate-400 whitespace-nowrap">
                                 {{ $log->waktu_pengecekan->format('d/m/Y') }}
                                 <br>
@@ -326,10 +347,17 @@
                                     <span class="text-xs text-slate-600">-</span>
                                 @endif
                             </td>
+                            <td class="px-5 py-4 text-center">
+                                <button @click.stop="deleteType = 'single'; deleteId = {{ $log->id }}; deleteMessage = 'Yakin ingin menghapus data ini?'; showDeleteModal = true;" class="inline-flex items-center justify-center p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-colors" title="Hapus Data">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                </button>
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-5 py-12 text-center">
+                            <td colspan="9" class="px-5 py-12 text-center">
                                 <svg class="w-12 h-12 text-slate-700 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
                                 </svg>
@@ -346,5 +374,35 @@
                 {{ $logs->links() }}
             </div>
         @endif
+    </div>
+
+    {{-- Delete Confirmation Modal --}}
+    <div x-show="showDeleteModal" 
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 scale-95"
+         x-transition:enter-end="opacity-100 scale-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100 scale-100"
+         x-transition:leave-end="opacity-0 scale-95"
+         class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm" 
+         style="display: none;">
+        <div @click.outside="showDeleteModal = false" class="bg-slate-900 border border-slate-700/50 rounded-2xl p-6 max-w-sm w-full shadow-2xl relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 to-rose-500"></div>
+            <div class="flex items-center gap-4 mb-4">
+                <div class="flex-shrink-0 w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-white">Konfirmasi Hapus</h3>
+                    <p class="text-sm text-slate-400 mt-1" x-text="deleteMessage"></p>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 mt-6">
+                <button @click="showDeleteModal = false" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 transition-colors">Batal</button>
+                <button @click="if(deleteType === 'single') { $wire.deleteSingle(deleteId) } else { $wire.deleteSelected() }; showDeleteModal = false" class="px-4 py-2 rounded-xl text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20">Ya, Hapus</button>
+            </div>
+        </div>
     </div>
 </div>

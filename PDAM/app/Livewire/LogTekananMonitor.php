@@ -15,12 +15,16 @@ class LogTekananMonitor extends Component
     public string $startDate = '';
     public string $endDate = '';
 
+    public array $selectedRows = [];
+    public bool $selectAll = false;
+
     /**
      * Reset pagination when filters change.
      */
     public function updatedSearch(): void
     {
         $this->resetPage();
+        $this->resetSelection();
     }
 
     public function updatedStartDate(): void
@@ -31,6 +35,7 @@ class LogTekananMonitor extends Component
     public function updatedEndDate(): void
     {
         $this->resetPage();
+        $this->resetSelection();
     }
 
     public function updatedFilterStatus(): void
@@ -45,6 +50,38 @@ class LogTekananMonitor extends Component
     {
         $this->filterStatus = $status;
         $this->resetPage();
+        $this->resetSelection();
+    }
+
+    public function updatedSelectAll($value): void
+    {
+        if ($value) {
+            $this->selectedRows = $this->buildQuery()->orderBy('waktu_pengecekan', 'desc')->paginate(15)->pluck('id')->map(fn($id) => (string) $id)->toArray();
+        } else {
+            $this->selectedRows = [];
+        }
+    }
+
+    private function resetSelection(): void
+    {
+        $this->selectedRows = [];
+        $this->selectAll = false;
+    }
+
+    public function deleteSelected(): void
+    {
+        if (!empty($this->selectedRows)) {
+            LogTekanan::whereIn('id', $this->selectedRows)->delete();
+            $this->resetSelection();
+            $this->dispatch('chart-data-updated', chartData: $this->chartData);
+        }
+    }
+
+    public function deleteSingle($id): void
+    {
+        LogTekanan::find($id)?->delete();
+        $this->resetSelection();
+        $this->dispatch('chart-data-updated', chartData: $this->chartData);
     }
 
     /**
