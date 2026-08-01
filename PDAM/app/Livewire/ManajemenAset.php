@@ -60,8 +60,8 @@ class ManajemenAset extends Component
         $this->kapasitas_full_putaran = (string) $kapBulat;
         $this->kapasitas_full_pecahan = (string) $kapPecahan;
         
-        $this->latitude = (string) ($aset->lokasi->latitude ?? '');
-        $this->longitude = (string) ($aset->lokasi->longitude ?? '');
+        $this->latitude = (string) ($aset->latitude ?? '');
+        $this->longitude = (string) ($aset->longitude ?? '');
 
         $this->dispatch('open-modal');
     }
@@ -105,6 +105,8 @@ class ManajemenAset extends Component
                 'lokasi_id' => $lokasi->id,
                 'nama_aset' => $validated['nama_aset'],
                 'kapasitas_full_putaran' => $kapasitasFull,
+                'latitude' => $latVal,
+                'longitude' => $lngVal,
             ]);
         } else {
             $totalTutupan = 0;
@@ -123,6 +125,8 @@ class ManajemenAset extends Component
                 'nama_aset' => $validated['nama_aset'],
                 'kapasitas_full_putaran' => $kapasitasFull,
                 'total_tutupan_saat_ini' => $totalTutupan,
+                'latitude' => $latVal,
+                'longitude' => $lngVal,
             ]);
         }
 

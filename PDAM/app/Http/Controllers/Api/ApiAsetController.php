@@ -44,8 +44,8 @@ class ApiAsetController extends Controller
                 'kapasitas_full_putaran' => (float) $aset->kapasitas_full_putaran,
                 'sisa_bukaan' => $aset->sisa_bukaan,
                 'persentase_bukaan' => $aset->persentase_bukaan,
-                'latitude' => $aset->lokasi->latitude ? (float) $aset->lokasi->latitude : null,
-                'longitude' => $aset->lokasi->longitude ? (float) $aset->lokasi->longitude : null,
+                'latitude' => $aset->latitude ? (float) $aset->latitude : null,
+                'longitude' => $aset->longitude ? (float) $aset->longitude : null,
                 'nama_teknisi' => $aset->lastLogValve ? $aset->lastLogValve->nama_teknisi : null,
                 'keterangan' => $aset->lastLogValve ? $aset->lastLogValve->keterangan : null,
                 'foto_eviden' => $aset->lastLogValve && $aset->lastLogValve->foto_eviden 
@@ -137,7 +137,12 @@ class ApiAsetController extends Controller
                 'nama_aset' => $validated['jenis_pipa'],
                 'kapasitas_full_putaran' => $validated['kapasitas_full'],
                 'total_tutupan_saat_ini' => $totalTutupan,
+                'latitude' => $validated['latitude'] ?? null,
+                'longitude' => $validated['longitude'] ?? null,
             ]);
+        } else {
+            // Jika aset sudah ada dan dikiim kembali, update koordinat jika diperlukan (opsional)
+            // Sesuai kebutuhan, kita biarkan saja atau bisa tambahkan update koordinat
         }
 
         return response()->json([
@@ -150,8 +155,8 @@ class ApiAsetController extends Controller
                 'kapasitas_full_putaran' => (float) $aset->kapasitas_full_putaran,
                 'sisa_bukaan' => $aset->sisa_bukaan,
                 'persentase_bukaan' => $aset->persentase_bukaan,
-                'latitude' => $lokasi->latitude ? (float) $lokasi->latitude : null,
-                'longitude' => $lokasi->longitude ? (float) $lokasi->longitude : null,
+                'latitude' => $aset->latitude ? (float) $aset->latitude : null,
+                'longitude' => $aset->longitude ? (float) $aset->longitude : null,
             ],
         ]);
     }

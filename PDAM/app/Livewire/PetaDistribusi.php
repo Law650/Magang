@@ -44,7 +44,8 @@ class PetaDistribusi extends Component
     private function getGvMarkers(): array
     {
         $asets = AsetValve::with(['lokasi', 'lastLogValve.user'])
-            ->whereHas('lokasi', fn ($q) => $q->whereNotNull('latitude')->whereNotNull('longitude'))
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
             ->get();
 
         return $asets->map(function ($aset) {
@@ -54,8 +55,8 @@ class PetaDistribusi extends Component
             $lastLog = $aset->lastLogValve;
             $teknisiTerakhir = $lastLog?->user?->name ?? '-';
 
-            $lat = $aset->lokasi->latitude;
-            $lng = $aset->lokasi->longitude;
+            $lat = $aset->latitude;
+            $lng = $aset->longitude;
             $foto = $lastLog?->foto_eviden ? asset('storage/' . $lastLog->foto_eviden) : null;
 
             return [

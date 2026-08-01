@@ -87,11 +87,10 @@ class ApiLogValveController extends Controller
                 'total_tutupan_saat_ini' => round($totalTutupan, 2),
             ]);
 
-            // Jika lokasi belum memiliki koordinat, otomatis update koordinat master
+            // Jika aset valve belum memiliki koordinat, atau jika kita ingin update, simpan koordinatnya
             if (isset($validated['latitude']) && isset($validated['longitude'])) {
-                $lokasi = $aset->lokasi;
-                if (empty($lokasi->latitude) || empty($lokasi->longitude)) {
-                    $lokasi->update([
+                if (empty($aset->latitude) || empty($aset->longitude) || $request->input('aksi_kerja') === 'cek') {
+                    $aset->update([
                         'latitude' => $validated['latitude'],
                         'longitude' => $validated['longitude'],
                     ]);

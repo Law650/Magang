@@ -28,6 +28,8 @@ class AsetValve extends Model
         'nama_aset',
         'kapasitas_full_putaran',
         'total_tutupan_saat_ini',
+        'latitude',
+        'longitude',
     ];
 
     /**
@@ -40,6 +42,8 @@ class AsetValve extends Model
         return [
             'kapasitas_full_putaran' => 'decimal:2',
             'total_tutupan_saat_ini' => 'decimal:2',
+            'latitude' => 'float',
+            'longitude' => 'float',
         ];
     }
 
