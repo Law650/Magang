@@ -25,12 +25,47 @@ class ManajemenAset extends Component
     public string $custom_tutupan_bulat = '';
     public string $custom_tutupan_pecahan = '0';
 
+    // Selected rows for bulk actions
+    public array $selectedRows = [];
+    public bool $selectAll = false;
+
     /**
      * Reset pagination when search changes.
      */
     public function updatedSearch(): void
     {
         $this->resetPage();
+        $this->resetSelection();
+    }
+
+    public function updatedSelectAll($value): void
+    {
+        if ($value) {
+            $this->selectedRows = AsetValve::with('lokasi')
+                ->where(function ($q) {
+                    $searchTerm = '%' . $this->search . '%';
+                    $q->where('nama_aset', 'like', $searchTerm)
+                      ->orWhereHas('lokasi', fn ($q) => $q->where('nama_lokasi', 'like', $searchTerm));
+                })
+                ->orderBy('id', 'desc')->paginate(15)->pluck('id')->map(fn($id) => (string) $id)->toArray();
+        } else {
+            $this->selectedRows = [];
+        }
+    }
+
+    private function resetSelection(): void
+    {
+        $this->selectedRows = [];
+        $this->selectAll = false;
+    }
+
+    public function deleteSelected(): void
+    {
+        if (!empty($this->selectedRows)) {
+            AsetValve::whereIn('id', $this->selectedRows)->delete();
+            $this->resetSelection();
+            session()->flash('success', 'Aset terpilih berhasil dihapus.');
+        }
     }
 
     /**
@@ -140,6 +175,8 @@ class ManajemenAset extends Component
     public function delete(int $id): void
     {
         AsetValve::findOrFail($id)->delete();
+        $this->resetSelection();
+        session()->flash('success', 'Aset berhasil dihapus.');
     }
 
     /**

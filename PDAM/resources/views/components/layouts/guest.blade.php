@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id" class="h-full">
+<html lang="id" class="h-full dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +8,18 @@
     <link rel="icon" href="/images/TIRTAFLOWBGPUTIH.png" type="image/png">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
+
+    {{-- Anti-FOUC: Set theme before first paint --}}
+    <script>
+        (function() {
+            const theme = localStorage.getItem('tirta-theme') || 'dark';
+            if (theme === 'light') {
+                document.documentElement.classList.remove('dark');
+            } else {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
 
     {{-- Google Fonts: Inter --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,3 +31,4 @@
     @livewireScripts
 </body>
 </html>
+

@@ -198,7 +198,7 @@
             <input
                 type="text"
                 wire:model.live.debounce.300ms="search"
-                placeholder="Cari nama daerah..."
+                placeholder="Cari No SR / nama daerah..."
                 class="w-full pl-10 pr-4 py-2.5 bg-slate-900/50 border border-slate-700/50 rounded-xl text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-500/40 transition"
             >
         </div>
@@ -263,8 +263,7 @@
                             <input type="checkbox" wire:model.live="selectAll" class="rounded border-slate-700 bg-slate-800 text-cyan-500 focus:ring-cyan-500/50">
                         </th>
                         <th class="px-5 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Waktu</th>
-                        <th class="px-5 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Nama Daerah</th>
-                        {{-- <th class="px-5 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">No. SR</th> --}}
+                        <th class="px-5 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">No SR / Daerah</th>
                         <th class="px-5 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">Tekanan (Bar)</th>
                         <th class="px-5 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">Aliran</th>
                         <th class="px-5 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</th>
@@ -285,11 +284,10 @@
                                 <span class="text-slate-500">{{ $log->waktu_pengecekan->format('H:i') }}</span>
                             </td>
                             <td class="px-5 py-4">
-                                <span class="font-medium text-white">{{ $log->lokasi->nama_lokasi ?? '-' }}</span>
+                                <span class="font-medium text-white">{{ $log->no_sr ?: 'No SR Belum Diinput' }}</span>
+                                <br>
+                                <span class="text-xs text-slate-400">{{ $log->lokasi->nama_lokasi ?? '-' }}</span>
                             </td>
-                            {{-- <td class="px-5 py-4">
-                                <span class="text-slate-300">{{ $log->no_sr ?? '-' }}</span>
-                            </td> --}}
                             <td class="px-5 py-4 text-center font-mono text-slate-300 font-semibold">{{ $log->nilai_tekanan }}</td>
                             <td class="px-5 py-4 text-center">
                                 @if($log->status_aliran === 'mengalir')
@@ -379,29 +377,36 @@
     {{-- Delete Confirmation Modal --}}
     <div x-show="showDeleteModal" 
          x-transition:enter="transition ease-out duration-200"
-         x-transition:enter-start="opacity-0 scale-95"
-         x-transition:enter-end="opacity-100 scale-100"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
          x-transition:leave="transition ease-in duration-150"
-         x-transition:leave-start="opacity-100 scale-100"
-         x-transition:leave-end="opacity-0 scale-95"
-         class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm" 
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" 
          style="display: none;">
-        <div @click.outside="showDeleteModal = false" class="bg-slate-900 border border-slate-700/50 rounded-2xl p-6 max-w-sm w-full shadow-2xl relative overflow-hidden">
-            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 to-rose-500"></div>
-            <div class="flex items-center gap-4 mb-4">
-                <div class="flex-shrink-0 w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center">
-                    <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div @click.outside="showDeleteModal = false" 
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 scale-90"
+             x-transition:enter-end="opacity-100 scale-100"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 scale-100"
+             x-transition:leave-end="opacity-0 scale-90"
+             class="bg-slate-900 border border-slate-700/50 rounded-xl p-5 w-80 shadow-2xl relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-red-500 to-rose-500"></div>
+            <div class="flex items-start gap-3 mb-4">
+                <div class="flex-shrink-0 w-9 h-9 rounded-full bg-red-500/10 flex items-center justify-center mt-0.5">
+                    <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                     </svg>
                 </div>
                 <div>
-                    <h3 class="text-lg font-semibold text-white">Konfirmasi Hapus</h3>
-                    <p class="text-sm text-slate-400 mt-1" x-text="deleteMessage"></p>
+                    <h3 class="text-sm font-semibold text-white">Konfirmasi Hapus</h3>
+                    <p class="text-xs text-slate-400 mt-0.5" x-text="deleteMessage"></p>
                 </div>
             </div>
-            <div class="flex justify-end gap-3 mt-6">
-                <button @click="showDeleteModal = false" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 transition-colors">Batal</button>
-                <button @click="if(deleteType === 'single') { $wire.deleteSingle(deleteId) } else { $wire.deleteSelected() }; showDeleteModal = false" class="px-4 py-2 rounded-xl text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20">Ya, Hapus</button>
+            <div class="flex justify-end gap-2">
+                <button @click="showDeleteModal = false" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 transition-colors">Batal</button>
+                <button @click="if(deleteType === 'single') { $wire.deleteSingle(deleteId) } else { $wire.deleteSelected() }; showDeleteModal = false" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500 text-white hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20">Ya, Hapus</button>
             </div>
         </div>
     </div>

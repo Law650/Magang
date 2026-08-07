@@ -39,6 +39,9 @@ class ApiLogValveController extends Controller
         // Normalize aksi_kerja ke lowercase
         $validated['aksi_kerja'] = strtolower($validated['aksi_kerja']);
         
+        // Simpan aksi asli sebelum di-remap untuk pengecekan koordinat nanti
+        $aksiAsli = $validated['aksi_kerja'];
+
         // Map 'cek' ke 'buka' agar tidak error di kolom ENUM MySQL, karena putaran = 0 tidak akan merubah status
         if ($validated['aksi_kerja'] === 'cek') {
             $validated['aksi_kerja'] = 'buka';
@@ -61,7 +64,7 @@ class ApiLogValveController extends Controller
             $fotoPath2 = $file->storeAs($folder, $filename, 'public');
         }
 
-        $log = DB::transaction(function () use ($validated, $fotoPath, $fotoPath2, $request) {
+        $log = DB::transaction(function () use ($validated, $fotoPath, $fotoPath2, $request, $aksiAsli) {
             $aset = AsetValve::lockForUpdate()->findOrFail($validated['aset_id']);
             
             // Allow updating kapasitas_full from mobile
@@ -87,9 +90,9 @@ class ApiLogValveController extends Controller
                 'total_tutupan_saat_ini' => round($totalTutupan, 2),
             ]);
 
-            // Jika aset valve belum memiliki koordinat, atau jika kita ingin update, simpan koordinatnya
+            // Jika aset valve belum memiliki koordinat, atau jika aksi = cek, selalu update koordinatnya
             if (isset($validated['latitude']) && isset($validated['longitude'])) {
-                if (empty($aset->latitude) || empty($aset->longitude) || $request->input('aksi_kerja') === 'cek') {
+                if (empty($aset->latitude) || empty($aset->longitude) || $aksiAsli === 'cek') {
                     $aset->update([
                         'latitude' => $validated['latitude'],
                         'longitude' => $validated['longitude'],

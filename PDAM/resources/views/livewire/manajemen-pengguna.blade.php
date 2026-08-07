@@ -1,4 +1,4 @@
-<div class="space-y-6">
+<div class="space-y-6" x-data="{ showDeleteModal: false, deleteId: null, deleteMessage: '' }">
 
     {{-- Page Header --}}
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -39,9 +39,9 @@
                 <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-violet-500/10 text-violet-400">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
                 </div>
-                <span class="text-xs font-medium text-slate-400">Admin</span>
+                <span class="text-xs font-medium text-slate-400">Super Admin / Admin</span>
             </div>
-            <p class="text-2xl font-bold text-violet-400">{{ $totalAdmin }}</p>
+            <p class="text-2xl font-bold text-violet-400">{{ $totalSuperAdmin }} / {{ $totalAdmin }}</p>
         </div>
 
         <div class="rounded-xl bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-slate-700/40 p-4">
@@ -130,8 +130,7 @@
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                     Edit
                                 </button>
-                                <button wire:click="delete({{ $user->id }})"
-                                        wire:confirm="Yakin ingin menghapus akun {{ $user->name }} secara permanen?"
+                                <button @click="deleteId = {{ $user->id }}; deleteMessage = `Yakin ingin menghapus akun {{ addslashes($user->name) }} secara permanen?`; showDeleteModal = true;"
                                         class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-red-400 hover:bg-red-500/10 transition-colors">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                     Hapus
@@ -158,22 +157,14 @@
     </div>
 
     {{-- Modal Form --}}
-    <div x-data="{ open: false }"
-         x-on:open-user-modal.window="open = true"
-         x-on:close-user-modal.window="open = false"
-         x-cloak>
-
+    @if($showModal)
+    <div>
         {{-- Backdrop --}}
-        <div x-show="open" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-             x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-             class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"></div>
+        <div class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"></div>
 
         {{-- Modal --}}
-        <div x-show="open" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95 translate-y-4"
-             x-transition:enter-end="opacity-100 scale-100 translate-y-0" x-transition:leave="transition ease-in duration-200"
-             x-transition:leave-start="opacity-100 scale-100 translate-y-0" x-transition:leave-end="opacity-0 scale-95 translate-y-4"
-             class="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div class="bg-slate-900 border border-slate-700/60 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" @click.outside="open = false">
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="bg-slate-900 border border-slate-700/60 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" @click.outside="$wire.set('showModal', false)">
 
                 <div class="px-6 py-4 border-b border-slate-700/40">
                     <h3 class="text-lg font-semibold text-white">{{ $editingId ? 'Edit Pengguna' : 'Tambah Pengguna Baru' }}</h3>
@@ -236,29 +227,92 @@
                         </div>
                         <div>
                             <label class="block text-xs font-medium text-slate-400 mb-1.5">Role</label>
-                            <select wire:model="role"
+                            <select wire:model.live="role"
                                     class="w-full px-3 py-2.5 rounded-lg bg-slate-800/60 border border-slate-700/50 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-500/40">
                                 <option value="petugas">Petugas</option>
-                                <option value="admin">Admin</option>
+                                @if(auth()->user()->hasRole('super_admin'))
+                                    <option value="admin">Admin</option>
+                                    <option value="super_admin">Super Admin</option>
+                                @endif
                             </select>
                             @error('role') <p class="text-xs text-red-400 mt-1">{{ $message }}</p> @enderror
                         </div>
                     </div>
 
+                    {{-- Dynamic Permissions Checklist --}}
+                    <div x-show="$wire.role !== 'super_admin'" x-collapse>
+                        <div class="pt-3 border-t border-slate-700/40">
+                            <label class="block text-xs font-medium text-slate-400 mb-2">Hak Akses Admin Khusus (Permissions)</label>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                @foreach($availablePermissions as $perm)
+                                    <label class="flex items-center gap-2 p-2 rounded border border-slate-700/40 bg-slate-800/40 cursor-pointer hover:bg-slate-700/40 transition">
+                                        <input type="checkbox" wire:model="permissions" value="{{ $perm->name }}"
+                                               class="w-4 h-4 rounded bg-slate-900 border-slate-600 text-cyan-500 focus:ring-cyan-500 focus:ring-offset-slate-900">
+                                        <span class="text-xs text-slate-300 font-medium">{{ str_replace('_', ' ', Str::title($perm->name)) }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                            <p class="text-[10px] text-slate-500 mt-1.5 leading-relaxed">
+                                Centang fitur yang diizinkan untuk Admin ini. (Super Admin otomatis mendapat semua akses, Petugas hanya Dashboard & Peta).
+                            </p>
+                            @error('permissions') <p class="text-xs text-red-400 mt-1">{{ $message }}</p> @enderror
+                        </div>
+                    </div>
+
                     {{-- Actions --}}
                     <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-700/40">
-                        <button type="button" @click="open = false"
+                        <button type="button" wire:click="$set('showModal', false)"
                                 class="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-700/50 transition-colors">
                             Batal
                         </button>
                         <button type="submit"
-                                class="px-5 py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-sm font-semibold shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 transition-all">
-                            {{ $editingId ? 'Simpan Perubahan' : 'Buat Akun' }}
+                                wire:loading.attr="disabled"
+                                wire:target="save"
+                                class="px-5 py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-sm font-semibold shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                            <svg wire:loading wire:target="save" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            <span wire:loading.remove wire:target="save">{{ $editingId ? 'Simpan Perubahan' : 'Buat Akun' }}</span>
+                            <span wire:loading wire:target="save">Memproses...</span>
                         </button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
-
+    @endif
+    {{-- Delete Confirmation Modal --}}
+    <div x-show="showDeleteModal" 
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" 
+         style="display: none;">
+        <div @click.outside="showDeleteModal = false" 
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 scale-90"
+             x-transition:enter-end="opacity-100 scale-100"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 scale-100"
+             x-transition:leave-end="opacity-0 scale-90"
+             class="bg-slate-900 border border-slate-700/50 rounded-xl p-5 w-80 shadow-2xl relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-red-500 to-rose-500"></div>
+            <div class="flex items-start gap-3 mb-4">
+                <div class="flex-shrink-0 w-9 h-9 rounded-full bg-red-500/10 flex items-center justify-center mt-0.5">
+                    <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold text-white">Konfirmasi Hapus</h3>
+                    <p class="text-xs text-slate-400 mt-0.5" x-text="deleteMessage"></p>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2">
+                <button @click="showDeleteModal = false" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 transition-colors">Batal</button>
+                <button @click="$wire.delete(deleteId); showDeleteModal = false" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500 text-white hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20">Ya, Hapus</button>
+            </div>
+        </div>
+    </div>
 </div>

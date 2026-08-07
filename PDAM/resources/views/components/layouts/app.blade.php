@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id" class="h-full">
+<html lang="id" class="h-full dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,8 +9,20 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 
-    {{-- Chart.js CDN --}}
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    {{-- Anti-FOUC: Set theme before first paint --}}
+    <script>
+        (function() {
+            const theme = localStorage.getItem('tirta-theme') || 'dark';
+            if (theme === 'light') {
+                document.documentElement.classList.remove('dark');
+            } else {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+
+    {{-- Chart.js CDN (Menggunakan cdnjs untuk menghindari blokir CORS di HTTP) --}}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
     {{-- Leaflet.js CDN --}}
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
@@ -79,6 +91,7 @@
                     Dashboard
                 </a>
 
+                @canany(['view_peta_tekanan', 'view_peta_valve'])
                 <a href="{{ route('peta-distribusi') }}" wire:navigate
                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('peta-distribusi') ? 'bg-cyan-500/10 text-cyan-400 shadow-sm' : 'text-slate-400 hover:text-white hover:bg-slate-800/60' }}">
                     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -86,7 +99,9 @@
                     </svg>
                     Peta Distribusi
                 </a>
+                @endcanany
 
+                @can('manage_valve')
                 <a href="{{ route('log-valve') }}" wire:navigate
                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('log-valve') ? 'bg-cyan-500/10 text-cyan-400 shadow-sm' : 'text-slate-400 hover:text-white hover:bg-slate-800/60' }}">
                     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -94,7 +109,9 @@
                     </svg>
                     Log Valve
                 </a>
+                @endcan
 
+                @can('manage_tekanan')
                 <a href="{{ route('log-tekanan') }}" wire:navigate
                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('log-tekanan') ? 'bg-cyan-500/10 text-cyan-400 shadow-sm' : 'text-slate-400 hover:text-white hover:bg-slate-800/60' }}">
                     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -102,9 +119,13 @@
                     </svg>
                     Log Tekanan
                 </a>
+                @endcan
 
+                @canany(['manage_valve', 'manage_tekanan'])
                 <p class="px-3 mt-4 mb-2 text-xs font-semibold tracking-wider text-slate-500 uppercase">Master Data</p>
+                @endcanany
 
+                @can('manage_valve')
                 <a href="{{ route('manajemen-aset') }}" wire:navigate
                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('manajemen-aset') ? 'bg-cyan-500/10 text-cyan-400 shadow-sm' : 'text-slate-400 hover:text-white hover:bg-slate-800/60' }}">
                     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -112,7 +133,9 @@
                     </svg>
                     Master Aset
                 </a>
+                @endcan
 
+                @can('manage_tekanan')
                 <a href="{{ route('manajemen-daerah-tekanan') }}" wire:navigate
                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('manajemen-daerah-tekanan') ? 'bg-cyan-500/10 text-cyan-400 shadow-sm' : 'text-slate-400 hover:text-white hover:bg-slate-800/60' }}">
                     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -120,8 +143,9 @@
                     </svg>
                     Daerah Tekanan
                 </a>
+                @endcan
 
-                @if(auth()->user()->isAdmin())
+                @can('manage_users')
                     <p class="px-3 mt-4 mb-2 text-xs font-semibold tracking-wider text-slate-500 uppercase">Admin</p>
 
                     <a href="{{ route('manajemen-pengguna') }}" wire:navigate
@@ -131,7 +155,17 @@
                         </svg>
                         Manajemen Pengguna
                     </a>
-                @endif
+                @endcan
+
+                @role('super_admin')
+                    <a href="{{ route('manajemen-role') }}" wire:navigate
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('manajemen-role') ? 'bg-cyan-500/10 text-cyan-400 shadow-sm' : 'text-slate-400 hover:text-white hover:bg-slate-800/60' }}">
+                        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
+                        </svg>
+                        Manajemen Peran
+                    </a>
+                @endrole
             </nav>
 
             {{-- Sidebar User Info --}}
@@ -181,6 +215,14 @@
 
                 {{-- Right side --}}
                 <div class="flex items-center gap-3">
+                    {{-- Theme Toggle Slider --}}
+                    <button
+                        id="theme-toggle-btn"
+                        class="theme-toggle"
+                        title="Ganti mode tampilan"
+                        aria-label="Toggle light/dark mode"
+                    ></button>
+
                     {{-- Status indicator --}}
                     <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
                         <span class="relative flex h-2 w-2">
@@ -251,5 +293,39 @@
     </div>
 
     @livewireScripts
+
+    {{-- Theme Toggle Script --}}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const btn = document.getElementById('theme-toggle-btn');
+            if (!btn) return;
+
+            // Set initial state
+            const currentTheme = localStorage.getItem('tirta-theme') || 'dark';
+            if (currentTheme === 'light') {
+                btn.classList.add('light');
+            }
+
+            btn.addEventListener('click', function() {
+                const html = document.documentElement;
+                const isDark = html.classList.contains('dark');
+
+                if (isDark) {
+                    html.classList.remove('dark');
+                    btn.classList.add('light');
+                    localStorage.setItem('tirta-theme', 'light');
+                } else {
+                    html.classList.add('dark');
+                    btn.classList.remove('light');
+                    localStorage.setItem('tirta-theme', 'dark');
+                }
+
+                // Dispatch event for map tile switching
+                window.dispatchEvent(new CustomEvent('theme-changed', {
+                    detail: { theme: isDark ? 'light' : 'dark' }
+                }));
+            });
+        });
+    </script>
 </body>
 </html>

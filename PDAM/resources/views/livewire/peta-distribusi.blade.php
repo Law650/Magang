@@ -16,6 +16,7 @@
 
     {{-- Tab Navigation --}}
     <div class="flex items-center gap-1 p-1 rounded-xl bg-slate-800/60 border border-slate-700/40 w-fit">
+        @can('view_peta_valve')
         <button wire:click="setTab('gv')"
                 class="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200
                 {{ $activeTab === 'gv' ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/25' : 'text-slate-400 hover:text-white hover:bg-slate-700/50' }}">
@@ -25,6 +26,9 @@
             </svg>
             Peta Gate Valve
         </button>
+        @endcan
+        
+        @can('view_peta_tekanan')
         <button wire:click="setTab('tekanan')"
                 class="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200
                 {{ $activeTab === 'tekanan' ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/25' : 'text-slate-400 hover:text-white hover:bg-slate-700/50' }}">
@@ -33,6 +37,7 @@
             </svg>
             Peta Tekanan Air
         </button>
+        @endcan
     </div>
 
     {{-- ═══════════════════════════════════════════════════════════ --}}
@@ -96,7 +101,7 @@
         <div wire:ignore wire:key="map-gv">
             <div
                 x-data="{
-                    map: null, markerLayer: null, markers: @js($gvMarkers), markerObjects: {},
+                    map: null, markerLayer: null, markers: @js($gvMarkers), markerObjects: {}, tileLayer: null,
                     init() {
                         this.initMap();
                         this.renderMarkers();
@@ -109,34 +114,66 @@
                                 this.$refs.gvMap.scrollIntoView({ behavior: 'smooth', block: 'center' });
                             }
                         });
+                        window.addEventListener('theme-changed', (e) => { this.switchTile(e.detail.theme); this.renderMarkers(); });
+                    },
+                    getTileUrl() {
+                        const isDark = document.documentElement.classList.contains('dark');
+                        return isDark
+                            ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                            : 'https://{s}.basemaps.cartocdn.com/voyager/{z}/{x}/{y}{r}.png';
+                    },
+                    switchTile(theme) {
+                        if (!this.map) return;
+                        if (this.tileLayer) this.map.removeLayer(this.tileLayer);
+                        const url = theme === 'dark'
+                            ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                            : 'https://{s}.basemaps.cartocdn.com/voyager/{z}/{x}/{y}{r}.png';
+                        this.tileLayer = L.tileLayer(url, { attribution: '&copy; OSM &copy; CARTO', subdomains: 'abcd', maxZoom: 19 }).addTo(this.map);
                     },
                     initMap() {
                         this.map = L.map(this.$refs.gvMap, { zoomControl: false }).setView([-7.01, 109.40], 11);
-                        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OSM &copy; CARTO', subdomains: 'abcd', maxZoom: 19 }).addTo(this.map);
+                        this.tileLayer = L.tileLayer(this.getTileUrl(), { attribution: '&copy; OSM &copy; CARTO', subdomains: 'abcd', maxZoom: 19 }).addTo(this.map);
                         L.control.zoom({ position: 'topright' }).addTo(this.map);
                     },
                     getColor(s) { return { penuh: '#10b981', sebagian: '#f59e0b', tertutup: '#ef4444' }[s] || '#64748b'; },
                     getLabel(s) { return { penuh: 'Bukaan Penuh', sebagian: 'Sebagian', tertutup: 'Tertutup' }[s] || 'Unknown'; },
                     icon(color) {
-                        return L.divIcon({ html: `<div style='width:28px;height:28px;background:${color};border:3px solid rgba(15,23,42,0.9);border-radius:50%;box-shadow:0 0 12px ${color}88,0 2px 8px rgba(0,0,0,0.4);position:relative;'><div style='position:absolute;inset:4px;border-radius:50%;background:radial-gradient(circle at 35% 35%,rgba(255,255,255,0.4),transparent);'></div></div>`, className:'', iconSize:[28,28], iconAnchor:[14,14], popupAnchor:[0,-16] });
+                        const isDark = document.documentElement.classList.contains('dark');
+                        const border = isDark ? 'rgba(15,23,42,0.9)' : 'rgba(255,255,255,0.9)';
+                        return L.divIcon({ html: `<div style='width:28px;height:28px;background:${color};border:3px solid ${border};border-radius:50%;box-shadow:0 0 12px ${color}88,0 2px 8px rgba(0,0,0,0.4);position:relative;'><div style='position:absolute;inset:4px;border-radius:50%;background:radial-gradient(circle at 35% 35%,rgba(255,255,255,0.4),transparent);'></div></div>`, className:'', iconSize:[28,28], iconAnchor:[14,14], popupAnchor:[0,-16] });
+                    },
+                    popupColors() {
+                        const isDark = document.documentElement.classList.contains('dark');
+                        return {
+                            title: isDark ? '#f1f5f9' : '#0f172a',
+                            subtitle: isDark ? '#94a3b8' : '#64748b',
+                            boxBg: isDark ? 'rgba(30,41,59,0.6)' : 'rgba(241,245,249,0.8)',
+                            boxBorder: isDark ? 'rgba(51,65,85,0.4)' : 'rgba(226,232,240,0.8)',
+                            labelColor: isDark ? '#64748b' : '#94a3b8',
+                            valueColor: isDark ? '#e2e8f0' : '#1e293b',
+                            barBg: isDark ? 'rgba(51,65,85,0.5)' : 'rgba(226,232,240,0.8)',
+                            barText: isDark ? '#94a3b8' : '#64748b',
+                            imgBorder: isDark ? 'rgba(51,65,85,0.4)' : 'rgba(226,232,240,0.8)',
+                        };
                     },
                     renderMarkers() {
                         if (this.markerLayer) this.map.removeLayer(this.markerLayer);
                         this.markerLayer = L.layerGroup(); this.markerObjects = {};
+                        const pc = this.popupColors();
                         this.markers.forEach(m => {
                             const c = this.getColor(m.status);
                             const badge = { penuh:'background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3)', sebagian:'background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3)', tertutup:'background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3)' };
-                            const fotoHtml = m.foto ? `<div style='margin-top:12px;border-radius:8px;overflow:hidden;border:1px solid rgba(51,65,85,0.4);'><img src='${m.foto}' alt='Foto GV' style='width:100%;height:120px;object-fit:cover;display:block;'></div>` : '';
+                            const fotoHtml = m.foto ? `<div style='margin-top:12px;border-radius:8px;overflow:hidden;border:1px solid ${pc.imgBorder};'><img src='${m.foto}' alt='Foto GV' style='width:100%;height:120px;object-fit:cover;display:block;'></div>` : '';
                             const popup = `<div style='font-family:Inter,sans-serif;min-width:220px;padding:4px 0;'>
-                                <div style='font-size:14px;font-weight:700;color:#f1f5f9;margin-bottom:4px;'>${m.nama}</div>
-                                <div style='font-size:11px;color:#94a3b8;margin-bottom:10px;'>${m.lokasi}</div>
+                                <div style='font-size:14px;font-weight:700;color:${pc.title};margin-bottom:4px;'>${m.nama}</div>
+                                <div style='font-size:11px;color:${pc.subtitle};margin-bottom:10px;'>${m.lokasi}</div>
                                 <div style='margin-bottom:10px;'><span style='${badge[m.status]||badge.penuh};padding:2px 10px;border-radius:6px;font-size:11px;font-weight:600;'>${this.getLabel(m.status)}</span></div>
                                 <div style='display:grid;grid-template-columns:1fr 1fr;gap:8px;'>
-                                    <div style='background:rgba(30,41,59,0.6);padding:8px 10px;border-radius:8px;border:1px solid rgba(51,65,85,0.4);'><div style='font-size:10px;color:#64748b;margin-bottom:2px;'>Kapasitas</div><div style='font-size:14px;font-weight:700;color:#e2e8f0;'>${m.kapasitas} Put</div></div>
-                                    <div style='background:rgba(30,41,59,0.6);padding:8px 10px;border-radius:8px;border:1px solid rgba(51,65,85,0.4);'><div style='font-size:10px;color:#64748b;margin-bottom:2px;'>Sisa Bukaan</div><div style='font-size:14px;font-weight:700;color:${c};'>${m.sisaBukaan} Put</div></div>
+                                    <div style='background:${pc.boxBg};padding:8px 10px;border-radius:8px;border:1px solid ${pc.boxBorder};'><div style='font-size:10px;color:${pc.labelColor};margin-bottom:2px;'>Kapasitas</div><div style='font-size:14px;font-weight:700;color:${pc.valueColor};'>${m.kapasitas} Put</div></div>
+                                    <div style='background:${pc.boxBg};padding:8px 10px;border-radius:8px;border:1px solid ${pc.boxBorder};'><div style='font-size:10px;color:${pc.labelColor};margin-bottom:2px;'>Sisa Bukaan</div><div style='font-size:14px;font-weight:700;color:${c};'>${m.sisaBukaan} Put</div></div>
                                 </div>
-                                <div style='margin-top:10px;background:rgba(30,41,59,0.6);padding:8px 10px;border-radius:8px;border:1px solid rgba(51,65,85,0.4);'><div style='font-size:10px;color:#64748b;margin-bottom:2px;'>Petugas Terakhir</div><div style='font-size:12px;font-weight:600;color:#e2e8f0;'>${m.teknisiTerakhir}</div></div>
-                                <div style='margin-top:8px;'><div style='width:100%;height:6px;background:rgba(51,65,85,0.5);border-radius:3px;overflow:hidden;'><div style='height:100%;width:${m.persentase}%;background:${c};border-radius:3px;'></div></div><div style='font-size:10px;color:#94a3b8;margin-top:4px;text-align:right;'>${m.persentase}% terbuka</div></div>
+                                <div style='margin-top:10px;background:${pc.boxBg};padding:8px 10px;border-radius:8px;border:1px solid ${pc.boxBorder};'><div style='font-size:10px;color:${pc.labelColor};margin-bottom:2px;'>Petugas Terakhir</div><div style='font-size:12px;font-weight:600;color:${pc.valueColor};'>${m.teknisiTerakhir}</div></div>
+                                <div style='margin-top:8px;'><div style='width:100%;height:6px;background:${pc.barBg};border-radius:3px;overflow:hidden;'><div style='height:100%;width:${m.persentase}%;background:${c};border-radius:3px;'></div></div><div style='font-size:10px;color:${pc.barText};margin-top:4px;text-align:right;'>${m.persentase}% terbuka</div></div>
                                 ${fotoHtml}
                             </div>`;
                             const marker = L.marker([m.lat, m.lng], { icon: this.icon(c) }).bindPopup(popup, { className:'dark-popup', maxWidth:280 });
@@ -264,7 +301,7 @@
         <div wire:ignore wire:key="map-tekanan">
             <div
                 x-data="{
-                    map: null, markerLayer: null, markers: @js($tekananMarkers), markerObjects: {},
+                    map: null, markerLayer: null, markers: @js($tekananMarkers), markerObjects: {}, tileLayer: null,
                     init() {
                         this.initMap();
                         this.renderMarkers();
@@ -277,10 +314,25 @@
                                 this.$refs.tekananMap.scrollIntoView({ behavior: 'smooth', block: 'center' });
                             }
                         });
+                        window.addEventListener('theme-changed', (e) => { this.switchTile(e.detail.theme); this.renderMarkers(); });
+                    },
+                    getTileUrl() {
+                        const isDark = document.documentElement.classList.contains('dark');
+                        return isDark
+                            ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                            : 'https://{s}.basemaps.cartocdn.com/voyager/{z}/{x}/{y}{r}.png';
+                    },
+                    switchTile(theme) {
+                        if (!this.map) return;
+                        if (this.tileLayer) this.map.removeLayer(this.tileLayer);
+                        const url = theme === 'dark'
+                            ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                            : 'https://{s}.basemaps.cartocdn.com/voyager/{z}/{x}/{y}{r}.png';
+                        this.tileLayer = L.tileLayer(url, { attribution: '&copy; OSM &copy; CARTO', subdomains: 'abcd', maxZoom: 19 }).addTo(this.map);
                     },
                     initMap() {
                         this.map = L.map(this.$refs.tekananMap, { zoomControl: false }).setView([-7.01, 109.40], 11);
-                        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OSM &copy; CARTO', subdomains: 'abcd', maxZoom: 19 }).addTo(this.map);
+                        this.tileLayer = L.tileLayer(this.getTileUrl(), { attribution: '&copy; OSM &copy; CARTO', subdomains: 'abcd', maxZoom: 19 }).addTo(this.map);
                         L.control.zoom({ position: 'topright' }).addTo(this.map);
                     },
                     getColor(s) { return { normal:'#10b981', rendah:'#f59e0b', kritis:'#ef4444', unknown:'#64748b' }[s] || '#64748b'; },
@@ -288,21 +340,36 @@
                     getAliranLabel(s) { return s === 'mengalir' ? 'Mengalir' : (s === 'tidak_mengalir' ? 'Tidak Mengalir' : '-'); },
                     getAliranColor(s) { return s === 'mengalir' ? '#06b6d4' : (s === 'tidak_mengalir' ? '#ef4444' : '#64748b'); },
                     icon(color) {
-                        return L.divIcon({ html: `<div style='width:28px;height:28px;background:${color};border:3px solid rgba(15,23,42,0.9);border-radius:50%;box-shadow:0 0 12px ${color}88,0 2px 8px rgba(0,0,0,0.4);position:relative;'><div style='position:absolute;inset:4px;border-radius:50%;background:radial-gradient(circle at 35% 35%,rgba(255,255,255,0.4),transparent);'></div></div>`, className:'', iconSize:[28,28], iconAnchor:[14,14], popupAnchor:[0,-16] });
+                        const isDark = document.documentElement.classList.contains('dark');
+                        const border = isDark ? 'rgba(15,23,42,0.9)' : 'rgba(255,255,255,0.9)';
+                        return L.divIcon({ html: `<div style='width:28px;height:28px;background:${color};border:3px solid ${border};border-radius:50%;box-shadow:0 0 12px ${color}88,0 2px 8px rgba(0,0,0,0.4);position:relative;'><div style='position:absolute;inset:4px;border-radius:50%;background:radial-gradient(circle at 35% 35%,rgba(255,255,255,0.4),transparent);'></div></div>`, className:'', iconSize:[28,28], iconAnchor:[14,14], popupAnchor:[0,-16] });
+                    },
+                    popupColors() {
+                        const isDark = document.documentElement.classList.contains('dark');
+                        return {
+                            title: isDark ? '#f1f5f9' : '#0f172a',
+                            subtitle: isDark ? '#94a3b8' : '#64748b',
+                            boxBg: isDark ? 'rgba(30,41,59,0.6)' : 'rgba(241,245,249,0.8)',
+                            boxBorder: isDark ? 'rgba(51,65,85,0.4)' : 'rgba(226,232,240,0.8)',
+                            labelColor: isDark ? '#64748b' : '#94a3b8',
+                            valueColor: isDark ? '#e2e8f0' : '#1e293b',
+                            imgBorder: isDark ? 'rgba(51,65,85,0.4)' : 'rgba(226,232,240,0.8)',
+                        };
                     },
                     renderMarkers() {
                         if (this.markerLayer) this.map.removeLayer(this.markerLayer);
                         this.markerLayer = L.layerGroup(); this.markerObjects = {};
+                        const pc = this.popupColors();
                         this.markers.forEach(m => {
                             const c = this.getColor(m.status);
                             const aliranC = this.getAliranColor(m.statusAliran);
                             const badge = { normal:'background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3)', rendah:'background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3)', kritis:'background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3)', unknown:'background:rgba(100,116,139,0.15);color:#94a3b8;border:1px solid rgba(100,116,139,0.3)' };
                             const tekananText = m.tekanan !== null ? m.tekanan.toFixed(2) + ' Bar' : '-';
                             const waktuText = m.waktu || '-';
-                            const fotoHtml = m.foto ? `<div style='margin-top:12px;border-radius:8px;overflow:hidden;border:1px solid rgba(51,65,85,0.4);'><img src='${m.foto}' alt='Foto' style='width:100%;height:120px;object-fit:cover;display:block;'></div>` : '';
+                            const fotoHtml = m.foto ? `<div style='margin-top:12px;border-radius:8px;overflow:hidden;border:1px solid ${pc.imgBorder};'><img src='${m.foto}' alt='Foto' style='width:100%;height:120px;object-fit:cover;display:block;'></div>` : '';
                             const popup = `<div style='font-family:Inter,sans-serif;min-width:240px;padding:4px 0;'>
-                                <div style='font-size:14px;font-weight:700;color:#f1f5f9;margin-bottom:4px;'>${m.nama}</div>
-                                <div style='font-size:10px;font-family:monospace;color:#64748b;margin-bottom:10px;display:flex;align-items:center;gap:4px;'>
+                                <div style='font-size:14px;font-weight:700;color:${pc.title};margin-bottom:4px;'>${m.nama}</div>
+                                <div style='font-size:10px;font-family:monospace;color:${pc.labelColor};margin-bottom:10px;display:flex;align-items:center;gap:4px;'>
                                     <svg style='width:12px;height:12px;' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z'></path></svg>
                                     ${m.lat.toFixed(6)}, ${m.lng.toFixed(6)}
                                 </div>
@@ -311,8 +378,8 @@
                                     <span style='background:rgba(${aliranC === '#06b6d4' ? '6,182,212' : '239,68,68'},0.15);color:${aliranC};border:1px solid rgba(${aliranC === '#06b6d4' ? '6,182,212' : '239,68,68'},0.3);padding:2px 10px;border-radius:6px;font-size:11px;font-weight:600;'>${this.getAliranLabel(m.statusAliran)}</span>
                                 </div>
                                 <div style='display:grid;grid-template-columns:1fr 1fr;gap:8px;'>
-                                    <div style='background:rgba(30,41,59,0.6);padding:8px 10px;border-radius:8px;border:1px solid rgba(51,65,85,0.4);'><div style='font-size:10px;color:#64748b;margin-bottom:2px;'>Tekanan</div><div style='font-size:16px;font-weight:700;color:${c};'>${tekananText}</div></div>
-                                    <div style='background:rgba(30,41,59,0.6);padding:8px 10px;border-radius:8px;border:1px solid rgba(51,65,85,0.4);'><div style='font-size:10px;color:#64748b;margin-bottom:2px;'>Terakhir Dicek</div><div style='font-size:11px;font-weight:600;color:#e2e8f0;'>${waktuText}</div></div>
+                                    <div style='background:${pc.boxBg};padding:8px 10px;border-radius:8px;border:1px solid ${pc.boxBorder};'><div style='font-size:10px;color:${pc.labelColor};margin-bottom:2px;'>Tekanan</div><div style='font-size:16px;font-weight:700;color:${c};'>${tekananText}</div></div>
+                                    <div style='background:${pc.boxBg};padding:8px 10px;border-radius:8px;border:1px solid ${pc.boxBorder};'><div style='font-size:10px;color:${pc.labelColor};margin-bottom:2px;'>Terakhir Dicek</div><div style='font-size:11px;font-weight:600;color:${pc.valueColor};'>${waktuText}</div></div>
                                 </div>
                                 ${fotoHtml}
                             </div>`;

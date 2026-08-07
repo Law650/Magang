@@ -72,6 +72,10 @@ class ApiAsetController extends Controller
             'success' => true,
             'data' => $lokasis->map(fn ($lok) => [
                 'id' => $lok->id,
+                'no_sr' => $lok->no_sr,
+                'nama_pelanggan' => $lok->nama_pelanggan,
+                'alamat' => $lok->alamat,
+                'desa' => $lok->desa,
                 'nama_lokasi' => $lok->nama_lokasi,
                 'latitude' => $lok->latitude ? (float) $lok->latitude : null,
                 'longitude' => $lok->longitude ? (float) $lok->longitude : null,
@@ -141,8 +145,10 @@ class ApiAsetController extends Controller
                 'longitude' => $validated['longitude'] ?? null,
             ]);
         } else {
-            // Jika aset sudah ada dan dikiim kembali, update koordinat jika diperlukan (opsional)
-            // Sesuai kebutuhan, kita biarkan saja atau bisa tambahkan update koordinat
+            return response()->json([
+                'success' => false,
+                'message' => 'Exception: Jenis Pipa GV dengan nama "' . $validated['jenis_pipa'] . '" sudah ada di jalur ini.',
+            ], 422);
         }
 
         return response()->json([
@@ -169,21 +175,25 @@ class ApiAsetController extends Controller
     public function storeLokasiTekanan(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'nama_lokasi' => [
-                'required', 
-                'string', 
-                'max:150', 
-                \Illuminate\Validation\Rule::unique('lokasis')->where(fn ($query) => $query->where('jenis', 'tekanan'))
-            ],
+            'no_sr' => ['required', 'string', 'max:50', \Illuminate\Validation\Rule::unique('lokasis')],
+            'nama_pelanggan' => ['required', 'string', 'max:150'],
+            'alamat' => ['nullable', 'string'],
+            'desa' => ['required', 'string', 'max:100'],
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
         ]);
 
+        $namaLokasiFinal = $validated['no_sr'] . ' - ' . $validated['nama_pelanggan'];
+
         $lokasi = Lokasi::create([
-            'nama_lokasi' => $validated['nama_lokasi'],
+            'jenis' => 'tekanan',
+            'no_sr' => $validated['no_sr'],
+            'nama_pelanggan' => $validated['nama_pelanggan'],
+            'alamat' => $validated['alamat'] ?? null,
+            'desa' => $validated['desa'],
+            'nama_lokasi' => $namaLokasiFinal,
             'latitude' => $validated['latitude'] ?? null,
             'longitude' => $validated['longitude'] ?? null,
-            'jenis' => 'tekanan',
         ]);
 
         return response()->json([
@@ -192,6 +202,10 @@ class ApiAsetController extends Controller
             'data' => [
                 'id' => $lokasi->id,
                 'nama_lokasi' => $lokasi->nama_lokasi,
+                'no_sr' => $lokasi->no_sr,
+                'nama_pelanggan' => $lokasi->nama_pelanggan,
+                'alamat' => $lokasi->alamat,
+                'desa' => $lokasi->desa,
                 'latitude' => $lokasi->latitude ? (float) $lokasi->latitude : null,
                 'longitude' => $lokasi->longitude ? (float) $lokasi->longitude : null,
             ],

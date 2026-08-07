@@ -41,21 +41,31 @@ Route::post('/logout', function () {
 */
 Route::middleware(['auth', 'check.active'])->group(function () {
 
-    // ── Semua Role (Admin & Pekerja) ─────────────────────────────
+    // ── Terbuka untuk semua (hanya butuh auth) ─────────────────────────────
     Route::get('/', ExecutiveDashboard::class)->name('dashboard');
-    Route::get('/log-valve', LogValveRiwayat::class)->name('log-valve');
-    Route::get('/log-tekanan', LogTekananMonitor::class)->name('log-tekanan');
-    Route::get('/peta', PetaDistribusi::class)->name('peta-distribusi');
-    Route::get('/manajemen-aset', ManajemenAset::class)->name('manajemen-aset');
-    Route::get('/manajemen-daerah-tekanan', ManajemenDaerahTekanan::class)->name('manajemen-daerah-tekanan');
 
-    // Export endpoints
-    Route::get('/export/log-valve', [ExportController::class, 'logValve'])->name('export.log-valve');
-    Route::get('/export/log-tekanan', [ExportController::class, 'logTekanan'])->name('export.log-tekanan');
+    Route::middleware('permission:view_peta_tekanan|view_peta_valve')->group(function () {
+        Route::get('/peta', PetaDistribusi::class)->name('peta-distribusi');
+    });
 
-    // ── Admin Only ───────────────────────────────────────────────
-    Route::middleware('role:admin')->group(function () {
+    Route::middleware('can:manage_tekanan')->group(function () {
+        Route::get('/log-tekanan', LogTekananMonitor::class)->name('log-tekanan');
+        Route::get('/manajemen-daerah-tekanan', ManajemenDaerahTekanan::class)->name('manajemen-daerah-tekanan');
+        Route::get('/export/log-tekanan', [ExportController::class, 'logTekanan'])->name('export.log-tekanan');
+    });
+
+    Route::middleware('can:manage_valve')->group(function () {
+        Route::get('/log-valve', LogValveRiwayat::class)->name('log-valve');
+        Route::get('/manajemen-aset', ManajemenAset::class)->name('manajemen-aset');
+        Route::get('/export/log-valve', [ExportController::class, 'logValve'])->name('export.log-valve');
+    });
+
+    Route::middleware('can:manage_users')->group(function () {
         Route::get('/manajemen-pengguna', ManajemenPengguna::class)->name('manajemen-pengguna');
+    });
+
+    Route::middleware('role:super_admin')->group(function () {
+        Route::get('/manajemen-role', \App\Livewire\ManajemenRole::class)->name('manajemen-role');
     });
 });
 

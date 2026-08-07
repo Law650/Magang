@@ -7,13 +7,28 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
- * @property string $nama_lokasi
+ * @property string $jenis 'tekanan' atau 'valve'
+ * @property string $nama_lokasi (Unified Display Name) Jika tekanan: gabungan SR & Nama. Jika valve: nama valvenya.
+ * @property string|null $no_sr Hanya untuk jenis 'tekanan'
+ * @property string|null $nama_pelanggan Hanya untuk jenis 'tekanan'
+ * @property string|null $alamat
+ * @property string|null $desa
+ * @property float|null $latitude
+ * @property float|null $longitude
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  */
 class Lokasi extends Model
 {
+    // Catatan Developer: 
+    // Kolom 'nama_lokasi' dipertahankan sebagai "Unified Display Name" agar Frontend (Mobile App / Web)
+    // bisa langsung menampilkan 1 variabel tanpa perlu merakit string secara manual, yang mempercepat performa API.
+    
     protected $fillable = [
+        'no_sr',
+        'nama_pelanggan',
+        'alamat',
+        'desa',
         'nama_lokasi',
         'latitude',
         'longitude',

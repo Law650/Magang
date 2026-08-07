@@ -18,11 +18,14 @@ class ManajemenPengguna extends Component
     public ?int $editingId = null;
     public string $name = '';
     public string $username = '';
-
     public string $password = '';
     public string $password_confirmation = '';
     public string $phone = '';
     public string $role = 'petugas';
+    public array $permissions = []; // Array of permission names
+
+    // Modal state
+    public bool $showModal = false;
 
     public function updatedSearch(): void
     {
@@ -35,7 +38,7 @@ class ManajemenPengguna extends Component
     public function create(): void
     {
         $this->resetForm();
-        $this->dispatch('open-user-modal');
+        $this->showModal = true;
     }
 
     /**
@@ -50,11 +53,15 @@ class ManajemenPengguna extends Component
         $this->username = $user->username ?? '';
 
         $this->phone = $user->phone ?? '';
-        $this->role = $user->role;
+        // Load the primary role
+        $this->role = $user->roles->first()?->name ?? $user->role; 
+        // Load direct permissions
+        $this->permissions = $user->permissions->pluck('name')->toArray();
+
         $this->password = '';
         $this->password_confirmation = '';
 
-        $this->dispatch('open-user-modal');
+        $this->showModal = true;
     }
 
     /**
@@ -65,9 +72,9 @@ class ManajemenPengguna extends Component
         $rules = [
             'name' => ['required', 'string', 'max:150'],
             'username' => ['required', 'string', 'max:50', Rule::unique('users', 'username')->ignore($this->editingId)],
-
             'phone' => ['nullable', 'string', 'max:20'],
-            'role' => ['required', 'in:admin,petugas'],
+            'role' => ['required', 'in:super_admin,admin,petugas'],
+            'permissions' => ['array'],
         ];
 
         if (! $this->editingId) {
@@ -80,33 +87,59 @@ class ManajemenPengguna extends Component
 
         $validated = $this->validate($rules);
 
+        // Security Check: Only super_admin can create/edit super_admins
+        if ($validated['role'] === 'super_admin' && !auth()->user()->hasRole('super_admin')) {
+            session()->flash('error', 'Hanya Super Admin yang dapat menugaskan role Super Admin.');
+            return;
+        }
+
         if ($this->editingId) {
             $user = User::findOrFail($this->editingId);
+
+            // Security Check: Cannot change own role
+            if ($user->id === auth()->id() && $user->roles->first()?->name !== $validated['role']) {
+                session()->flash('error', 'Anda tidak dapat mengubah role akun Anda sendiri.');
+                return;
+            }
+
+            // Security Check: Non-super_admins cannot edit super_admins
+            if ($user->hasRole('super_admin') && !auth()->user()->hasRole('super_admin')) {
+                session()->flash('error', 'Anda tidak memiliki wewenang untuk mengedit Super Admin.');
+                return;
+            }
+
             $data = [
                 'name' => $validated['name'],
                 'username' => $validated['username'],
-
                 'phone' => $validated['phone'] ?? null,
-                'role' => $validated['role'],
+                'role' => $validated['role'], // Keep for backward compat
             ];
             if (! empty($validated['password'])) {
                 $data['password'] = $validated['password'];
             }
             $user->update($data);
+            
+            // Sync Spatie Roles and Permissions
+            $user->syncRoles([$validated['role']]);
+            $user->syncPermissions($validated['permissions'] ?? []);
+
         } else {
-            User::create([
+            $user = User::create([
                 'name' => $validated['name'],
                 'username' => $validated['username'],
-
                 'password' => $validated['password'],
                 'phone' => $validated['phone'] ?? null,
-                'role' => $validated['role'],
+                'role' => $validated['role'], // Keep for backward compat
                 'is_active' => true,
             ]);
+            
+            // Sync Spatie Roles and Permissions
+            $user->syncRoles([$validated['role']]);
+            $user->syncPermissions($validated['permissions'] ?? []);
         }
 
         $this->resetForm();
-        $this->dispatch('close-user-modal');
+        $this->showModal = false;
     }
 
     /**
@@ -119,6 +152,12 @@ class ManajemenPengguna extends Component
         // Jangan bisa menonaktifkan diri sendiri
         if ($user->id === auth()->id()) {
             session()->flash('error', 'Tidak bisa menonaktifkan akun sendiri.');
+            return;
+        }
+
+        // Security Check: Non-super_admins cannot disable super_admins
+        if ($user->hasRole('super_admin') && !auth()->user()->hasRole('super_admin')) {
+            session()->flash('error', 'Anda tidak memiliki wewenang untuk menonaktifkan Super Admin.');
             return;
         }
 
@@ -138,6 +177,12 @@ class ManajemenPengguna extends Component
             return;
         }
 
+        // Security Check: Non-super_admins cannot delete super_admins
+        if ($user->hasRole('super_admin') && !auth()->user()->hasRole('super_admin')) {
+            session()->flash('error', 'Anda tidak memiliki wewenang untuk menghapus Super Admin.');
+            return;
+        }
+
         $user->delete();
         session()->flash('message', 'Akun berhasil dihapus.');
     }
@@ -151,14 +196,23 @@ class ManajemenPengguna extends Component
         $this->name = '';
         $this->username = '';
         $this->password = '';
+        $this->password_confirmation = '';
         $this->phone = '';
         $this->role = 'petugas';
-        $this->is_active = true;
+        $this->permissions = [];
+        $this->resetValidation();
     }
 
     public function render(): mixed
     {
-        $query = User::query();
+        $query = User::with('roles', 'permissions');
+
+        // Jika yang login adalah admin (bukan super_admin), hanya tampilkan petugas
+        if (auth()->user()->hasRole('admin') && !auth()->user()->hasRole('super_admin')) {
+            $query->whereHas('roles', function ($q) {
+                $q->where('name', 'petugas');
+            });
+        }
 
         if ($this->search !== '') {
             $searchTerm = '%' . $this->search . '%';
@@ -171,17 +225,33 @@ class ManajemenPengguna extends Component
 
         $users = $query->orderBy('id', 'desc')->paginate(15);
 
-        $totalUsers = User::count();
-        $totalAdmin = User::where('role', 'admin')->count();
-        $totalPetugas = User::where('role', 'petugas')->count();
-        $totalAktif = User::where('is_active', true)->count();
+        // Menghitung statistik (sesuaikan dengan visibility)
+        $totalUsers = $users->total(); 
+        $totalSuperAdmin = auth()->user()->hasRole('super_admin') ? User::role('super_admin')->count() : 0;
+        $totalAdmin = auth()->user()->hasRole('super_admin') ? User::role('admin')->count() : 0;
+        
+        $petugasQuery = User::role('petugas');
+        $totalPetugas = $petugasQuery->count();
+        
+        $aktifQuery = User::where('is_active', true);
+        if (auth()->user()->hasRole('admin') && !auth()->user()->hasRole('super_admin')) {
+            $aktifQuery->whereHas('roles', function ($q) {
+                $q->where('name', 'petugas');
+            });
+        }
+        $totalAktif = $aktifQuery->count();
+
+        // Pass available permissions to the view for dynamic checkboxes
+        $availablePermissions = \Spatie\Permission\Models\Permission::all();
 
         return view('livewire.manajemen-pengguna', [
             'users' => $users,
             'totalUsers' => $totalUsers,
+            'totalSuperAdmin' => $totalSuperAdmin,
             'totalAdmin' => $totalAdmin,
             'totalPetugas' => $totalPetugas,
             'totalAktif' => $totalAktif,
+            'availablePermissions' => $availablePermissions,
         ])->layout('components.layouts.app', ['title' => 'Manajemen Pengguna']);
     }
 }

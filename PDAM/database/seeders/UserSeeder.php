@@ -16,9 +16,18 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         $users = [
+            // ── Super Admin ──────────────────────────────────────────
+            [
+                'name' => 'Super Administrator',
+                'username' => 'superadmin',
+                'password' => 'password',
+                'role' => User::ROLE_ADMIN, // Will be migrated to super_admin by RolePermissionSeeder if run after
+                'phone' => '081200000000',
+                'is_active' => true,
+            ],
             // ── Admin ──────────────────────────────────────────
             [
-                'name' => 'Administrator PDAM',
+                'name' => 'Administrator',
                 'username' => 'admin',
                 'password' => 'password',
                 'role' => User::ROLE_ADMIN,
@@ -28,27 +37,11 @@ class UserSeeder extends Seeder
 
             // ── Petugas ────────────────────────────────────────
             [
-                'name' => 'B',
-                'username' => 'b',
+                'name' => 'Petugas Lapangan',
+                'username' => 'petugas',
                 'password' => 'password',
                 'role' => User::ROLE_PETUGAS,
-                'phone' => '081200000004',
-                'is_active' => true,
-            ],
-            [
-                'name' => 'A',
-                'username' => 'a',
-                'password' => 'password',
-                'role' => User::ROLE_PETUGAS,
-                'phone' => '081200000005',
-                'is_active' => true,
-            ],
-            [
-                'name' => 'C',
-                'username' => 'c',
-                'password' => 'password',
-                'role' => User::ROLE_PETUGAS,
-                'phone' => '081200000006',
+                'phone' => '081200000002',
                 'is_active' => true,
             ],
         ];

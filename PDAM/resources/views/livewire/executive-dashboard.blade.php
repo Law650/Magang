@@ -169,8 +169,12 @@
             if (!mapEl) return;
             if (this.map) { this.map.remove(); this.map = null; }
             this.map = L.map(mapEl, { zoomControl: true }).setView([item.latitude, item.longitude], 15);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap'
+            const isDark = document.documentElement.classList.contains('dark');
+            const tileUrl = isDark
+                ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                : 'https://{s}.basemaps.cartocdn.com/voyager/{z}/{x}/{y}{r}.png';
+            L.tileLayer(tileUrl, {
+                attribution: '&copy; OSM &copy; CARTO', subdomains: 'abcd', maxZoom: 19
             }).addTo(this.map);
             this.marker = L.marker([item.latitude, item.longitude]).addTo(this.map)
                 .bindPopup('<b>' + item.nama_lokasi + '</b>').openPopup();
@@ -361,8 +365,12 @@
             if (!mapEl) return;
             if (this.gvMap) { this.gvMap.remove(); this.gvMap = null; }
             this.gvMap = L.map(mapEl, { zoomControl: true }).setView([item.latitude, item.longitude], 15);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap'
+            const isDark = document.documentElement.classList.contains('dark');
+            const tileUrl = isDark
+                ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                : 'https://{s}.basemaps.cartocdn.com/voyager/{z}/{x}/{y}{r}.png';
+            L.tileLayer(tileUrl, {
+                attribution: '&copy; OSM &copy; CARTO', subdomains: 'abcd', maxZoom: 19
             }).addTo(this.gvMap);
             L.marker([item.latitude, item.longitude]).addTo(this.gvMap)
                 .bindPopup('<b>' + item.nama_aset + '</b><br>' + item.lokasi).openPopup();

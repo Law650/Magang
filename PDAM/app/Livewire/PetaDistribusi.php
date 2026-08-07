@@ -10,7 +10,7 @@ use Livewire\Component;
 
 class PetaDistribusi extends Component
 {
-    public string $activeTab = 'gv';
+    public string $activeTab = '';
 
     public array $gvMarkers = [];
     public array $tekananMarkers = [];
@@ -19,11 +19,26 @@ class PetaDistribusi extends Component
 
     public function mount()
     {
+        // Tentukan default tab berdasarkan permission
+        if (auth()->user()->can('view_peta_valve')) {
+            $this->activeTab = 'gv';
+        } elseif (auth()->user()->can('view_peta_tekanan')) {
+            $this->activeTab = 'tekanan';
+        } else {
+            abort(403, 'Anda tidak memiliki akses ke Peta Distribusi.');
+        }
+
         $this->refreshData();
     }
 
     public function setTab(string $tab): void
     {
+        if ($tab === 'gv' && !auth()->user()->can('view_peta_valve')) {
+            return;
+        }
+        if ($tab === 'tekanan' && !auth()->user()->can('view_peta_tekanan')) {
+            return;
+        }
         $this->activeTab = $tab;
     }
 

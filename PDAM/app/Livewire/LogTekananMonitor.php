@@ -100,7 +100,8 @@ class LogTekananMonitor extends Component
         if ($this->search !== '') {
             $searchTerm = '%' . $this->search . '%';
             $query->where(function ($q) use ($searchTerm) {
-                $q->whereHas('lokasi', fn ($q) => $q->where('nama_lokasi', 'like', $searchTerm));
+                $q->whereHas('lokasi', fn ($q) => $q->where('nama_lokasi', 'like', $searchTerm))
+                  ->orWhere('no_sr', 'like', $searchTerm);
             });
         }
 
@@ -141,7 +142,7 @@ class LogTekananMonitor extends Component
         $colors = [];
 
         foreach ($latestLogs as $log) {
-            $labels[] = $log->lokasi->nama_lokasi;
+            $labels[] = $log->no_sr ?: ($log->lokasi->nama_lokasi ?? 'Unknown');
             $values[] = (float) $log->nilai_tekanan;
             $colors[] = match ($log->status) {
                 'normal' => 'rgba(34, 197, 94, 0.8)',

@@ -12,13 +12,16 @@
     width: 6px;
     height: 6px;
 }
+
 ::-webkit-scrollbar-track {
     background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
     background: rgba(100, 116, 139, 0.3);
     border-radius: 3px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
     background: rgba(100, 116, 139, 0.5);
 }
@@ -28,6 +31,7 @@ nav[role="navigation"] {
     display: flex;
     justify-content: center;
 }
+
 nav[role="navigation"] span,
 nav[role="navigation"] a {
     padding: 0.375rem 0.75rem;
@@ -36,36 +40,51 @@ nav[role="navigation"] a {
     margin: 0 0.125rem;
     transition: all 0.2s;
 }
+
 nav[role="navigation"] span[aria-current="page"] {
     background: linear-gradient(135deg, rgb(6 182 212), rgb(37 99 235));
     color: white;
     font-weight: 600;
 }
+
 nav[role="navigation"] a {
     color: rgb(148 163 184);
     background: rgba(30 41 59 / 0.5);
     border: 1px solid rgba(51 65 85 / 0.5);
 }
+
 nav[role="navigation"] a:hover {
     color: white;
     background: rgba(51 65 85 / 0.8);
 }
+
 nav[role="navigation"] span[aria-disabled="true"] {
     color: rgb(71 85 105);
 }
 
 /* Dashboard custom animations */
 @keyframes pulse-slow {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
 }
+
 .animate-pulse-slow {
     animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 @keyframes spin-slow {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
+
 .animate-spin-slow {
     animation: spin-slow 3s linear infinite;
 }
@@ -78,17 +97,470 @@ nav[role="navigation"] span[aria-disabled="true"] {
  */
 .leaflet-container {
     isolation: isolate;
-    z-index: 1; /* Memberikan nilai z-index rendah yang valid di konteks root */
+    z-index: 1;
+    /* Memberikan nilai z-index rendah yang valid di konteks root */
 }
 
 
 /* Fix calendar icon color on dark mode inputs */
-input[type="date"]::-webkit-calendar-picker-indicator {
+html.dark input[type="date"]::-webkit-calendar-picker-indicator {
     filter: invert(1);
     opacity: 0.7;
     cursor: pointer;
 }
-input[type="date"]::-webkit-calendar-picker-indicator:hover {
+
+html.dark input[type="date"]::-webkit-calendar-picker-indicator:hover {
     opacity: 1;
 }
 
+/* =====================================================
+   LIGHT MODE OVERRIDES
+   When html does NOT have .dark class, apply light theme.
+   ===================================================== */
+
+/* --- Global transition for smooth theme switching --- */
+html {
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+html:not(.dark) *,
+html:not(.dark) *::before,
+html:not(.dark) *::after {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* --- Body --- */
+html:not(.dark) body {
+    background-color: #f1f5f9 !important;
+    color: #1e293b !important;
+}
+
+/* --- Text overrides --- */
+html:not(.dark) .text-white {
+    color: #0f172a !important;
+}
+
+html:not(.dark) .text-slate-200 {
+    color: #334155 !important;
+}
+
+html:not(.dark) .text-slate-300 {
+    color: #475569 !important;
+}
+
+html:not(.dark) .text-slate-400 {
+    color: #64748b !important;
+}
+
+html:not(.dark) .text-slate-500 {
+    color: #94a3b8 !important;
+}
+
+html:not(.dark) .text-slate-600 {
+    color: #94a3b8 !important;
+}
+
+/* --- Sidebar --- */
+html:not(.dark) aside {
+    background-color: #ffffff !important;
+    border-color: #e2e8f0 !important;
+}
+
+html:not(.dark) aside .border-slate-800\/50,
+html:not(.dark) aside .border-b {
+    border-color: #e2e8f0 !important;
+}
+
+/* --- Sidebar navigation links --- */
+html:not(.dark) aside nav a.text-slate-400 {
+    color: #475569 !important;
+}
+
+html:not(.dark) aside nav a.text-slate-400:hover {
+    color: #0f172a !important;
+    background-color: #f1f5f9 !important;
+}
+
+html:not(.dark) aside nav a.bg-cyan-500\/10 {
+    background-color: rgba(6, 182, 212, 0.1) !important;
+}
+
+/* --- Sidebar section headers --- */
+html:not(.dark) aside nav p.text-slate-500 {
+    color: #94a3b8 !important;
+}
+
+/* --- Sidebar user info --- */
+html:not(.dark) aside .border-t {
+    border-color: #e2e8f0 !important;
+}
+
+/* --- Topbar / Header --- */
+html:not(.dark) header {
+    background-color: rgba(255, 255, 255, 0.95) !important;
+    border-color: #e2e8f0 !important;
+    backdrop-filter: blur(12px) !important;
+}
+
+html:not(.dark) header button.text-slate-400:hover {
+    color: #0f172a !important;
+    background-color: #f1f5f9 !important;
+}
+
+/* --- Status badge "Sistem Aktif" --- */
+html:not(.dark) .bg-emerald-500\/10 {
+    background-color: rgba(16, 185, 129, 0.08) !important;
+}
+
+/* --- Cards (gradient backgrounds) --- */
+html:not(.dark) .bg-gradient-to-br.from-slate-800\/80.to-slate-900\/80,
+html:not(.dark) .bg-gradient-to-br.from-slate-800\/80,
+html:not(.dark) [class*="from-slate-800"][class*="to-slate-900"] {
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+}
+
+/* --- Stat cards --- */
+html:not(.dark) .bg-slate-900\/50 {
+    background-color: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* --- Card borders --- */
+html:not(.dark) .border-slate-700\/40,
+html:not(.dark) .border-slate-700\/50,
+html:not(.dark) .border-slate-800\/50,
+html:not(.dark) .border-slate-800\/60 {
+    border-color: #e2e8f0 !important;
+}
+
+/* --- Tab navigation container --- */
+html:not(.dark) .bg-slate-800\/60 {
+    background-color: #f1f5f9 !important;
+}
+
+html:not(.dark) .bg-slate-800\/60.border {
+    border-color: #e2e8f0 !important;
+}
+
+/* --- Tab inactive text --- */
+html:not(.dark) button.text-slate-400:not(.bg-gradient-to-r) {
+    color: #64748b !important;
+}
+
+html:not(.dark) button.text-slate-400:not(.bg-gradient-to-r):hover {
+    color: #0f172a !important;
+    background-color: #e2e8f0 !important;
+}
+
+/* --- Badge / pill backgrounds --- */
+html:not(.dark) .bg-slate-700\/40 {
+    background-color: #f1f5f9 !important;
+}
+
+/* --- Table header --- */
+html:not(.dark) thead {
+    background-color: #f8fafc !important;
+}
+
+html:not(.dark) .bg-slate-800\/95 {
+    background-color: rgba(248, 250, 252, 0.98) !important;
+}
+
+html:not(.dark) th.text-slate-400 {
+    color: #64748b !important;
+}
+
+/* --- Table rows --- */
+html:not(.dark) .divide-slate-700\/30>*+* {
+    border-color: #f1f5f9 !important;
+}
+
+html:not(.dark) .border-b.border-slate-700\/40 {
+    border-color: #e2e8f0 !important;
+}
+
+html:not(.dark) .border-b.border-slate-700\/20 {
+    border-color: #f1f5f9 !important;
+}
+
+html:not(.dark) tr:hover.hover\:bg-slate-700\/20,
+html:not(.dark) tr.hover\:bg-slate-700\/20:hover {
+    background-color: #f8fafc !important;
+}
+
+html:not(.dark) .hover\:bg-slate-700\/30:hover {
+    background-color: #f8fafc !important;
+}
+
+/* --- Inputs --- */
+html:not(.dark) input[type="text"],
+html:not(.dark) input[type="email"],
+html:not(.dark) input[type="password"],
+html:not(.dark) input[type="number"],
+html:not(.dark) input[type="date"],
+html:not(.dark) input[type="search"],
+html:not(.dark) select,
+html:not(.dark) textarea {
+    background-color: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+}
+
+html:not(.dark) input::placeholder,
+html:not(.dark) textarea::placeholder {
+    color: #94a3b8 !important;
+}
+
+html:not(.dark) .bg-slate-800\/60 input,
+html:not(.dark) .bg-slate-800\/60 select {
+    background-color: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+}
+
+/* --- Input icons --- */
+html:not(.dark) .text-slate-500 svg {
+    color: #94a3b8 !important;
+}
+
+/* --- Checkboxes --- */
+html:not(.dark) input[type="checkbox"] {
+    background-color: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+}
+
+/* --- Modals --- */
+html:not(.dark) .bg-slate-900 {
+    background-color: #ffffff !important;
+}
+
+html:not(.dark) .bg-slate-900\/95 {
+    background-color: rgba(255, 255, 255, 0.98) !important;
+}
+
+html:not(.dark) .bg-slate-900\/90 {
+    background-color: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* --- Modal detail boxes --- */
+html:not(.dark) .bg-slate-800\/50 {
+    background-color: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+}
+
+html:not(.dark) .bg-slate-800\/60 {
+    background-color: #f1f5f9 !important;
+}
+
+html:not(.dark) .bg-slate-800\/40 {
+    background-color: #f8fafc !important;
+}
+
+html:not(.dark) .bg-slate-800\/30 {
+    background-color: #f8fafc !important;
+}
+
+html:not(.dark) .bg-slate-800 {
+    background-color: #f1f5f9 !important;
+}
+
+/* --- Modal borders --- */
+html:not(.dark) .border-slate-700\/50 {
+    border-color: #e2e8f0 !important;
+}
+
+html:not(.dark) .border-slate-700\/30 {
+    border-color: #e2e8f0 !important;
+}
+
+html:not(.dark) .border-slate-800 {
+    border-color: #e2e8f0 !important;
+}
+
+html:not(.dark) .border-slate-800\/50 {
+    border-color: #e2e8f0 !important;
+}
+
+/* --- Modal overlay (keep dark backdrop) --- */
+html:not(.dark) .bg-black\/70,
+html:not(.dark) .bg-black\/80,
+html:not(.dark) .bg-black\/60 {
+    background-color: rgba(0, 0, 0, 0.4) !important;
+}
+
+/* --- Progress bars --- */
+html:not(.dark) .bg-slate-700\/60 {
+    background-color: #e2e8f0 !important;
+}
+
+html:not(.dark) .bg-slate-700\/50 {
+    background-color: #e2e8f0 !important;
+}
+
+/* --- Login page --- */
+html:not(.dark) .bg-slate-950 {
+    background-color: #f1f5f9 !important;
+}
+
+/* --- Login card glow effect --- */
+html:not(.dark) .bg-gradient-to-r.from-cyan-500\/20 {
+    opacity: 0.3 !important;
+}
+
+/* --- Divider lines --- */
+html:not(.dark) .bg-gradient-to-r.from-transparent.via-slate-700.to-transparent {
+    background: linear-gradient(to right, transparent, #cbd5e1, transparent) !important;
+}
+
+/* --- User dropdown --- */
+html:not(.dark) .bg-slate-900\/95.backdrop-blur-xl {
+    background-color: rgba(255, 255, 255, 0.98) !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12) !important;
+}
+
+html:not(.dark) .hover\:bg-slate-800\/60:hover {
+    background-color: #f1f5f9 !important;
+}
+
+/* --- Dot grid pattern in login background --- */
+html:not(.dark) .opacity-\[0\.02\] {
+    opacity: 0.03 !important;
+}
+
+/* --- Gradient orbs on login --- */
+html:not(.dark) .bg-cyan-500\/10 {
+    background-color: rgba(6, 182, 212, 0.06) !important;
+}
+
+html:not(.dark) .bg-blue-600\/10 {
+    background-color: rgba(37, 99, 235, 0.06) !important;
+}
+
+html:not(.dark) .bg-slate-800\/20 {
+    background-color: rgba(241, 245, 249, 0.5) !important;
+}
+
+/* --- Red alert / Daerah Kritis card in light mode --- */
+html:not(.dark) .from-red-950\/60 {
+    background: linear-gradient(to bottom right, rgba(254, 226, 226, 0.6), rgba(254, 202, 202, 0.3)) !important;
+}
+
+/* --- Scrollbar for light mode --- */
+html:not(.dark) ::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.3) !important;
+}
+
+html:not(.dark) ::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.5) !important;
+}
+
+/* --- Pagination for light mode --- */
+html:not(.dark) nav[role="navigation"] a {
+    color: #475569 !important;
+    background: rgba(241, 245, 249, 0.8) !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+html:not(.dark) nav[role="navigation"] a:hover {
+    color: #0f172a !important;
+    background: #e2e8f0 !important;
+}
+
+html:not(.dark) nav[role="navigation"] span[aria-disabled="true"] {
+    color: #cbd5e1 !important;
+}
+
+/* --- Leaflet Light popup override --- */
+html:not(.dark) .dark-popup .leaflet-popup-content-wrapper {
+    background: rgba(255, 255, 255, 0.98) !important;
+    color: #1e293b !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12) !important;
+}
+
+html:not(.dark) .dark-popup .leaflet-popup-tip {
+    background: rgba(255, 255, 255, 0.98) !important;
+    border: 1px solid #e2e8f0 !important;
+    border-top: none !important;
+    border-right: none !important;
+}
+
+html:not(.dark) .dark-popup .leaflet-popup-close-button {
+    color: #64748b !important;
+}
+
+html:not(.dark) .dark-popup .leaflet-popup-close-button:hover {
+    color: #0f172a !important;
+}
+
+/* --- Leaflet zoom controls for light mode --- */
+html:not(.dark) .leaflet-control-zoom a {
+    background-color: #ffffff !important;
+    color: #334155 !important;
+    border-color: #e2e8f0 !important;
+}
+
+html:not(.dark) .leaflet-control-zoom a:hover {
+    background-color: #f1f5f9 !important;
+}
+
+/* --- Calendar/date icon for light mode --- */
+html:not(.dark) input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: none;
+    opacity: 0.7;
+    cursor: pointer;
+}
+
+html:not(.dark) input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+}
+
+
+/* =====================================================
+   THEME TOGGLE SLIDER
+   ===================================================== */
+.theme-toggle {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    border-radius: 12px;
+    background: #334155;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    border: none;
+    padding: 0;
+    outline: none;
+}
+
+.theme-toggle:hover {
+    background: #475569;
+}
+
+.theme-toggle::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.theme-toggle.light {
+    background: linear-gradient(135deg, #06b6d4, #3b82f6);
+}
+
+.theme-toggle.light:hover {
+    background: linear-gradient(135deg, #22d3ee, #60a5fa);
+}
+
+.theme-toggle.light::after {
+    transform: translateX(20px);
+}

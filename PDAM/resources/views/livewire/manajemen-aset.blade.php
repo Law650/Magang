@@ -1,9 +1,23 @@
-<div wire:poll.10s>
+<div wire:poll.10s x-data="{ showDeleteModal: false, deleteId: null, deleteMessage: 'Yakin ingin menghapus aset ini?' }">
     {{-- Page Header --}}
     <div class="mb-6">
         <h1 class="text-2xl font-bold text-white">Manajemen Master Aset</h1>
         <p class="text-sm text-slate-400 mt-1">Kelola data master Gate Valve dan lokasi distribusi</p>
     </div>
+
+    {{-- Flash Messages --}}
+    @if (session()->has('success'))
+        <div class="mb-6 px-4 py-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-3">
+            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <p class="text-sm text-emerald-400">{{ session('success') }}</p>
+        </div>
+    @endif
+    @if (session()->has('error'))
+        <div class="mb-6 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3">
+            <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            <p class="text-sm text-red-400">{{ session('error') }}</p>
+        </div>
+    @endif
 
     {{-- Stat Cards --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -83,6 +97,18 @@
             >
         </div>
         @if(auth()->user()->isAdmin())
+        @if(count($selectedRows) > 0)
+            <button
+                wire:click="deleteSelected"
+                wire:confirm="Yakin ingin menghapus {{ count($selectedRows) }} aset terpilih?"
+                class="flex items-center justify-center gap-2 px-5 py-2.5 bg-red-500 text-white text-sm font-semibold rounded-xl hover:bg-red-600 shadow-lg shadow-red-500/25 transition-all duration-300 hover:shadow-red-500/40"
+            >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+                Hapus Terpilih ({{ count($selectedRows) }})
+            </button>
+        @endif
         <button
             wire:click="create"
             class="flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-sm font-semibold rounded-xl hover:from-cyan-400 hover:to-blue-500 shadow-lg shadow-cyan-500/25 transition-all duration-300 hover:shadow-cyan-500/40 hover:-translate-y-0.5 active:translate-y-0"
@@ -101,6 +127,11 @@
             <table class="w-full text-sm">
                 <thead>
                     <tr class="border-b border-slate-800/50">
+                        @if(auth()->user()->isAdmin())
+                        <th class="px-5 py-3.5 w-12 text-left">
+                            <input type="checkbox" wire:model.live="selectAll" class="w-4 h-4 rounded border-slate-700 bg-slate-900/50 text-cyan-500 focus:ring-cyan-500/30 focus:ring-offset-slate-900">
+                        </th>
+                        @endif
                         <th class="px-5 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Nama Aset</th>
                         <th class="px-5 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Lokasi</th>
                         <th class="px-5 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">Koordinat</th>
@@ -112,7 +143,12 @@
                 </thead>
                 <tbody class="divide-y divide-slate-800/30">
                     @forelse ($asets as $aset)
-                        <tr wire:key="aset-{{ $aset->id }}" class="hover:bg-slate-800/30 transition-colors duration-150">
+                        <tr wire:key="aset-{{ $aset->id }}" class="hover:bg-slate-800/30 transition-colors duration-150 {{ in_array($aset->id, $selectedRows) ? 'bg-cyan-500/5' : '' }}">
+                            @if(auth()->user()->isAdmin())
+                            <td class="px-5 py-4">
+                                <input type="checkbox" wire:model.live="selectedRows" value="{{ $aset->id }}" class="w-4 h-4 rounded border-slate-700 bg-slate-900/50 text-cyan-500 focus:ring-cyan-500/30 focus:ring-offset-slate-900">
+                            </td>
+                            @endif
                             <td class="px-5 py-4">
                                 <span class="font-semibold text-white">{{ $aset->nama_aset }}</span>
                             </td>
@@ -122,10 +158,10 @@
                                 </span>
                             </td>
                             <td class="px-5 py-4 text-center">
-                                @if($aset->lokasi->latitude && $aset->lokasi->longitude)
+                                @if($aset->latitude && $aset->longitude)
                                     <div class="flex flex-col items-center gap-1">
-                                        <span class="text-xs text-slate-400 font-mono">{{ $aset->lokasi->latitude }}, {{ $aset->lokasi->longitude }}</span>
-                                        <a href="https://www.google.com/maps/search/?api=1&query={{ $aset->lokasi->latitude }},{{ $aset->lokasi->longitude }}" target="_blank"
+                                        <span class="text-xs text-slate-400 font-mono">{{ $aset->latitude }}, {{ $aset->longitude }}</span>
+                                        <a href="https://www.google.com/maps/search/?api=1&query={{ $aset->latitude }},{{ $aset->longitude }}" target="_blank"
                                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 text-xs font-medium transition-colors">
                                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                                             Maps
@@ -163,8 +199,7 @@
                                         </svg>
                                     </button>
                                     <button
-                                        wire:click="delete({{ $aset->id }})"
-                                        wire:confirm="Yakin ingin menghapus aset ini?"
+                                        @click="deleteId = {{ $aset->id }}; deleteMessage = 'Yakin ingin menghapus aset ini?'; showDeleteModal = true;"
                                         class="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition"
                                         title="Hapus"
                                     >
@@ -180,7 +215,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-5 py-12 text-center">
+                            <td colspan="8" class="px-5 py-12 text-center">
                                 <svg class="w-12 h-12 text-slate-700 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
                                 </svg>
@@ -493,5 +528,42 @@
                 </div>
             </div>
         </template>
+    </div>
+
+    {{-- Delete Confirmation Modal --}}
+    <div x-show="showDeleteModal" 
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" 
+         style="display: none;">
+        <div @click.outside="showDeleteModal = false" 
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 scale-90"
+             x-transition:enter-end="opacity-100 scale-100"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 scale-100"
+             x-transition:leave-end="opacity-0 scale-90"
+             class="bg-slate-900 border border-slate-700/50 rounded-xl p-5 w-80 shadow-2xl relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-red-500 to-rose-500"></div>
+            <div class="flex items-start gap-3 mb-4">
+                <div class="flex-shrink-0 w-9 h-9 rounded-full bg-red-500/10 flex items-center justify-center mt-0.5">
+                    <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold text-white">Konfirmasi Hapus</h3>
+                    <p class="text-xs text-slate-400 mt-0.5" x-text="deleteMessage"></p>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2">
+                <button @click="showDeleteModal = false" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 transition-colors">Batal</button>
+                <button @click="$wire.delete(deleteId); showDeleteModal = false" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500 text-white hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20">Ya, Hapus</button>
+            </div>
+        </div>
     </div>
 </div>

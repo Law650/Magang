@@ -97,6 +97,10 @@ class ApiLogTekananController extends Controller
             return [
                 'id' => $lokasi->id,
                 'nama_lokasi' => $lokasi->nama_lokasi,
+                'no_sr' => $lokasi->no_sr,
+                'nama_pelanggan' => $lokasi->nama_pelanggan,
+                'alamat' => $lokasi->alamat,
+                'desa' => $lokasi->desa,
                 'latitude' => $lokasi->latitude,
                 'longitude' => $lokasi->longitude,
                 'latest_log' => $latestLog ? [

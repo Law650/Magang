@@ -13,6 +13,8 @@ use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
+use Spatie\Permission\Traits\HasRoles;
+
 /**
  * Model User — Autentikasi terpusat untuk Web & Mobile (Fase 2).
  *
@@ -33,9 +35,10 @@ use Illuminate\Support\Str;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, HasRoles;
 
-    /** Role constants — sesuai PRD §4.0.2 (2 role saja) */
+    /** Role constants */
+    public const ROLE_SUPER_ADMIN = 'super_admin';
     public const ROLE_ADMIN = 'admin';
     public const ROLE_PETUGAS = 'petugas';
 
@@ -57,7 +60,7 @@ class User extends Authenticatable
      */
     public function isAdmin(): bool
     {
-        return $this->role === self::ROLE_ADMIN;
+        return $this->hasRole(self::ROLE_ADMIN) || $this->hasRole(self::ROLE_SUPER_ADMIN);
     }
 
     /**
@@ -65,7 +68,7 @@ class User extends Authenticatable
      */
     public function isPetugas(): bool
     {
-        return $this->role === self::ROLE_PETUGAS;
+        return $this->hasRole(self::ROLE_PETUGAS);
     }
 
     /**
@@ -73,11 +76,11 @@ class User extends Authenticatable
      */
     public function getRoleLabelAttribute(): string
     {
-        return match ($this->role) {
-            self::ROLE_ADMIN => 'Administrator',
-            self::ROLE_PETUGAS => 'Petugas',
-            default => ucfirst($this->role),
-        };
+        if ($this->hasRole(self::ROLE_SUPER_ADMIN)) return 'Super Administrator';
+        if ($this->hasRole(self::ROLE_ADMIN)) return 'Administrator';
+        if ($this->hasRole(self::ROLE_PETUGAS)) return 'Petugas';
+        
+        return ucfirst($this->role); // Fallback to column
     }
 
     /**

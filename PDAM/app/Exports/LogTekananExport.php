@@ -26,6 +26,7 @@ class LogTekananExport implements FromQuery, WithHeadings, WithMapping, WithStyl
     private $filter;
     private $startDate;
     private $endDate;
+    private $rowNumber = 0;
 
     public function __construct(string $search = '', string $filter = '', string $startDate = '', string $endDate = '')
     {
@@ -61,10 +62,19 @@ class LogTekananExport implements FromQuery, WithHeadings, WithMapping, WithStyl
 
     public function map($log): array
     {
+        $this->rowNumber++;
+        $koordinat = ($log->lokasi->latitude ?? '') && ($log->lokasi->longitude ?? '') 
+            ? $log->lokasi->latitude . ', ' . $log->lokasi->longitude 
+            : '-';
+
         return [
+            $this->rowNumber,
             $log->waktu_pengecekan->format('d/m/Y H:i'),
-            $log->lokasi->nama_lokasi ?? '-',
-            // $log->no_sr ?? '-',
+            $log->lokasi->no_sr ?? '-',
+            $log->lokasi->nama_pelanggan ?? '-',
+            $log->lokasi->alamat ?? '-',
+            $log->lokasi->desa ?? '-',
+            $koordinat,
             $log->nilai_tekanan,
             ucfirst($log->status),
         ];
@@ -85,9 +95,13 @@ class LogTekananExport implements FromQuery, WithHeadings, WithMapping, WithStyl
             [],
             // Row 6: Column Headers
             [
+                'No.',
                 'Waktu Pengecekan',
-                'Lokasi',
-                // 'No. SR',
+                'No. SR',
+                'Nama Pelanggan',
+                'Alamat',
+                'Desa',
+                'Koordinat (Lat, Lng)',
                 'Nilai Tekanan (Bar)',
                 'Status',
             ]
@@ -97,7 +111,7 @@ class LogTekananExport implements FromQuery, WithHeadings, WithMapping, WithStyl
     public function columnFormats(): array
     {
         return [
-            'C' => '#,##0.00',
+            'H' => '#,##0.00',
         ];
     }
 
@@ -131,10 +145,10 @@ class LogTekananExport implements FromQuery, WithHeadings, WithMapping, WithStyl
                 $sheet = $event->sheet->getDelegate();
                 
                 // Merge title cells
-                $sheet->mergeCells('A1:D1');
-                $sheet->mergeCells('A2:D2');
-                $sheet->mergeCells('A3:D3');
-                $sheet->mergeCells('A4:D4');
+                $sheet->mergeCells('A1:I1');
+                $sheet->mergeCells('A2:I2');
+                $sheet->mergeCells('A3:I3');
+                $sheet->mergeCells('A4:I4');
                 
                 $sheet->getStyle('A1:A4')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
@@ -142,7 +156,7 @@ class LogTekananExport implements FromQuery, WithHeadings, WithMapping, WithStyl
                 $highestRow = $sheet->getHighestRow();
                 
                 if ($highestRow >= 6) {
-                    $cellRange = 'A6:D' . $highestRow;
+                    $cellRange = 'A6:I' . $highestRow;
                     
                     // Apply borders
                     $sheet->getStyle($cellRange)->applyFromArray([
@@ -154,13 +168,14 @@ class LogTekananExport implements FromQuery, WithHeadings, WithMapping, WithStyl
                         ],
                     ]);
                     
-                    // Alignment for data columns
-                    $sheet->getStyle('A7:A' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-                    $sheet->getStyle('C7:D' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                    // Alignment for data columns (No, Waktu, No SR)
+                    $sheet->getStyle('A7:C' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                    // Nilai Tekanan, Koordinat, Status
+                    $sheet->getStyle('G7:I' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
                     // Add color coding to Status column based on GD
                     for ($row = 7; $row <= $highestRow; $row++) {
-                        $status = $sheet->getCell('D' . $row)->getValue();
+                        $status = $sheet->getCell('I' . $row)->getValue();
                         
                         $color = 'FF64748B'; // Default Slate
                         if ($status === 'Normal') {
@@ -171,7 +186,7 @@ class LogTekananExport implements FromQuery, WithHeadings, WithMapping, WithStyl
                             $color = 'FFEF4444'; // Red
                         }
                         
-                        $sheet->getStyle('D' . $row)->getFont()->setBold(true)->getColor()->setARGB($color);
+                        $sheet->getStyle('I' . $row)->getFont()->setBold(true)->getColor()->setARGB($color);
                     }
                 }
             },
