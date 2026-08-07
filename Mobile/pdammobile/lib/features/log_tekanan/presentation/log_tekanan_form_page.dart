@@ -33,6 +33,9 @@ class _LogTekananFormPageState extends ConsumerState<LogTekananFormPage> {
   final _formKey = GlobalKey<FormState>();
   final _namaTeknisiController = TextEditingController();
   final _noSrController = TextEditingController();
+  final _namaPelangganController = TextEditingController();
+  final _alamatController = TextEditingController();
+  final _desaController = TextEditingController();
   final _keteranganController = TextEditingController();
   final _latitudeController = TextEditingController();
   final _longitudeController = TextEditingController();
@@ -68,6 +71,9 @@ class _LogTekananFormPageState extends ConsumerState<LogTekananFormPage> {
     
     _namaTeknisiController.text = map['nama_teknisi'] ?? '';
     _noSrController.text = map['no_sr'] ?? '';
+    _namaPelangganController.text = map['nama_pelanggan'] ?? '';
+    _alamatController.text = map['alamat'] ?? '';
+    _desaController.text = map['desa'] ?? '';
     _keteranganController.text = map['keterangan'] ?? '';
     
     // Reconstruct selected Lokasi to populate the dropdown
@@ -98,6 +104,9 @@ class _LogTekananFormPageState extends ConsumerState<LogTekananFormPage> {
   void dispose() {
     _namaTeknisiController.dispose();
     _noSrController.dispose();
+    _namaPelangganController.dispose();
+    _alamatController.dispose();
+    _desaController.dispose();
     _keteranganController.dispose();
     _latitudeController.dispose();
     _longitudeController.dispose();
@@ -132,23 +141,38 @@ class _LogTekananFormPageState extends ConsumerState<LogTekananFormPage> {
   }
 
   void _showLokasiSearchDialog() async {
-    final lokasiList = ref.read(lokasiListProvider).valueOrNull ?? [];
-    if (lokasiList.isEmpty) {
+    final rekapList = ref.read(rekapTekananProvider).valueOrNull ?? [];
+    if (rekapList.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tidak ada data lokasi.')),
+        const SnackBar(content: Text('Tidak ada data lokasi/pelanggan.')),
       );
       return;
     }
 
-    final selected = await SearchableBottomSheet.show<Lokasi>(
+    final selectedRekap = await SearchableBottomSheet.show<RekapTekanan>(
       context: context,
-      title: 'Pilih Lokasi',
-      items: lokasiList,
-      itemAsString: (l) => l.namaLokasi,
+      title: 'Pilih No SR Pelanggan',
+      items: rekapList,
+      itemAsString: (r) => r.namaLokasi,
     );
 
-    if (selected != null && mounted) {
-      setState(() => _selectedLokasi = selected);
+    if (selectedRekap != null && mounted) {
+      final selected = Lokasi(
+        id: selectedRekap.id,
+        namaLokasi: selectedRekap.namaLokasi,
+        latitude: selectedRekap.latitude,
+        longitude: selectedRekap.longitude,
+      );
+
+      setState(() {
+        _selectedLokasi = selected;
+        if (selectedRekap.noSr != null && selectedRekap.noSr!.isNotEmpty) {
+          _noSrController.text = selectedRekap.noSr!;
+        }
+        _namaPelangganController.text = selectedRekap.namaPelanggan ?? '';
+        _alamatController.text = selectedRekap.alamat ?? '';
+        _desaController.text = selectedRekap.desa ?? selectedRekap.namaLokasi;
+      });
       
       try {
         final rekapList = await ref.read(rekapTekananProvider.future);
@@ -296,6 +320,9 @@ class _LogTekananFormPageState extends ConsumerState<LogTekananFormPage> {
         'nilai_tekanan': _tekananAir,
         'status_aliran': _aliranIndex == 0 ? 'mengalir' : 'tidak_mengalir',
         'no_sr': _noSrController.text.trim(),
+        'nama_pelanggan': _namaPelangganController.text.trim(),
+        'alamat': _alamatController.text.trim(),
+        'desa': _desaController.text.trim(),
         'keterangan': _keteranganController.text.trim(),
         'latitude': _latitudeController.text.isNotEmpty ? double.tryParse(_latitudeController.text) : gpsState.latitude,
         'longitude': _longitudeController.text.isNotEmpty ? double.tryParse(_longitudeController.text) : gpsState.longitude,
@@ -357,6 +384,9 @@ class _LogTekananFormPageState extends ConsumerState<LogTekananFormPage> {
         _tekananAir = 0.0;
         _aliranIndex = 0;
         _noSrController.clear();
+        _namaPelangganController.clear();
+        _alamatController.clear();
+        _desaController.clear();
         _keteranganController.clear();
         _latitudeController.clear();
         _longitudeController.clear();
@@ -463,33 +493,36 @@ class _LogTekananFormPageState extends ConsumerState<LogTekananFormPage> {
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _namaTeknisiController,
-                      decoration: const InputDecoration(hintText: 'Nama lengkap'),
+                      readOnly: true,
+                      style: theme.textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary),
+                      decoration: InputDecoration(
+                        hintText: 'Nama lengkap',
+                        fillColor: AppColors.surface.withValues(alpha: 0.5),
+                        filled: true,
+                      ),
                       validator: (val) => (val == null || val.isEmpty) ? 'Wajib diisi' : null,
                     ),
                     const SizedBox(height: 20),
 
                     _buildSectionLabel('Waktu Pengecekan *'),
                     const SizedBox(height: 8),
-                    InkWell(
-                      onTap: _pickDateTime,
-                      child: Container(
-                        height: 56,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.cardBorder),
-                        ),
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          dateFormat.format(_waktuPengecekan),
-                          style: theme.textTheme.bodyLarge,
-                        ),
+                    Container(
+                      height: 56,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.cardBorder),
+                      ),
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        dateFormat.format(_waktuPengecekan),
+                        style: theme.textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary),
                       ),
                     ),
                     const SizedBox(height: 20),
 
-                    _buildSectionLabel('Cari / Tambah Lokasi Daerah *'),
+                    _buildSectionLabel('Cari Nomor SR Pelanggan *'),
                     const SizedBox(height: 8),
                     Row(
                       children: [
@@ -510,7 +543,9 @@ class _LogTekananFormPageState extends ConsumerState<LogTekananFormPage> {
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      _selectedLokasi?.namaLokasi ?? 'Cari lokasi...',
+                                      _selectedLokasi != null 
+                                          ? _selectedLokasi!.namaLokasi
+                                          : 'Cari No SR...',
                                       style: theme.textTheme.bodyLarge?.copyWith(
                                         color: _selectedLokasi != null ? AppColors.textPrimary : AppColors.textHint,
                                       ),
@@ -542,6 +577,61 @@ class _LogTekananFormPageState extends ConsumerState<LogTekananFormPage> {
                       ],
                     ),
                     const SizedBox(height: 20),
+
+                    if (_selectedLokasi != null) ...[
+                      _buildSectionLabel('Nomor Sambung Rumah (No. SR)'),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _noSrController,
+                        readOnly: true,
+                        style: theme.textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary),
+                        decoration: InputDecoration(
+                          fillColor: AppColors.surface.withValues(alpha: 0.5),
+                          filled: true,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      _buildSectionLabel('Nama Pelanggan'),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _namaPelangganController,
+                        readOnly: true,
+                        style: theme.textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary),
+                        decoration: InputDecoration(
+                          fillColor: AppColors.surface.withValues(alpha: 0.5),
+                          filled: true,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      _buildSectionLabel('Alamat'),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _alamatController,
+                        readOnly: true,
+                        maxLines: 2,
+                        style: theme.textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary),
+                        decoration: InputDecoration(
+                          fillColor: AppColors.surface.withValues(alpha: 0.5),
+                          filled: true,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      _buildSectionLabel('Desa'),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _desaController,
+                        readOnly: true,
+                        style: theme.textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary),
+                        decoration: InputDecoration(
+                          fillColor: AppColors.surface.withValues(alpha: 0.5),
+                          filled: true,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
 
                     if (_selectedLokasi != null &&
                         (_selectedLokasi!.latitude == null || _selectedLokasi!.latitude == 0) &&
@@ -652,19 +742,6 @@ class _LogTekananFormPageState extends ConsumerState<LogTekananFormPage> {
                       onChanged: (idx) => setState(() => _aliranIndex = idx),
                     ),
                     const SizedBox(height: 24),
-
-                    /*
-                    _buildSectionLabel('Nomor Sambung Rumah (No. SR)'),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _noSrController,
-                      style: theme.textTheme.bodyLarge,
-                      decoration: const InputDecoration(
-                        hintText: 'Contoh: SR-12345 (Opsional)',
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    */
 
                     _buildSectionLabel('Keterangan / Catatan (Opsional)'),
                     const SizedBox(height: 8),

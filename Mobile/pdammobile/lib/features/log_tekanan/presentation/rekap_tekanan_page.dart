@@ -96,7 +96,7 @@ class _RekapTekananPageState extends ConsumerState<RekapTekananPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Expanded(child: Text('Detail Daerah', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.primaryDark))),
+                      const Expanded(child: Text('Detail Pelanggan', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.primaryDark))),
                       if (hasLog)
                         Row(
                           mainAxisSize: MainAxisSize.min,
@@ -152,7 +152,11 @@ class _RekapTekananPageState extends ConsumerState<RekapTekananPage> {
                     ),
                     child: Column(
                       children: [
-                        _buildDetailRow('Nama Daerah', item.namaLokasi),
+                        if (item.noSr != null && item.noSr!.isNotEmpty)
+                          _buildDetailRow('No. SR', item.noSr!),
+                        _buildDetailRow('Nama Pelanggan', item.namaPelanggan ?? '-'),
+                        _buildDetailRow('Alamat', item.alamat ?? '-'),
+                        _buildDetailRow('Desa', item.desa ?? item.namaLokasi),
                         if (hasLog) ...[
                           _buildDetailRow('Tekanan Terakhir', '${item.nilaiTekanan} Bar'),
                           if (item.statusAliran != null)
@@ -334,7 +338,7 @@ class _RekapTekananPageState extends ConsumerState<RekapTekananPage> {
                 });
               },
               decoration: InputDecoration(
-                hintText: 'Cari nama daerah...',
+                hintText: 'Cari No SR / nama daerah...',
                 fillColor: Colors.white,
                 filled: true,
                 prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary),
@@ -364,7 +368,9 @@ class _RekapTekananPageState extends ConsumerState<RekapTekananPage> {
           }
           
           final filteredList = list.where((item) {
-            return item.namaLokasi.toLowerCase().contains(_searchQuery);
+            final matchNoSr = item.noSr?.toLowerCase().contains(_searchQuery) ?? false;
+            final matchNama = item.namaLokasi.toLowerCase().contains(_searchQuery);
+            return matchNoSr || matchNama;
           }).toList();
           
           if (filteredList.isEmpty) {
@@ -448,18 +454,24 @@ class _RekapTekananPageState extends ConsumerState<RekapTekananPage> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      item.namaLokasi,
+                                      (item.noSr != null && item.noSr!.isNotEmpty) ? item.noSr! : 'No SR Belum Diinput',
                                       style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                                     ),
-                                    /*
-                                    if (item.noSr != null && item.noSr!.isNotEmpty) ...[
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'No. SR: ${item.noSr}',
-                                        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontStyle: FontStyle.italic),
-                                      ),
-                                    ],
-                                    */
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      item.namaPelanggan ?? 'Nama Belum Diinput',
+                                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Alamat: ${item.alamat ?? '-'}',
+                                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Desa: ${item.desa ?? item.namaLokasi}',
+                                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                    ),
                                   ],
                                 ),
                               ),

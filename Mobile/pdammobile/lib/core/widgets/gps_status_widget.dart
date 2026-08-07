@@ -56,7 +56,7 @@ class GpsStatusWidget extends StatelessWidget {
                 ),
               ],
             ),
-          GpsSuccess(latitude: final lat, longitude: final lng) => Row(
+          GpsSuccess(latitude: final lat, longitude: final lng, accuracy: final acc) => Row(
               children: [
                 Container(
                   padding: const EdgeInsets.all(4),
@@ -94,7 +94,16 @@ class GpsStatusWidget extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '⚠️ WAJIB: Refresh koordinat jika berpindah lokasi!',
+                        'Akurasi: ±${acc.toStringAsFixed(1)} meter ${acc <= 2.5 ? "(Dalam toleransi 2.5m)" : "(Mencari akurasi <= 2.5m...)"}',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: acc <= 2.5 ? AppColors.statusNormal : Colors.orange[800],
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        acc <= 2.5 ? '⚠️ Koordinat telah dikunci!' : 'Harap tunggu di tempat terbuka...',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: Colors.orange[800],
                           fontWeight: FontWeight.bold,

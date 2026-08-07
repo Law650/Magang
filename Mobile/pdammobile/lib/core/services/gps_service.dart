@@ -17,8 +17,9 @@ class GpsLoading extends GpsState {
 class GpsSuccess extends GpsState {
   final double latitude;
   final double longitude;
+  final double accuracy;
 
-  const GpsSuccess({required this.latitude, required this.longitude});
+  const GpsSuccess({required this.latitude, required this.longitude, required this.accuracy});
 }
 
 class GpsError extends GpsState {
@@ -102,11 +103,8 @@ class GpsServiceNotifier extends StateNotifier<GpsState> {
         return;
       }
 
-      // 3. Ambil posisi dengan menyaring akurasi terbaik (cocok untuk HP spesifikasi rendah)
+      // 3. Ambil posisi secara terus-menerus (live) sampai akurasi <= 2.5m
       _positionStreamSubscription?.cancel();
-      
-      Position? bestPosition;
-      final completer = Completer<Position?>();
       
       _positionStreamSubscription = Geolocator.getPositionStream(
         locationSettings: const LocationSettings(
@@ -114,47 +112,24 @@ class GpsServiceNotifier extends StateNotifier<GpsState> {
           distanceFilter: 0,
         ),
       ).listen((Position position) {
-        if (bestPosition == null || position.accuracy < bestPosition!.accuracy) {
-          bestPosition = position;
+        if (mounted) {
+          state = GpsSuccess(
+            latitude: position.latitude,
+            longitude: position.longitude,
+            accuracy: position.accuracy,
+          );
         }
 
-        // Target akurasi yang ideal (di bawah 20 meter), bisa langsung selesai
-        if (bestPosition!.accuracy <= 20.0) {
-          if (!completer.isCompleted) {
-            completer.complete(bestPosition);
-          }
+        // Kunci koordinat (hentikan pencarian) jika akurasi sudah mencapai batas toleransi <= 2.5m
+        if (position.accuracy <= 2.5) {
+          _positionStreamSubscription?.cancel();
         }
       }, onError: (e) {
-        if (!completer.isCompleted) {
-          completer.completeError(e);
+        if (mounted) {
+          state = GpsError('Gagal membaca GPS: ${e.toString()}');
         }
       });
 
-      try {
-        // Tunggu maksimal 15 detik
-        await completer.future.timeout(const Duration(seconds: 15));
-      } catch (e) {
-        if (e is TimeoutException) {
-          // Timeout terjadi, biarkan berlanjut untuk menggunakan bestPosition yang berhasil dikumpulkan
-        } else {
-          rethrow;
-        }
-      } finally {
-        _positionStreamSubscription?.cancel();
-      }
-
-      if (bestPosition == null) {
-        throw Exception("Gagal mendapatkan sinyal GPS. Pastikan Anda berada di luar ruangan.");
-      } else if (bestPosition!.accuracy > 100.0) {
-        throw Exception("Akurasi terlalu lemah (${bestPosition!.accuracy.toStringAsFixed(0)}m). Nyalakan GPS Akurasi Tinggi & cari area terbuka.");
-      }
-
-      if (mounted) {
-        state = GpsSuccess(
-          latitude: bestPosition!.latitude,
-          longitude: bestPosition!.longitude,
-        );
-      }
     } catch (e) {
       state = GpsError(
         'Gagal mendapatkan lokasi: ${e.toString().length > 80 ? '${e.toString().substring(0, 80)}...' : e.toString()}',

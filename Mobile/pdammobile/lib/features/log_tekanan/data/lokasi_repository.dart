@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/services/database_helper.dart';
 import '../../../core/providers/api_provider.dart';
 import '../../../core/providers/technician_provider.dart';
 import '../../../core/services/api_client.dart';
@@ -11,12 +11,20 @@ import '../../../core/services/api_client.dart';
 class Lokasi {
   final int id;
   final String namaLokasi;
+  final String? noSr;
+  final String? namaPelanggan;
+  final String? alamat;
+  final String? desa;
   final double? latitude;
   final double? longitude;
 
   const Lokasi({
     required this.id,
     required this.namaLokasi,
+    this.noSr,
+    this.namaPelanggan,
+    this.alamat,
+    this.desa,
     this.latitude,
     this.longitude,
   });
@@ -32,6 +40,10 @@ class Lokasi {
     return Lokasi(
       id: json['id'],
       namaLokasi: json['nama_lokasi'],
+      noSr: json['no_sr']?.toString(),
+      namaPelanggan: json['nama_pelanggan']?.toString(),
+      alamat: json['alamat']?.toString(),
+      desa: json['desa']?.toString(),
       latitude: _parseDouble(json['latitude']),
       longitude: _parseDouble(json['longitude']),
     );
@@ -41,6 +53,10 @@ class Lokasi {
     return {
       'id': id,
       'nama_lokasi': namaLokasi,
+      'no_sr': noSr,
+      'nama_pelanggan': namaPelanggan,
+      'alamat': alamat,
+      'desa': desa,
       'latitude': latitude,
       'longitude': longitude,
     };
@@ -60,8 +76,7 @@ class Lokasi {
 
 final lokasiRepositoryProvider = Provider<LokasiRepository>((ref) {
   final apiClient = ref.watch(apiClientProvider);
-  final prefs = ref.watch(sharedPreferencesProvider);
-  return LokasiRepository(apiClient, prefs);
+  return LokasiRepository(apiClient);
 });
 
 final lokasiListProvider = FutureProvider.autoDispose<List<Lokasi>>((ref) async {
@@ -71,9 +86,8 @@ final lokasiListProvider = FutureProvider.autoDispose<List<Lokasi>>((ref) async 
 
 class LokasiRepository {
   final ApiClient _apiClient;
-  final SharedPreferences _prefs;
 
-  LokasiRepository(this._apiClient, this._prefs);
+  LokasiRepository(this._apiClient);
 
   Future<List<Lokasi>> fetchLokasi() async {
     try {
@@ -83,29 +97,28 @@ class LokasiRepository {
         final list = data.map((json) => Lokasi.fromJson(json)).toList();
         
         final jsonList = list.map((e) => e.toJson()).toList();
-        await _prefs.setString('cache_lokasi', jsonEncode(jsonList));
+        await DatabaseHelper.instance.insertLokasiBatch(jsonList);
         
         return list;
       }
-      return _loadFromCache();
+      return await _loadFromCache();
     } on DioException catch (e) {
       debugPrint('[LokasiRepository] API Error (Offline): ${e.message}');
-      return _loadFromCache();
+      return await _loadFromCache();
     } catch (e) {
       debugPrint('[LokasiRepository] Parse Error: $e');
-      return _loadFromCache();
+      return await _loadFromCache();
     }
   }
 
-  List<Lokasi> _loadFromCache() {
-    final cached = _prefs.getString('cache_lokasi');
-    if (cached != null) {
-      try {
-        final List data = jsonDecode(cached);
+  Future<List<Lokasi>> _loadFromCache() async {
+    try {
+      final data = await DatabaseHelper.instance.getLokasiList();
+      if (data.isNotEmpty) {
         return data.map((json) => Lokasi.fromJson(json)).toList();
-      } catch (e) {
-        debugPrint('[LokasiRepository] Cache Parse Error: $e');
       }
+    } catch (e) {
+      debugPrint('[LokasiRepository] Cache Parse Error: $e');
     }
     // Jika tidak ada cache dan offline, baru kita lempar exception
     throw Exception('Koneksi terputus dan tidak ada data offline');

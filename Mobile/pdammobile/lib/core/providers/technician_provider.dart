@@ -16,8 +16,9 @@ final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
   );
 });
 
-final technicianNameProvider = StateNotifierProvider<TechnicianNameNotifier, String?>(
-  (ref) {
+final StateNotifierProvider<TechnicianNameNotifier, String?> technicianNameProvider =
+    StateNotifierProvider<TechnicianNameNotifier, String?>(
+  (StateNotifierProviderRef<TechnicianNameNotifier, String?> ref) {
     final prefs = ref.watch(sharedPreferencesProvider);
     final apiClient = ref.watch(apiClientProvider);
     return TechnicianNameNotifier(prefs, apiClient);
@@ -81,6 +82,15 @@ class TechnicianNameNotifier extends StateNotifier<String?> {
     await _prefs.remove(_kAuthTokenKey);
     await _prefs.remove(_kTechnicianNameKey);
     await _prefs.remove(_kTechnicianIdKey);
+    state = null;
+  }
+
+  /// Logout paksa secara lokal (misal saat token expired / 401)
+  /// Tidak memanggil endpoint API untuk menghindari loop 401.
+  void forceLogoutLocal() {
+    _prefs.remove(_kAuthTokenKey);
+    _prefs.remove(_kTechnicianNameKey);
+    _prefs.remove(_kTechnicianIdKey);
     state = null;
   }
 

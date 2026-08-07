@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/services/database_helper.dart';
 import '../../../core/providers/api_provider.dart';
 import '../../../core/providers/technician_provider.dart';
 import '../../../core/services/api_client.dart';
@@ -92,8 +92,7 @@ class AsetValve {
 
 final asetRepositoryProvider = Provider<AsetRepository>((ref) {
   final apiClient = ref.watch(apiClientProvider);
-  final prefs = ref.watch(sharedPreferencesProvider);
-  return AsetRepository(apiClient, prefs);
+  return AsetRepository(apiClient);
 });
 
 final asetValveListProvider = FutureProvider<List<AsetValve>>((ref) async {
@@ -103,9 +102,8 @@ final asetValveListProvider = FutureProvider<List<AsetValve>>((ref) async {
 
 class AsetRepository {
   final ApiClient _apiClient;
-  final SharedPreferences _prefs;
 
-  AsetRepository(this._apiClient, this._prefs);
+  AsetRepository(this._apiClient);
 
   Future<List<AsetValve>> fetchAsetValves() async {
     try {
@@ -116,29 +114,28 @@ class AsetRepository {
         
         // Simpan ke cache lokal
         final jsonList = list.map((e) => e.toJson()).toList();
-        await _prefs.setString('cache_aset_valve', jsonEncode(jsonList));
+        await DatabaseHelper.instance.insertAsetValveBatch(jsonList);
         
         return list;
       }
-      return _loadFromCache();
+      return await _loadFromCache();
     } on DioException catch (e) {
       debugPrint('[AsetRepository] API Error (Offline): ${e.message}');
-      return _loadFromCache();
+      return await _loadFromCache();
     } catch (e) {
       debugPrint('[AsetRepository] Parse Error: $e');
-      return _loadFromCache();
+      return await _loadFromCache();
     }
   }
 
-  List<AsetValve> _loadFromCache() {
-    final cached = _prefs.getString('cache_aset_valve');
-    if (cached != null) {
-      try {
-        final List data = jsonDecode(cached);
+  Future<List<AsetValve>> _loadFromCache() async {
+    try {
+      final data = await DatabaseHelper.instance.getAsetValveList();
+      if (data.isNotEmpty) {
         return data.map((json) => AsetValve.fromJson(json)).toList();
-      } catch (e) {
-        debugPrint('[AsetRepository] Cache Parse Error: $e');
       }
+    } catch (e) {
+      debugPrint('[AsetRepository] Cache Parse Error: $e');
     }
     return [];
   }

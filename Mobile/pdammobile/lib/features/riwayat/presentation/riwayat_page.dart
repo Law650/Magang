@@ -29,6 +29,7 @@ class RiwayatPage extends ConsumerStatefulWidget {
 
 class _RiwayatPageState extends ConsumerState<RiwayatPage> {
   String? _selectedLokasiName;
+  String? _selectedNoSr;
   String? _selectedAsetName;
   String _kategoriFilter = 'Tekanan';
   Timer? _refreshTimer;
@@ -43,6 +44,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
     } else if (widget.initialRekap != null) {
       _kategoriFilter = 'Tekanan';
       _selectedLokasiName = widget.initialRekap!.namaLokasi;
+      _selectedNoSr = widget.initialRekap!.noSr;
     }
     _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       final syncState = ref.read(syncControllerProvider);
@@ -170,274 +172,317 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
       ),
       body: RefreshIndicator(
         onRefresh: () async => await syncController.forceSyncNow(),
-        child: SingleChildScrollView(
+        child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Breadcrumb(title: 'Histori & Akumulasi'),
-              const SizedBox(height: 16),
-              const FormHeaderCard(
-                title: 'Histori & Akumulasi Status Valve',
-                subtitle: 'Pelacakan kronologis perubahan posisi valve jaringan.',
-                icon: Icons.access_time,
-              ),
-              const SizedBox(height: 16),
-
-              // Filter Data
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.cardBorder),
-                ),
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              sliver: SliverToBoxAdapter(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.filter_alt_outlined, color: AppColors.textSecondary, size: 20),
-                        const SizedBox(width: 8),
-                        Text('Filter Data', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                      ],
+                    const Breadcrumb(title: 'Histori & Akumulasi'),
+                    const SizedBox(height: 16),
+                    const FormHeaderCard(
+                      title: 'Histori & Akumulasi Status Valve',
+                      subtitle: 'Pelacakan kronologis perubahan posisi valve jaringan.',
+                      icon: Icons.access_time,
                     ),
                     const SizedBox(height: 16),
-                    // Kategori Toggle
-                    Row(
-                      children: [
-                        Expanded(
-                          child: InkWell(
-                            onTap: () {
-                              if (_kategoriFilter != 'Tekanan') {
-                                setState(() {
-                                  _kategoriFilter = 'Tekanan';
-                                  _selectedLokasiName = null;
-                                  _selectedAsetName = null;
-                                });
-                              }
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              decoration: BoxDecoration(
-                                color: _kategoriFilter == 'Tekanan' ? AppColors.primary : Colors.transparent,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: _kategoriFilter == 'Tekanan' ? AppColors.primary : AppColors.cardBorder),
-                              ),
-                              alignment: Alignment.center,
-                              child: Text('Tekanan', style: TextStyle(color: _kategoriFilter == 'Tekanan' ? Colors.white : AppColors.textSecondary, fontWeight: FontWeight.bold)),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: InkWell(
-                            onTap: () {
-                              if (_kategoriFilter != 'Valve') {
-                                setState(() {
-                                  _kategoriFilter = 'Valve';
-                                  _selectedLokasiName = null;
-                                  _selectedAsetName = null;
-                                });
-                              }
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              decoration: BoxDecoration(
-                                color: _kategoriFilter == 'Valve' ? AppColors.primary : Colors.transparent,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: _kategoriFilter == 'Valve' ? AppColors.primary : AppColors.cardBorder),
-                              ),
-                              alignment: Alignment.center,
-                              child: Text('Valve', style: TextStyle(color: _kategoriFilter == 'Valve' ? Colors.white : AppColors.textSecondary, fontWeight: FontWeight.bold)),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Text(_kategoriFilter == 'Tekanan' ? 'Lokasi Tekanan' : 'Jalur Valve', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 4),
+
+                    // Filter Data
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: AppColors.cardBorder),
-                        borderRadius: BorderRadius.circular(12),
                       ),
-                      child: InkWell(
-                        onTap: () async {
-                          List<String> unik = [];
-                          if (_kategoriFilter == 'Tekanan') {
-                            unik = (lokasiAsync.valueOrNull ?? []).map((l) => l.namaLokasi).toSet().toList();
-                          } else {
-                            unik = (asetAsync.valueOrNull ?? []).map((a) => a.namaLokasi).toSet().toList();
-                          }
-                          unik.sort();
-                          
-                          final selected = await SearchableBottomSheet.show<String>(
-                            context: context,
-                            title: 'Filter Lokasi',
-                            items: unik,
-                            itemAsString: (l) => l,
-                          );
-                          if (selected != null) {
-                            setState(() {
-                              _selectedLokasiName = selected;
-                              _selectedAsetName = null; // Reset aset jika lokasi berubah
-                            });
-                          }
-                        },
-                        child: Container(
-                          height: 48,
-                          alignment: Alignment.centerLeft,
-                          child: Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.filter_alt_outlined, color: AppColors.textSecondary, size: 20),
+                              const SizedBox(width: 8),
+                              Text('Filter Data', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          // Kategori Toggle
+                          Row(
                             children: [
                               Expanded(
-                                child: Text(
-                                  _selectedLokasiName ?? 'Pilih Lokasi',
-                                  style: theme.textTheme.bodyLarge?.copyWith(
-                                    color: _selectedLokasiName != null ? AppColors.textPrimary : AppColors.textHint,
+                                child: InkWell(
+                                  onTap: () {
+                                    if (_kategoriFilter != 'Tekanan') {
+                                      setState(() {
+                                        _kategoriFilter = 'Tekanan';
+                                        _selectedLokasiName = null;
+                                        _selectedNoSr = null;
+                                        _selectedAsetName = null;
+                                      });
+                                    }
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: _kategoriFilter == 'Tekanan' ? AppColors.primary : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: _kategoriFilter == 'Tekanan' ? AppColors.primary : AppColors.cardBorder),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text('Tekanan', style: TextStyle(color: _kategoriFilter == 'Tekanan' ? Colors.white : AppColors.textSecondary, fontWeight: FontWeight.bold)),
                                   ),
                                 ),
                               ),
-                              const Icon(Icons.arrow_drop_down, color: AppColors.textHint),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: InkWell(
+                                  onTap: () {
+                                    if (_kategoriFilter != 'Valve') {
+                                      setState(() {
+                                        _kategoriFilter = 'Valve';
+                                        _selectedLokasiName = null;
+                                        _selectedNoSr = null;
+                                        _selectedAsetName = null;
+                                      });
+                                    }
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: _kategoriFilter == 'Valve' ? AppColors.primary : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: _kategoriFilter == 'Valve' ? AppColors.primary : AppColors.cardBorder),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text('Valve', style: TextStyle(color: _kategoriFilter == 'Valve' ? Colors.white : AppColors.textSecondary, fontWeight: FontWeight.bold)),
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
-                        ),
+                          const SizedBox(height: 16),
+                          Text(_kategoriFilter == 'Tekanan' ? 'Lokasi Tekanan' : 'Jalur Valve', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: AppColors.cardBorder),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: InkWell(
+                              onTap: () async {
+                                if (_kategoriFilter == 'Tekanan') {
+                                  final rekapList = rekapTekananAsync.valueOrNull ?? [];
+                                  final selected = await SearchableBottomSheet.show<RekapTekanan>(
+                                    context: context,
+                                    title: 'Filter No SR / Lokasi',
+                                    items: rekapList,
+                                    itemAsString: (r) => r.namaLokasi,
+                                  );
+                                  if (selected != null) {
+                                    setState(() {
+                                      _selectedLokasiName = selected.namaLokasi;
+                                      _selectedNoSr = selected.noSr;
+                                      _selectedAsetName = null;
+                                    });
+                                  }
+                                } else {
+                                  final unik = (asetAsync.valueOrNull ?? []).map((a) => a.namaLokasi).toSet().toList();
+                                  unik.sort();
+                                  
+                                  final selected = await SearchableBottomSheet.show<String>(
+                                    context: context,
+                                    title: 'Filter Lokasi',
+                                    items: unik,
+                                    itemAsString: (l) => l,
+                                  );
+                                  if (selected != null) {
+                                    setState(() {
+                                      _selectedLokasiName = selected;
+                                      _selectedNoSr = null;
+                                      _selectedAsetName = null;
+                                    });
+                                  }
+                                }
+                              },
+                              child: Container(
+                                height: 48,
+                                alignment: Alignment.centerLeft,
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        _selectedLokasiName != null 
+                                          ? _selectedLokasiName!
+                                          : 'Pilih Lokasi',
+                                        style: theme.textTheme.bodyLarge?.copyWith(
+                                          color: _selectedLokasiName != null ? AppColors.textPrimary : AppColors.textHint,
+                                        ),
+                                      ),
+                                    ),
+                                    const Icon(Icons.arrow_drop_down, color: AppColors.textHint),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          
+                          if (_kategoriFilter == 'Valve' && _selectedLokasiName != null) ...[
+                            const SizedBox(height: 16),
+                            Text('Aset / Valve', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: AppColors.cardBorder),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: InkWell(
+                                onTap: () async {
+                                  final unik = (asetAsync.valueOrNull ?? [])
+                                      .where((a) => _selectedLokasiName == null || a.namaLokasi == _selectedLokasiName)
+                                      .map((a) => a.namaAset)
+                                      .toSet()
+                                      .toList();
+                                  unik.sort();
+                                  
+                                  final selected = await SearchableBottomSheet.show<String>(
+                                    context: context,
+                                    title: 'Filter Valve',
+                                    items: unik,
+                                    itemAsString: (a) => a,
+                                  );
+                                  if (selected != null) {
+                                    setState(() => _selectedAsetName = selected);
+                                  }
+                                },
+                                child: Container(
+                                  height: 48,
+                                  alignment: Alignment.centerLeft,
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                        _selectedAsetName ?? 'Semua Valve',
+                                        style: theme.textTheme.bodyLarge?.copyWith(
+                                          color: _selectedAsetName != null ? AppColors.textPrimary : AppColors.textHint,
+                                        ),
+                                      ),
+                                    ),
+                                    const Icon(Icons.arrow_drop_down, color: AppColors.textHint),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          ], // Closes the ...[ from _kategoriFilter == 'Valve'
+                        ],
                       ),
                     ),
-                    
-                    if (_kategoriFilter == 'Valve' && _selectedLokasiName != null) ...[
-                      const SizedBox(height: 16),
-                      Text('Aset / Valve', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 4),
+                    const SizedBox(height: 16),
+
+                    // Kartu Status Langsung
+                    if (_selectedLokasiName == null && _selectedAsetName == null)
+                      const SizedBox.shrink()
+                    else if (selectedAsetDb != null && selectedAsetDb.sisaBukaan != null)
+                      _buildKartuStatusLangsungAset(context, selectedAsetDb, theme)
+                    else if (_selectedLokasiName != null && selectedRekap != null)
+                      _buildKartuStatusLangsungTekanan(context, selectedRekap, theme)
+                    else
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          border: Border.all(color: AppColors.cardBorder),
-                          borderRadius: BorderRadius.circular(12),
+                          color: AppColors.primaryDark,
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                        child: InkWell(
-                          onTap: () async {
-                            final unik = (asetAsync.valueOrNull ?? [])
-                                .where((a) => _selectedLokasiName == null || a.namaLokasi == _selectedLokasiName)
-                                .map((a) => a.namaAset)
-                                .toSet()
-                                .toList();
-                            unik.sort();
-                            
-                            final selected = await SearchableBottomSheet.show<String>(
-                              context: context,
-                              title: 'Filter Valve',
-                              items: unik,
-                              itemAsString: (a) => a,
-                            );
-                            if (selected != null) {
-                              setState(() => _selectedAsetName = selected);
-                            }
-                          },
-                          child: Container(
-                            height: 48,
-                            alignment: Alignment.centerLeft,
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                  _selectedAsetName ?? 'Semua Valve',
-                                  style: theme.textTheme.bodyLarge?.copyWith(
-                                    color: _selectedAsetName != null ? AppColors.textPrimary : AppColors.textHint,
-                                  ),
-                                ),
-                              ),
-                              const Icon(Icons.arrow_drop_down, color: AppColors.textHint),
-                            ],
-                          ),
+                        child: const Center(
+                          child: Text('Tidak ada data status langsung untuk filter ini.', style: TextStyle(color: Colors.white70)),
                         ),
                       ),
+                    
+                    const SizedBox(height: 24),
+
+                    // Tabel Riwayat Kronologis
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                        border: Border.all(color: AppColors.cardBorder),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.list, color: AppColors.textSecondary),
+                          const SizedBox(width: 8),
+                          Text('Tabel Riwayat Kronologis', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                          const Spacer(),
+                          Text('${filteredLogs.length} entri', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textHint)),
+                        ],
+                      ),
                     ),
-                    ], // Closes the ...[ from _kategoriFilter == 'Valve'
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-
-              // Kartu Status Langsung
-              if (_selectedLokasiName == null && _selectedAsetName == null)
-                const SizedBox.shrink()
-              else if (selectedAsetDb != null && selectedAsetDb.sisaBukaan != null)
-                _buildKartuStatusLangsungAset(context, selectedAsetDb, theme)
-              else if (_selectedLokasiName != null && selectedRekap != null)
-                _buildKartuStatusLangsungTekanan(context, selectedRekap, theme)
-              else
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryDark,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Center(
-                    child: Text('Tidak ada data status langsung untuk filter ini.', style: TextStyle(color: Colors.white70)),
-                  ),
-                ),
-              
-              const SizedBox(height: 24),
-
-              // Tabel Riwayat Kronologis
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                  border: Border.all(color: AppColors.cardBorder),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.list, color: AppColors.textSecondary),
-                    const SizedBox(width: 8),
-                    Text('Tabel Riwayat Kronologis', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                    const Spacer(),
-                    Text('${filteredLogs.length} entri', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textHint)),
-                  ],
-                ),
-              ),
-
-              // List of logs
-              Container(
-                decoration: const BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
-                  border: Border(
-                    left: BorderSide(color: AppColors.cardBorder),
-                    right: BorderSide(color: AppColors.cardBorder),
-                    bottom: BorderSide(color: AppColors.cardBorder),
-                  ),
-                ),
-                child: filteredLogs.isEmpty
-                    ? Padding(
+            ),
+            
+            // List of logs
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              sliver: filteredLogs.isEmpty
+                  ? SliverToBoxAdapter(
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
+                          border: Border(
+                            left: BorderSide(color: AppColors.cardBorder),
+                            right: BorderSide(color: AppColors.cardBorder),
+                            bottom: BorderSide(color: AppColors.cardBorder),
+                          ),
+                        ),
                         padding: const EdgeInsets.all(32),
-                        child: Center(
+                        child: const Center(
                           child: Text('Belum ada riwayat', style: TextStyle(color: AppColors.textHint)),
                         ),
-                      )
-                    : ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: filteredLogs.length,
-                        separatorBuilder: (context, index) => const Divider(height: 1),
-                        itemBuilder: (context, index) {
+                      ),
+                    )
+                  : SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
                           final log = filteredLogs[index];
-                          return _buildHistoryItem(
-                            context, 
-                            log, 
-                            filteredLogs.length - index, 
-                            allowedToEditKeys.contains(log.idempotencyKey),
+                          final isLast = index == filteredLogs.length - 1;
+                          
+                          return Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.surface,
+                              borderRadius: isLast ? const BorderRadius.vertical(bottom: Radius.circular(16)) : BorderRadius.zero,
+                              border: Border(
+                                left: const BorderSide(color: AppColors.cardBorder),
+                                right: const BorderSide(color: AppColors.cardBorder),
+                                bottom: BorderSide(color: AppColors.cardBorder, width: isLast ? 1.0 : 0.0),
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                _buildHistoryItem(
+                                  context, 
+                                  log, 
+                                  filteredLogs.length - index, 
+                                  allowedToEditKeys.contains(log.idempotencyKey),
+                                ),
+                                if (!isLast) const Divider(height: 1),
+                              ],
+                            ),
                           );
                         },
+                        childCount: filteredLogs.length,
                       ),
-              ),
-            ],
-          ),
+                    ),
+            ),
+          ],
         ),
       ),
     );
@@ -665,6 +710,9 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
             'kekeruhan': rekap.kekeruhan,
             'keterangan': rekap.keterangan,
             'no_sr': rekap.noSr,
+            'nama_pelanggan': rekap.namaPelanggan,
+            'alamat': rekap.alamat,
+            'desa': rekap.desa,
             'nama_teknisi': rekap.namaTeknisi ?? 'Sistem',
             'foto_eviden': rekap.fotoEviden,
           },
@@ -727,11 +775,9 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
               ],
             ),
             const SizedBox(height: 20),
-          Text('Nama Lokasi / Jalur', style: theme.textTheme.bodySmall?.copyWith(color: Colors.white70)),
-          Text(rekap.namaLokasi, style: theme.textTheme.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
-          
-          /*
           if (rekap.noSr != null && rekap.noSr!.isNotEmpty) ...[
+            Text('No. SR Pelanggan', style: theme.textTheme.bodySmall?.copyWith(color: Colors.white70)),
+            Text(rekap.noSr!, style: theme.textTheme.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Container(
               width: double.infinity,
@@ -744,14 +790,16 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('No. SR:', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                  const Text('No SR dan Nama Pelanggan:', style: TextStyle(color: Colors.white54, fontSize: 11)),
                   const SizedBox(height: 4),
-                  Text(rekap.noSr!, style: const TextStyle(color: Colors.white, fontSize: 13, fontStyle: FontStyle.italic)),
+                  Text(rekap.namaLokasi, style: const TextStyle(color: Colors.white, fontSize: 13, fontStyle: FontStyle.italic)),
                 ],
               ),
             ),
+          ] else ...[
+            Text('Nama Lokasi / Jalur', style: theme.textTheme.bodySmall?.copyWith(color: Colors.white70)),
+            Text(rekap.namaLokasi, style: theme.textTheme.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
           ],
-          */
           
           if (rekap.keterangan != null && rekap.keterangan!.isNotEmpty) ...[
             const SizedBox(height: 8),
@@ -1564,7 +1612,18 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                   ),
                   child: Column(
                     children: [
-                      _buildDetailRow(isValve ? 'Aset / Valve' : 'Lokasi Daerah', map[isValve ? 'nama_aset' : 'nama_lokasi'] ?? '-'),
+                      if (!isValve && map['no_sr'] != null && map['no_sr'].toString().isNotEmpty)
+                        _buildDetailRow('No. SR', map['no_sr'].toString()),
+                      if (!isValve && map['nama_pelanggan'] != null && map['nama_pelanggan'].toString().isNotEmpty)
+                        _buildDetailRow('Nama Pelanggan', map['nama_pelanggan'].toString()),
+                      if (!isValve && map['alamat'] != null && map['alamat'].toString().isNotEmpty)
+                        _buildDetailRow('Alamat', map['alamat'].toString()),
+                      if (isValve)
+                        _buildDetailRow('Aset / Valve', map['nama_aset'] ?? '-')
+                      else if (map['no_sr'] == null || map['no_sr'].toString().isEmpty)
+                        _buildDetailRow('Lokasi Daerah', map['nama_lokasi'] ?? '-'),
+                      if (!isValve && map['desa'] != null && map['desa'].toString().isNotEmpty)
+                        _buildDetailRow('Desa', map['desa'].toString()),
                       if (isValve) _buildDetailRow('Lokasi', map['nama_lokasi'] ?? '-'),
                       _buildDetailRow('Petugas', map['nama_teknisi'] ?? '-'),
                       
@@ -1574,7 +1633,6 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                       ] else ...[
                         _buildDetailRow('Tekanan', '${map['nilai_tekanan'] ?? 0.0} Bar'),
                         _buildDetailRow('Aliran', map['status_aliran']?.toString().toUpperCase() ?? '-'),
-                        // _buildDetailRow('No. SR', map['no_sr'] ?? '-'),
                         if (map['kekeruhan'] != null) _buildDetailRow('Kekeruhan', map['kekeruhan']!),
                       ],
                       

@@ -17,14 +17,20 @@ class TambahDaerahPage extends ConsumerStatefulWidget {
 
 class _TambahDaerahPageState extends ConsumerState<TambahDaerahPage> {
   final _formKey = GlobalKey<FormState>();
-  final _namaLokasiController = TextEditingController();
+  final _noSrController = TextEditingController();
+  final _namaPelangganController = TextEditingController();
+  final _alamatController = TextEditingController();
+  final _desaController = TextEditingController();
   final _latController = TextEditingController();
   final _lngController = TextEditingController();
   bool _isLoading = false;
 
   @override
   void dispose() {
-    _namaLokasiController.dispose();
+    _noSrController.dispose();
+    _namaPelangganController.dispose();
+    _alamatController.dispose();
+    _desaController.dispose();
     _latController.dispose();
     _lngController.dispose();
     super.dispose();
@@ -64,7 +70,10 @@ class _TambahDaerahPageState extends ConsumerState<TambahDaerahPage> {
     try {
       final repository = ref.read(lokasiRepositoryProvider);
       await repository.tambahDaerahTekanan({
-        'nama_lokasi': _namaLokasiController.text.trim(),
+        'no_sr': _noSrController.text.trim(),
+        'nama_pelanggan': _namaPelangganController.text.trim(),
+        'alamat': _alamatController.text.trim(),
+        'desa': _desaController.text.trim(),
         'latitude': lat,
         'longitude': lng,
       });
@@ -84,8 +93,8 @@ class _TambahDaerahPageState extends ConsumerState<TambahDaerahPage> {
     } catch (e) {
       if (mounted) {
         String errMsg = e.toString();
-        if (errMsg.contains('Duplicate entry') || errMsg.contains('Integrity constraint violation')) {
-          errMsg = 'Nama daerah ini sudah ada. Silakan gunakan nama lain.';
+        if (errMsg.contains('Duplicate entry') || errMsg.contains('Integrity constraint violation') || errMsg.contains('already has')) {
+          errMsg = 'Nomor SR ini sudah ada. Silakan gunakan No SR lain.';
         } else if (errMsg.startsWith('Exception: ')) {
           errMsg = errMsg.substring(11);
         }
@@ -121,16 +130,44 @@ class _TambahDaerahPageState extends ConsumerState<TambahDaerahPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildSectionLabel('Informasi Daerah *'),
+                    _buildSectionLabel('Informasi Pelanggan *'),
                     const SizedBox(height: 16),
                     TextFormField(
-                      controller: _namaLokasiController,
+                      controller: _noSrController,
                       decoration: const InputDecoration(
-                        labelText: 'Nama Daerah Tekanan',
-                        hintText: 'Contoh: Jl. Ahmad Yani',
+                        labelText: 'Nomor SR',
+                        hintText: 'Contoh: 12345678',
                       ),
                       validator: (v) =>
                           v == null || v.trim().isEmpty ? 'Wajib diisi' : null,
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _namaPelangganController,
+                      decoration: const InputDecoration(
+                        labelText: 'Nama Pelanggan',
+                        hintText: 'Contoh: Budi Santoso',
+                      ),
+                      validator: (v) =>
+                          v == null || v.trim().isEmpty ? 'Wajib diisi' : null,
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _desaController,
+                      decoration: const InputDecoration(
+                        labelText: 'Desa',
+                        hintText: 'Contoh: Kedungwuluh',
+                      ),
+                      validator: (v) =>
+                          v == null || v.trim().isEmpty ? 'Wajib diisi' : null,
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _alamatController,
+                      decoration: const InputDecoration(
+                        labelText: 'Alamat (Opsional)',
+                        hintText: 'Detail alamat',
+                      ),
                     ),
                     const SizedBox(height: 24),
                     _buildSectionLabel('Koordinat GPS (Opsional)'),

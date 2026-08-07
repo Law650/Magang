@@ -425,28 +425,31 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _namaTeknisiController,
-                      decoration: const InputDecoration(hintText: 'Nama lengkap'),
+                      readOnly: true,
+                      style: theme.textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary),
+                      decoration: InputDecoration(
+                        hintText: 'Nama lengkap',
+                        fillColor: AppColors.surface.withValues(alpha: 0.5),
+                        filled: true,
+                      ),
                       validator: (val) => (val == null || val.isEmpty) ? 'Wajib diisi' : null,
                     ),
                     const SizedBox(height: 20),
 
                     _buildSectionLabel('Waktu Kegiatan Lapangan *'),
                     const SizedBox(height: 8),
-                    InkWell(
-                      onTap: _pickDateTime,
-                      child: Container(
-                        height: 56,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.cardBorder),
-                        ),
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          dateFormat.format(_waktuKegiatan),
-                          style: theme.textTheme.bodyLarge,
-                        ),
+                    Container(
+                      height: 56,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.cardBorder),
+                      ),
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        dateFormat.format(_waktuKegiatan),
+                        style: theme.textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -640,26 +643,29 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
                           isExpanded: true,
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           value: _aksiKerjaIndex,
-                          items: [
+                          items: () {
+                            final bool bukaDisabled = _bukaanSaatIni >= _kapasitasFull && _kapasitasFull > 0;
+                            final bool tutupDisabled = _bukaanSaatIni <= 0;
+                            return <DropdownMenuItem<int>>[
                             DropdownMenuItem(
                               value: 0,
-                              enabled: !(_bukaanSaatIni >= _kapasitasFull && _kapasitasFull > 0),
+                              enabled: !bukaDisabled,
                               child: Row(
                                 children: [
-                                  const Icon(Icons.arrow_upward, color: AppColors.accentGreen, size: 20),
+                                  Icon(Icons.arrow_upward, color: bukaDisabled ? AppColors.textHint : AppColors.accentGreen, size: 20),
                                   const SizedBox(width: 8),
-                                  const Text('Buka Valve', style: TextStyle(color: AppColors.textPrimary)),
+                                  Flexible(child: Text('Buka Valve', style: TextStyle(color: bukaDisabled ? AppColors.textHint : AppColors.textPrimary), overflow: TextOverflow.ellipsis)),
                                 ],
                               ),
                             ),
                             DropdownMenuItem(
                               value: 1,
-                              enabled: !(_bukaanSaatIni <= 0),
+                              enabled: !tutupDisabled,
                               child: Row(
                                 children: [
-                                  const Icon(Icons.arrow_downward, color: AppColors.statusKritis, size: 20),
+                                  Icon(Icons.arrow_downward, color: tutupDisabled ? AppColors.textHint : AppColors.statusKritis, size: 20),
                                   const SizedBox(width: 8),
-                                  const Text('Tutup Valve', style: TextStyle(color: AppColors.textPrimary)),
+                                  Flexible(child: Text('Tutup Valve', style: TextStyle(color: tutupDisabled ? AppColors.textHint : AppColors.textPrimary), overflow: TextOverflow.ellipsis)),
                                 ],
                               ),
                             ),
@@ -669,11 +675,12 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
                                 children: [
                                   const Icon(Icons.location_on, color: AppColors.primary, size: 20),
                                   const SizedBox(width: 8),
-                                  const Text('Cek (Update Koordinat & Foto)', style: TextStyle(color: AppColors.textPrimary)),
+                                  Flexible(child: Text('Cek (Update Koordinat & Foto)', style: TextStyle(color: AppColors.textPrimary), overflow: TextOverflow.ellipsis)),
                                 ],
                               ),
                             ),
-                          ],
+                            ];
+                          }(),
                           onChanged: (val) {
                             if (val != null) {
                               setState(() {
@@ -766,8 +773,17 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
                         child: OutlinedButton.icon(
                           onPressed: () {
                             if (gpsState is GpsSuccess) {
-                              _latController.text = gpsState.latitude.toString();
-                              _lngController.text = gpsState.longitude.toString();
+                              if (gpsState.accuracy > 2.5) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Akurasi GPS > 2.5 meter. Tidak dapat menggunakan lokasi saat ini.'),
+                                    backgroundColor: AppColors.statusKritis,
+                                  ),
+                                );
+                              } else {
+                                _latController.text = gpsState.latitude.toString();
+                                _lngController.text = gpsState.longitude.toString();
+                              }
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text('Sinyal GPS belum stabil atau aktif.')),

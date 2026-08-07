@@ -40,6 +40,8 @@ dependencies:
 
   # Local Storage — Technician Name (PRD §2.2)
   shared_preferences: ^2.3.4
+  sqflite: ^2.4.1
+  path: ^1.9.0
 
   # Date/Time Formatting (PRD §2.4)
   intl: ^0.20.2
