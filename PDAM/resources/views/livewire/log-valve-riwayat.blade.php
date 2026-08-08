@@ -87,7 +87,6 @@
                 type="date" 
                 wire:model.live="startDate"
                 class="px-3 py-2.5 bg-slate-900/50 border border-slate-700/50 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-500/40 transition"
-                style="color-scheme: dark;"
                 title="Tanggal Mulai"
             >
             <span class="text-slate-500">-</span>
@@ -95,7 +94,6 @@
                 type="date" 
                 wire:model.live="endDate"
                 class="px-3 py-2.5 bg-slate-900/50 border border-slate-700/50 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-500/40 transition"
-                style="color-scheme: dark;"
                 title="Tanggal Akhir"
             >
         </div>

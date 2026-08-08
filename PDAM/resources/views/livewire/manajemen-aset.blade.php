@@ -1,4 +1,4 @@
-<div wire:poll.10s x-data="{ showDeleteModal: false, deleteId: null, deleteMessage: 'Yakin ingin menghapus aset ini?' }">
+<div wire:poll.10s x-data="{ showDeleteModal: false, deleteType: 'single', deleteId: null, deleteMessage: 'Yakin ingin menghapus aset ini?' }">
     {{-- Page Header --}}
     <div class="mb-6">
         <h1 class="text-2xl font-bold text-white">Manajemen Master Aset</h1>
@@ -99,8 +99,7 @@
         @if(auth()->user()->isAdmin())
         @if(count($selectedRows) > 0)
             <button
-                wire:click="deleteSelected"
-                wire:confirm="Yakin ingin menghapus {{ count($selectedRows) }} aset terpilih?"
+                @click="deleteType = 'multiple'; deleteMessage = 'Yakin ingin menghapus {{ count($selectedRows) }} aset terpilih?'; showDeleteModal = true;"
                 class="flex items-center justify-center gap-2 px-5 py-2.5 bg-red-500 text-white text-sm font-semibold rounded-xl hover:bg-red-600 shadow-lg shadow-red-500/25 transition-all duration-300 hover:shadow-red-500/40"
             >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -199,7 +198,7 @@
                                         </svg>
                                     </button>
                                     <button
-                                        @click="deleteId = {{ $aset->id }}; deleteMessage = 'Yakin ingin menghapus aset ini?'; showDeleteModal = true;"
+                                        @click="deleteType = 'single'; deleteId = {{ $aset->id }}; deleteMessage = 'Yakin ingin menghapus aset ini?'; showDeleteModal = true;"
                                         class="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition"
                                         title="Hapus"
                                     >
@@ -562,7 +561,7 @@
             </div>
             <div class="flex justify-end gap-2">
                 <button @click="showDeleteModal = false" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 transition-colors">Batal</button>
-                <button @click="$wire.delete(deleteId); showDeleteModal = false" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500 text-white hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20">Ya, Hapus</button>
+                <button @click="if(deleteType === 'single') { $wire.delete(deleteId) } else { $wire.deleteSelected() }; showDeleteModal = false" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500 text-white hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20">Ya, Hapus</button>
             </div>
         </div>
     </div>

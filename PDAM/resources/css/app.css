@@ -102,15 +102,13 @@ nav[role="navigation"] span[aria-disabled="true"] {
 }
 
 
-/* Fix calendar icon color on dark mode inputs */
-html.dark input[type="date"]::-webkit-calendar-picker-indicator {
-    filter: invert(1);
-    opacity: 0.7;
-    cursor: pointer;
+/* Fix calendar icon color on both modes */
+input[type="date"] {
+    color-scheme: light;
 }
 
-html.dark input[type="date"]::-webkit-calendar-picker-indicator:hover {
-    opacity: 1;
+html.dark input[type="date"] {
+    color-scheme: dark;
 }
 
 /* =====================================================
@@ -123,11 +121,7 @@ html {
     transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-html:not(.dark) *,
-html:not(.dark) *::before,
-html:not(.dark) *::after {
-    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
-}
+
 
 /* --- Body --- */
 html:not(.dark) body {
@@ -161,14 +155,14 @@ html:not(.dark) .text-slate-600 {
 }
 
 /* --- Sidebar --- */
-html:not(.dark) aside {
-    background-color: #ffffff !important;
-    border-color: #e2e8f0 !important;
+html:not(.dark) body aside.bg-slate-900\/95 {
+    background-color: #ffffff;
+    border-color: #e2e8f0;
 }
 
-html:not(.dark) aside .border-slate-800\/50,
-html:not(.dark) aside .border-b {
-    border-color: #e2e8f0 !important;
+html:not(.dark) body aside .border-slate-800\/50,
+html:not(.dark) body aside .border-b {
+    border-color: #e2e8f0;
 }
 
 /* --- Sidebar navigation links --- */
@@ -563,4 +557,39 @@ html:not(.dark) input[type="date"]::-webkit-calendar-picker-indicator:hover {
 
 .theme-toggle.light::after {
     transform: translateX(20px);
+}
+
+/* --- Export button light mode --- */
+html:not(.dark) .bg-slate-800\/80 {
+    background-color: #e2e8f0 !important;
+}
+
+html:not(.dark) a.text-slate-300,
+html:not(.dark) button.text-slate-300 {
+    color: #334155 !important;
+}
+
+html:not(.dark) a.text-slate-300:hover,
+html:not(.dark) button.text-slate-300:hover {
+    color: #0f172a !important;
+}
+
+/* --- Date input color-scheme for light mode --- */
+html:not(.dark) input[type="date"] {
+    color-scheme: light !important;
+}
+
+html.dark input[type="date"] {
+    color-scheme: dark !important;
+}
+
+/* --- Filter pill bg in light mode --- */
+html:not(.dark) .bg-slate-900\/50.border-slate-700\/50 {
+    background-color: #ffffff !important;
+    border-color: #e2e8f0 !important;
+}
+
+html:not(.dark) .bg-slate-900\/50.border-slate-800\/50 {
+    background-color: #ffffff !important;
+    border-color: #e2e8f0 !important;
 }

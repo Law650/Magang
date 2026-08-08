@@ -102,35 +102,65 @@
             <div
                 x-data="{
                     map: null, markerLayer: null, markers: @js($gvMarkers), markerObjects: {}, tileLayer: null,
+                    _listeners: {},
                     init() {
                         this.initMap();
                         this.renderMarkers();
-                        new ResizeObserver(() => { if (this.map) this.map.invalidateSize(); }).observe(this.$refs.gvMap);
-                        window.addEventListener('gv-markers-updated', (e) => { this.markers = e.detail.markers; this.renderMarkers(); });
-                        window.addEventListener('focus-gv-marker', (e) => {
+                        this._resizeObserver = new ResizeObserver(() => { if (this.map) this.map.invalidateSize(); });
+                        this._resizeObserver.observe(this.$refs.gvMap);
+
+                        // Deferred tile re-check: ensures correct tile after initThemeToggle syncs HTML class
+                        setTimeout(() => {
+                            const theme = localStorage.getItem('tirta-theme') || 'dark';
+                            const currentTileIsDark = this.tileLayer && this.tileLayer._url && this.tileLayer._url.includes('dark_all');
+                            if ((theme === 'light' && currentTileIsDark) || (theme === 'dark' && !currentTileIsDark)) {
+                                this.switchTile(theme === 'dark' ? 'dark' : 'light');
+                                this.renderMarkers();
+                            }
+                        }, 150);
+
+                        this._listeners.gvUpdated = (e) => { this.markers = e.detail.markers; this.renderMarkers(); };
+                        this._listeners.focusGv = (e) => {
                             if (this.map) { 
                                 this.map.setView([e.detail.lat, e.detail.lng], 16, { animate: true });
                                 if (this.markerObjects[e.detail.id]) setTimeout(() => this.markerObjects[e.detail.id].openPopup(), 250);
                                 this.$refs.gvMap.scrollIntoView({ behavior: 'smooth', block: 'center' });
                             }
-                        });
-                        window.addEventListener('theme-changed', (e) => { this.switchTile(e.detail.theme); this.renderMarkers(); });
+                        };
+                        this._listeners.themeChanged = (e) => { this.switchTile(e.detail.theme); this.renderMarkers(); };
+
+                        window.addEventListener('gv-markers-updated', this._listeners.gvUpdated);
+                        window.addEventListener('focus-gv-marker', this._listeners.focusGv);
+                        window.addEventListener('theme-changed', this._listeners.themeChanged);
+                    },
+                    destroy() {
+                        window.removeEventListener('gv-markers-updated', this._listeners.gvUpdated);
+                        window.removeEventListener('focus-gv-marker', this._listeners.focusGv);
+                        window.removeEventListener('theme-changed', this._listeners.themeChanged);
+                        if (this._resizeObserver) this._resizeObserver.disconnect();
+                        if (this.map) { this.map.remove(); this.map = null; }
                     },
                     getTileUrl() {
                         const isDark = document.documentElement.classList.contains('dark');
                         return isDark
                             ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-                            : 'https://{s}.basemaps.cartocdn.com/voyager/{z}/{x}/{y}{r}.png';
+                            : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
                     },
                     switchTile(theme) {
                         if (!this.map) return;
                         if (this.tileLayer) this.map.removeLayer(this.tileLayer);
                         const url = theme === 'dark'
                             ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-                            : 'https://{s}.basemaps.cartocdn.com/voyager/{z}/{x}/{y}{r}.png';
+                            : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
                         this.tileLayer = L.tileLayer(url, { attribution: '&copy; OSM &copy; CARTO', subdomains: 'abcd', maxZoom: 19 }).addTo(this.map);
                     },
                     initMap() {
+                        // Clean up any previous map instance on this container
+                        if (this.$refs.gvMap._leaflet_id) {
+                            this.map = null;
+                            this.$refs.gvMap._leaflet_id = null;
+                            this.$refs.gvMap.innerHTML = '';
+                        }
                         this.map = L.map(this.$refs.gvMap, { zoomControl: false }).setView([-7.01, 109.40], 11);
                         this.tileLayer = L.tileLayer(this.getTileUrl(), { attribution: '&copy; OSM &copy; CARTO', subdomains: 'abcd', maxZoom: 19 }).addTo(this.map);
                         L.control.zoom({ position: 'topright' }).addTo(this.map);
@@ -164,7 +194,7 @@
                             const c = this.getColor(m.status);
                             const badge = { penuh:'background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3)', sebagian:'background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3)', tertutup:'background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3)' };
                             const fotoHtml = m.foto ? `<div style='margin-top:12px;border-radius:8px;overflow:hidden;border:1px solid ${pc.imgBorder};'><img src='${m.foto}' alt='Foto GV' style='width:100%;height:120px;object-fit:cover;display:block;'></div>` : '';
-                            const popup = `<div style='font-family:Inter,sans-serif;min-width:220px;padding:4px 0;'>
+                            const popup = '<' + 'div style=\'font-family:Inter,sans-serif;min-width:240px;max-height:60vh;overflow-y:auto;padding:4px 0;padding-right:4px;\' class=\'custom-popup-content\'>' + `
                                 <div style='font-size:14px;font-weight:700;color:${pc.title};margin-bottom:4px;'>${m.nama}</div>
                                 <div style='font-size:11px;color:${pc.subtitle};margin-bottom:10px;'>${m.lokasi}</div>
                                 <div style='margin-bottom:10px;'><span style='${badge[m.status]||badge.penuh};padding:2px 10px;border-radius:6px;font-size:11px;font-weight:600;'>${this.getLabel(m.status)}</span></div>
@@ -302,35 +332,65 @@
             <div
                 x-data="{
                     map: null, markerLayer: null, markers: @js($tekananMarkers), markerObjects: {}, tileLayer: null,
+                    _listeners: {},
                     init() {
                         this.initMap();
                         this.renderMarkers();
-                        new ResizeObserver(() => { if (this.map) this.map.invalidateSize(); }).observe(this.$refs.tekananMap);
-                        window.addEventListener('tekanan-markers-updated', (e) => { this.markers = e.detail.markers; this.renderMarkers(); });
-                        window.addEventListener('focus-tekanan-marker', (e) => {
+                        this._resizeObserver = new ResizeObserver(() => { if (this.map) this.map.invalidateSize(); });
+                        this._resizeObserver.observe(this.$refs.tekananMap);
+
+                        // Deferred tile re-check: ensures correct tile after initThemeToggle syncs HTML class
+                        setTimeout(() => {
+                            const theme = localStorage.getItem('tirta-theme') || 'dark';
+                            const currentTileIsDark = this.tileLayer && this.tileLayer._url && this.tileLayer._url.includes('dark_all');
+                            if ((theme === 'light' && currentTileIsDark) || (theme === 'dark' && !currentTileIsDark)) {
+                                this.switchTile(theme === 'dark' ? 'dark' : 'light');
+                                this.renderMarkers();
+                            }
+                        }, 150);
+
+                        this._listeners.tekananUpdated = (e) => { this.markers = e.detail.markers; this.renderMarkers(); };
+                        this._listeners.focusTekanan = (e) => {
                             if (this.map) { 
                                 this.map.setView([e.detail.lat, e.detail.lng], 16, { animate: true });
                                 if (this.markerObjects[e.detail.id]) setTimeout(() => this.markerObjects[e.detail.id].openPopup(), 250);
                                 this.$refs.tekananMap.scrollIntoView({ behavior: 'smooth', block: 'center' });
                             }
-                        });
-                        window.addEventListener('theme-changed', (e) => { this.switchTile(e.detail.theme); this.renderMarkers(); });
+                        };
+                        this._listeners.themeChanged = (e) => { this.switchTile(e.detail.theme); this.renderMarkers(); };
+
+                        window.addEventListener('tekanan-markers-updated', this._listeners.tekananUpdated);
+                        window.addEventListener('focus-tekanan-marker', this._listeners.focusTekanan);
+                        window.addEventListener('theme-changed', this._listeners.themeChanged);
+                    },
+                    destroy() {
+                        window.removeEventListener('tekanan-markers-updated', this._listeners.tekananUpdated);
+                        window.removeEventListener('focus-tekanan-marker', this._listeners.focusTekanan);
+                        window.removeEventListener('theme-changed', this._listeners.themeChanged);
+                        if (this._resizeObserver) this._resizeObserver.disconnect();
+                        if (this.map) { this.map.remove(); this.map = null; }
                     },
                     getTileUrl() {
                         const isDark = document.documentElement.classList.contains('dark');
                         return isDark
                             ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-                            : 'https://{s}.basemaps.cartocdn.com/voyager/{z}/{x}/{y}{r}.png';
+                            : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
                     },
                     switchTile(theme) {
                         if (!this.map) return;
                         if (this.tileLayer) this.map.removeLayer(this.tileLayer);
                         const url = theme === 'dark'
                             ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-                            : 'https://{s}.basemaps.cartocdn.com/voyager/{z}/{x}/{y}{r}.png';
+                            : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
                         this.tileLayer = L.tileLayer(url, { attribution: '&copy; OSM &copy; CARTO', subdomains: 'abcd', maxZoom: 19 }).addTo(this.map);
                     },
                     initMap() {
+                        // Clean up any previous map instance on this container
+                        if (this.$refs.tekananMap._leaflet_id) {
+                            this.map = null;
+                            this.$refs.tekananMap._leaflet_id = null;
+                            this.$refs.tekananMap.innerHTML = '';
+                        }
                         this.map = L.map(this.$refs.tekananMap, { zoomControl: false }).setView([-7.01, 109.40], 11);
                         this.tileLayer = L.tileLayer(this.getTileUrl(), { attribution: '&copy; OSM &copy; CARTO', subdomains: 'abcd', maxZoom: 19 }).addTo(this.map);
                         L.control.zoom({ position: 'topright' }).addTo(this.map);
@@ -367,7 +427,7 @@
                             const tekananText = m.tekanan !== null ? m.tekanan.toFixed(2) + ' Bar' : '-';
                             const waktuText = m.waktu || '-';
                             const fotoHtml = m.foto ? `<div style='margin-top:12px;border-radius:8px;overflow:hidden;border:1px solid ${pc.imgBorder};'><img src='${m.foto}' alt='Foto' style='width:100%;height:120px;object-fit:cover;display:block;'></div>` : '';
-                            const popup = `<div style='font-family:Inter,sans-serif;min-width:240px;padding:4px 0;'>
+                            const popup = '<' + 'div style=\'font-family:Inter,sans-serif;min-width:240px;max-height:60vh;overflow-y:auto;padding:4px 0;padding-right:4px;\' class=\'custom-popup-content\'>' + `
                                 <div style='font-size:14px;font-weight:700;color:${pc.title};margin-bottom:4px;'>${m.nama}</div>
                                 <div style='font-size:10px;font-family:monospace;color:${pc.labelColor};margin-bottom:10px;display:flex;align-items:center;gap:4px;'>
                                     <svg style='width:12px;height:12px;' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z'></path></svg>

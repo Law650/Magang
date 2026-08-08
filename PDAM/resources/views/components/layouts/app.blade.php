@@ -296,27 +296,42 @@
 
     {{-- Theme Toggle Script --}}
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        function initThemeToggle() {
             const btn = document.getElementById('theme-toggle-btn');
             if (!btn) return;
 
-            // Set initial state
+            // Clone button to remove any old event listeners (prevents duplicates)
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+
+            // Sync state from localStorage on every navigation
             const currentTheme = localStorage.getItem('tirta-theme') || 'dark';
+            const html = document.documentElement;
+
             if (currentTheme === 'light') {
-                btn.classList.add('light');
+                html.classList.remove('dark');
+                newBtn.classList.add('light');
+            } else {
+                html.classList.add('dark');
+                newBtn.classList.remove('light');
             }
 
-            btn.addEventListener('click', function() {
+            // Dispatch theme-changed on navigation so maps can sync tiles
+            window.dispatchEvent(new CustomEvent('theme-changed', {
+                detail: { theme: currentTheme }
+            }));
+
+            newBtn.addEventListener('click', function() {
                 const html = document.documentElement;
                 const isDark = html.classList.contains('dark');
 
                 if (isDark) {
                     html.classList.remove('dark');
-                    btn.classList.add('light');
+                    newBtn.classList.add('light');
                     localStorage.setItem('tirta-theme', 'light');
                 } else {
                     html.classList.add('dark');
-                    btn.classList.remove('light');
+                    newBtn.classList.remove('light');
                     localStorage.setItem('tirta-theme', 'dark');
                 }
 
@@ -325,7 +340,12 @@
                     detail: { theme: isDark ? 'light' : 'dark' }
                 }));
             });
-        });
+        }
+
+        // Initialize on first page load
+        document.addEventListener('DOMContentLoaded', initThemeToggle);
+        // Re-initialize after every wire:navigate SPA navigation
+        document.addEventListener('livewire:navigated', initThemeToggle);
     </script>
 </body>
 </html>
