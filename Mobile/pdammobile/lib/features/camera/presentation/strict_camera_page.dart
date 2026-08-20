@@ -1,7 +1,21 @@
 import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:image/image.dart' as img;
 import '../../../core/theme/app_colors.dart';
+
+/// Fungsi global (isolate) untuk kompresi gambar agar UI tidak freeze
+Future<Uint8List> _compressImage(Uint8List rawBytes) async {
+  final img.Image? decoded = img.decodeImage(rawBytes);
+  if (decoded == null) return rawBytes;
+  
+  img.Image resized = decoded;
+  if (decoded.width > 1200 || decoded.height > 1200) {
+    resized = img.copyResize(decoded, width: 1200);
+  }
+  return Uint8List.fromList(img.encodeJpg(resized, quality: 50));
+}
 
 /// Layar Kamera Kustom Strict — Modul F (PRD §4.6).
 ///
@@ -104,12 +118,17 @@ class _StrictCameraPageState extends State<StrictCameraPage>
 
     try {
       final XFile rawFile = await controller.takePicture();
-      final Uint8List bytes = await rawFile.readAsBytes();
+      final Uint8List rawBytes = await rawFile.readAsBytes();
+
+      if (!mounted) return;
+      
+      // Kompres foto menggunakan isolate agar UI tidak tersendat
+      final Uint8List compressedBytes = await compute(_compressImage, rawBytes);
 
       if (!mounted) return;
 
-      // Return bytes mentah ke pemanggil — watermark diproses di halaman preview
-      Navigator.of(context).pop(bytes);
+      // Return bytes terkompresi ke pemanggil
+      Navigator.of(context).pop(compressedBytes);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

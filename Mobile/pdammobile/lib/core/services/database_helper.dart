@@ -3,7 +3,7 @@ import 'package:sqflite/sqflite.dart';
 
 class DatabaseHelper {
   static const _databaseName = "pdam_cache.db";
-  static const _databaseVersion = 1;
+  static const _databaseVersion = 2;
 
   static const tableLokasi = 'lokasi';
   static const tableAsetValve = 'aset_valve';
@@ -26,7 +26,16 @@ class DatabaseHelper {
       path,
       version: _databaseVersion,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
+  }
+
+  Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    // Jika versi naik, hapus tabel lama dan buat ulang
+    await db.execute('DROP TABLE IF EXISTS $tableLokasi');
+    await db.execute('DROP TABLE IF EXISTS $tableAsetValve');
+    await db.execute('DROP TABLE IF EXISTS $tableRekapTekanan');
+    await _onCreate(db, newVersion);
   }
 
   Future _onCreate(Database db, int version) async {

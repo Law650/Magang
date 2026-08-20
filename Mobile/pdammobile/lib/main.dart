@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'core/models/queued_log.dart';
 import 'core/theme/app_theme.dart';
@@ -11,9 +13,22 @@ import 'core/services/sync_controller.dart';
 import 'core/services/sync_background.dart';
 import 'features/identity/presentation/login_page.dart';
 import 'features/main/presentation/main_layout.dart';
+import 'core/services/notification_service.dart';
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // If you're going to use other Firebase services in the background, such as Firestore,
+  // make sure you call `initializeApp` before using other Firebase services.
+  await Firebase.initializeApp();
+  debugPrint("Handling a background message: ${message.messageId}");
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Inisialisasi Firebase
+  await Firebase.initializeApp();
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   // Inisialisasi locale Indonesia untuk format tanggal (intl)
   await initializeDateFormatting('id', null);
@@ -33,6 +48,9 @@ void main() async {
   // ── Workmanager Background Sync (Modul G) ─────────────────────
   await initBackgroundSync();
 
+  // ── Real-time Notifications (Laravel Reverb & Echo) ────────────
+  await NotificationService().init();
+
   runApp(
     ProviderScope(
       overrides: [
@@ -46,6 +64,8 @@ void main() async {
     ),
   );
 }
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 /// Root widget aplikasi PDAM Mobile.
 ///
@@ -61,6 +81,7 @@ class PdamMobileApp extends ConsumerWidget {
     final hasName = technicianName != null && technicianName.isNotEmpty;
 
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'Tirta Flow — Petugas Lapangan',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,

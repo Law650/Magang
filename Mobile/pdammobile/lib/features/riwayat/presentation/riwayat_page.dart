@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/models/queued_log.dart';
 import '../../../core/services/sync_controller.dart';
+import '../../../core/services/api_client.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/ui_components.dart';
 import '../../../core/widgets/searchable_bottom_sheet.dart';
@@ -21,7 +22,20 @@ import 'package:latlong2/latlong.dart';
 class RiwayatPage extends ConsumerStatefulWidget {
   final AsetValve? initialAset;
   final RekapTekanan? initialRekap;
-  const RiwayatPage({super.key, this.initialAset, this.initialRekap});
+  final String? filterKategori;
+  final String? filterLokasiName;
+  final String? filterAsetName;
+  final String? filterNoSr;
+
+  const RiwayatPage({
+    super.key, 
+    this.initialAset, 
+    this.initialRekap,
+    this.filterKategori,
+    this.filterLokasiName,
+    this.filterAsetName,
+    this.filterNoSr,
+  });
 
   @override
   ConsumerState<RiwayatPage> createState() => _RiwayatPageState();
@@ -45,6 +59,14 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
       _kategoriFilter = 'Tekanan';
       _selectedLokasiName = widget.initialRekap!.namaLokasi;
       _selectedNoSr = widget.initialRekap!.noSr;
+    } else if (widget.filterKategori != null) {
+      _kategoriFilter = widget.filterKategori!;
+      _selectedLokasiName = widget.filterLokasiName;
+      if (_kategoriFilter == 'Valve') {
+        _selectedAsetName = widget.filterAsetName;
+      } else {
+        _selectedNoSr = widget.filterNoSr;
+      }
     }
     _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       final syncState = ref.read(syncControllerProvider);
@@ -542,7 +564,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
               children: [
                 const Icon(Icons.monitor, color: Colors.white70, size: 20),
                 const SizedBox(width: 8),
-                Text('Kartu Status Langsung (DB)', style: theme.textTheme.titleMedium?.copyWith(color: Colors.white)),
+                Text('Informasi Gate Valve', style: theme.textTheme.titleMedium?.copyWith(color: Colors.white)),
                 const Spacer(),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -583,7 +605,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
             ),
           ],
           
-          if (aset.fotoEviden != null) ...[
+          if (aset.fotoEviden != null && aset.fotoEviden!.isNotEmpty) ...[
             const SizedBox(height: 16),
             Row(
               children: [
@@ -591,20 +613,20 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: Image.network(
-                      aset.fotoEviden!,
+                      ApiClient.formatImageUrl(aset.fotoEviden)!,
                       height: 100,
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => Container(height: 100, color: Colors.black26, child: const Icon(Icons.broken_image, color: Colors.white54)),
                     ),
                   ),
                 ),
-                if (aset.fotoEviden2 != null) ...[
+                if (aset.fotoEviden2 != null && aset.fotoEviden2!.isNotEmpty) ...[
                   const SizedBox(width: 8),
                   Expanded(
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(12),
                       child: Image.network(
-                        aset.fotoEviden2!,
+                        ApiClient.formatImageUrl(aset.fotoEviden2)!,
                         height: 100,
                         fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => Container(height: 100, color: Colors.black26, child: const Icon(Icons.broken_image, color: Colors.white54)),
@@ -735,7 +757,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
               children: [
                 const Icon(Icons.speed, color: Colors.white70, size: 20),
                 const SizedBox(width: 8),
-                Text('Status Tekanan Daerah', style: theme.textTheme.titleMedium?.copyWith(color: Colors.white)),
+                Text('Informasi Tekanan Daerah', style: theme.textTheme.titleMedium?.copyWith(color: Colors.white)),
                 const Spacer(),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -790,9 +812,23 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('No SR dan Nama Pelanggan:', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                  const Text('Nama Pelanggan:', style: TextStyle(color: Colors.white54, fontSize: 11)),
                   const SizedBox(height: 4),
-                  Text(rekap.namaLokasi, style: const TextStyle(color: Colors.white, fontSize: 13, fontStyle: FontStyle.italic)),
+                  Text(rekap.namaPelanggan ?? '-', style: const TextStyle(color: Colors.white, fontSize: 13, fontStyle: FontStyle.italic)),
+                  
+                  if (rekap.alamat != null && rekap.alamat!.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    const Text('Alamat:', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                    const SizedBox(height: 4),
+                    Text(rekap.alamat!, style: const TextStyle(color: Colors.white, fontSize: 13, fontStyle: FontStyle.italic)),
+                  ],
+                  
+                  if (rekap.desa != null && rekap.desa!.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    const Text('Desa:', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                    const SizedBox(height: 4),
+                    Text(rekap.desa!, style: const TextStyle(color: Colors.white, fontSize: 13, fontStyle: FontStyle.italic)),
+                  ],
                 ],
               ),
             ),
@@ -822,12 +858,12 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
             ),
           ],
           
-          if (rekap.fotoEviden != null) ...[
+          if (rekap.fotoEviden != null && rekap.fotoEviden!.isNotEmpty) ...[
             const SizedBox(height: 16),
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: Image.network(
-                rekap.fotoEviden!,
+                ApiClient.formatImageUrl(rekap.fotoEviden)!,
                 height: 120,
                 width: double.infinity,
                 fit: BoxFit.cover,
@@ -1019,7 +1055,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(12),
                       child: Image.network(
-                        map['foto_eviden'].toString(),
+                        ApiClient.formatImageUrl(map['foto_eviden'].toString())!,
                         height: 100,
                         fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => Container(height: 100, color: Colors.black26, child: const Icon(Icons.broken_image, color: Colors.white54)),
@@ -1032,7 +1068,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         child: Image.network(
-                          map['foto_eviden_2'].toString(),
+                          ApiClient.formatImageUrl(map['foto_eviden_2'].toString())!,
                           height: 100,
                           fit: BoxFit.cover,
                               errorBuilder: (_, __, ___) => Container(height: 100, color: Colors.black26, child: const Icon(Icons.broken_image, color: Colors.white54)),
@@ -1440,8 +1476,8 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                                   insetPadding: const EdgeInsets.all(16),
                                   child: InteractiveViewer(
                                     child: Image.network(
-                                      map['foto_eviden'].toString(),
-                                                    ),
+                                      ApiClient.formatImageUrl(map['foto_eviden'].toString()) ?? '',
+                                    ),
                                   ),
                                 ),
                               );
@@ -1449,7 +1485,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                             child: Container(
                               height: 200,
                               child: Image.network(
-                                map['foto_eviden'].toString(),
+                                ApiClient.formatImageUrl(map['foto_eviden'].toString()) ?? '',
                                           fit: BoxFit.cover,
                                 errorBuilder: (_, __, ___) => Container(
                                   width: double.infinity,
@@ -1476,8 +1512,8 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                                     insetPadding: const EdgeInsets.all(16),
                                     child: InteractiveViewer(
                                       child: Image.network(
-                                        map['foto_eviden_2'].toString(),
-                                                        ),
+                                        ApiClient.formatImageUrl(map['foto_eviden_2'].toString()) ?? '',
+                                      ),
                                     ),
                                   ),
                                 );
@@ -1485,7 +1521,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                               child: Container(
                                 height: 200,
                                 child: Image.network(
-                                  map['foto_eviden_2'].toString(),
+                                  ApiClient.formatImageUrl(map['foto_eviden_2'].toString()) ?? '',
                                               fit: BoxFit.cover,
                                   errorBuilder: (_, __, ___) => Container(
                                     width: double.infinity,
@@ -1722,7 +1758,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                                   backgroundColor: Colors.transparent,
                                   insetPadding: const EdgeInsets.all(16),
                                   child: InteractiveViewer(
-                                    child: Image.network(map['foto_eviden'].toString()),
+                                    child: Image.network(ApiClient.formatImageUrl(map['foto_eviden'].toString()) ?? ''),
                                   ),
                                 ),
                               );
@@ -1730,7 +1766,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                             child: Container(
                               constraints: const BoxConstraints(maxHeight: 350),
                               child: Image.network(
-                                map['foto_eviden'].toString(),
+                                ApiClient.formatImageUrl(map['foto_eviden'].toString()) ?? '',
                                         fit: BoxFit.contain,
                                 errorBuilder: (_, __, ___) => Container(
                                   width: double.infinity,
@@ -1756,7 +1792,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                                     backgroundColor: Colors.transparent,
                                     insetPadding: const EdgeInsets.all(16),
                                     child: InteractiveViewer(
-                                      child: Image.network(map['foto_eviden_2'].toString()),
+                                      child: Image.network(ApiClient.formatImageUrl(map['foto_eviden_2'].toString()) ?? ''),
                                     ),
                                   ),
                                 );
@@ -1764,7 +1800,7 @@ class _RiwayatPageState extends ConsumerState<RiwayatPage> {
                               child: Container(
                                 constraints: const BoxConstraints(maxHeight: 350),
                                 child: Image.network(
-                                  map['foto_eviden_2'].toString(),
+                                  ApiClient.formatImageUrl(map['foto_eviden_2'].toString()) ?? '',
                                             fit: BoxFit.contain,
                                   errorBuilder: (_, __, ___) => Container(
                                     width: double.infinity,

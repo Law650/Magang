@@ -634,8 +634,8 @@ class _LogTekananFormPageState extends ConsumerState<LogTekananFormPage> {
                     ],
 
                     if (_selectedLokasi != null &&
-                        (_selectedLokasi!.latitude == null || _selectedLokasi!.latitude == 0) &&
-                        (_selectedLokasi!.longitude == null || _selectedLokasi!.longitude == 0)) ...[
+                        (_selectedLokasi!.latitude == null || _selectedLokasi!.latitude == 0 ||
+                         _selectedLokasi!.longitude == null || _selectedLokasi!.longitude == 0)) ...[
                       _buildSectionLabel('Koordinat Lokasi (Manual) *'),
                       const SizedBox(height: 8),
                       Row(
@@ -786,7 +786,7 @@ class _LogTekananFormPageState extends ConsumerState<LogTekananFormPage> {
                               });
                             },
                             icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
-                            label: const Text('Reset', style: TextStyle(color: AppColors.textSecondary)),
+                            label: const FittedBox(fit: BoxFit.scaleDown, child: Text('Reset', style: TextStyle(color: AppColors.textSecondary))),
                             style: OutlinedButton.styleFrom(side: const BorderSide(color: AppColors.cardBorder)),
                           ),
                         ),

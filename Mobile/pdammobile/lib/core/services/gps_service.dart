@@ -103,7 +103,7 @@ class GpsServiceNotifier extends StateNotifier<GpsState> {
         return;
       }
 
-      // 3. Ambil posisi secara terus-menerus (live) sampai akurasi <= 2.5m
+      // 3. Ambil posisi secara terus-menerus (live) sampai akurasi <= 3m
       _positionStreamSubscription?.cancel();
       
       _positionStreamSubscription = Geolocator.getPositionStream(
@@ -120,8 +120,8 @@ class GpsServiceNotifier extends StateNotifier<GpsState> {
           );
         }
 
-        // Kunci koordinat (hentikan pencarian) jika akurasi sudah mencapai batas toleransi <= 2.5m
-        if (position.accuracy <= 2.5) {
+        // Kunci koordinat (hentikan pencarian) jika akurasi sudah mencapai batas toleransi <= 3m
+        if (position.accuracy <= 3.0) {
           _positionStreamSubscription?.cancel();
         }
       }, onError: (e) {
@@ -137,8 +137,12 @@ class GpsServiceNotifier extends StateNotifier<GpsState> {
     }
   }
 
+  bool _isShowingRationale = false;
+
   /// Dialog rasional sebelum permintaan izin native (PRD §5.3, checklist #11).
   Future<bool> _showRationaleDialog(BuildContext context) async {
+    if (_isShowingRationale) return false;
+    _isShowingRationale = true;
     final result = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -166,6 +170,7 @@ class GpsServiceNotifier extends StateNotifier<GpsState> {
         ],
       ),
     );
+    _isShowingRationale = false;
     return result ?? false;
   }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../core/services/api_client.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/theme/app_colors.dart';
@@ -188,13 +189,13 @@ class _RekapTekananPageState extends ConsumerState<RekapTekananPage> {
                               backgroundColor: Colors.transparent,
                               insetPadding: const EdgeInsets.all(16),
                               child: InteractiveViewer(
-                                child: Image.network(item.fotoEviden!),
+                                child: Image.network(ApiClient.formatImageUrl(item.fotoEviden)!),
                               ),
                             ),
                           );
                         },
                         child: Image.network(
-                          item.fotoEviden!,
+                          ApiClient.formatImageUrl(item.fotoEviden)!,
                           width: double.infinity,
                           height: 200,
                           fit: BoxFit.cover,
@@ -312,7 +313,7 @@ class _RekapTekananPageState extends ConsumerState<RekapTekananPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Rekap Tekanan Daerah'),
+        title: const Text('Rekap Tekanan Air'),
         backgroundColor: AppColors.primaryDark,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -545,7 +546,20 @@ class _RekapTekananPageState extends ConsumerState<RekapTekananPage> {
                                 Text('Petugas: ${item.namaTeknisi}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                               ],
                             ),
-                          ]
+                          ],
+                          if (item.fotoEviden != null && item.fotoEviden!.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.network(
+                                ApiClient.formatImageUrl(item.fotoEviden)!,
+                                height: 120,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Container(height: 120, color: Colors.black12, child: const Icon(Icons.broken_image, color: Colors.grey)),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),

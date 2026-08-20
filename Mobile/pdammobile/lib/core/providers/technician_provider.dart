@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/api_client.dart';
+import '../services/notification_service.dart';
 import 'api_provider.dart';
 
 const String _kTechnicianNameKey = 'technician_name';
@@ -58,6 +59,10 @@ class TechnicianNameNotifier extends StateNotifier<String?> {
         await _prefs.setInt(_kTechnicianIdKey, technicianId);
         
         state = technicianName;
+
+        // Kirim FCM token sekarang karena user sudah login dan punya auth_token
+        await NotificationService().sendFcmTokenToServer();
+
         return null;
       }
       return response.data['message'] ?? 'Login gagal.';

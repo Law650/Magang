@@ -674,7 +674,7 @@ class HomePage extends ConsumerWidget {
                   children: [
                     Icon(Icons.map, color: Colors.white, size: 14),
                     SizedBox(width: 6),
-                    Text('Peta Lokasi Aset', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                    Text('Peta Lokasi Aset Gate Valve', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),

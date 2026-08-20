@@ -6,8 +6,15 @@ class ApiClient {
   static const String baseUrl = 'http://103.217.210.179:3430/api';
   
   // Server lokal (disesuaikan dengan IPv4 jaringan PC Anda saat ini)
-  //static const String baseUrl = 'https://untouched-creed-manly.ngrok-free.dev/api';
-  // Jika menggunakan Android Emulator dan tidak bisa terhubung, bisa gunakan 'http://10.0.2.2:8000/api'
+  // static const String baseUrl = "https://untouched-creed-manly.ngrok-free.dev/api";
+  //static const String baseUrl = 'http://192.168.0.117:8000/api';
+
+  static String? formatImageUrl(String? path) {
+    if (path == null || path.isEmpty) return null;
+    if (path.startsWith('http')) return path;
+    final storageUrl = baseUrl.replaceAll('/api', '/storage');
+    return '$storageUrl/$path';
+  }
 
   late Dio _dio;
 

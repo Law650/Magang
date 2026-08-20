@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1015493577283",
+    "project_id": "tirtaflow-764b1",
+    "storage_bucket": "tirtaflow-764b1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1015493577283:android:ee041d729e61483dc6e2f6",
+        "android_client_info": {
+          "package_name": "com.tirtaflow.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBkfQdBMOpdkNS6Ys-3giZw-mhb62DRjCc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

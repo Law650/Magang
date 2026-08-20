@@ -94,19 +94,29 @@ class GpsStatusWidget extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Akurasi: ±${acc.toStringAsFixed(1)} meter ${acc <= 2.5 ? "(Dalam toleransi 2.5m)" : "(Mencari akurasi <= 2.5m...)"}',
+                        'Akurasi: ±${acc.toStringAsFixed(1)} meter ${acc <= 3.0 ? "(Dalam toleransi 3m)" : "(Mencari akurasi <= 3m...)"}',
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: acc <= 2.5 ? AppColors.statusNormal : Colors.orange[800],
+                          color: acc <= 3.0 ? AppColors.statusNormal : Colors.orange[800],
                           fontWeight: FontWeight.bold,
                           fontSize: 12,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        acc <= 2.5 ? '⚠️ Koordinat telah dikunci!' : 'Harap tunggu di tempat terbuka...',
+                        acc <= 3.0 ? '⚠️ Koordinat telah dikunci!' : 'Harap tunggu di tempat terbuka...',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: Colors.orange[800],
                           fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Peringatan: Setiap pindah tempat harap refresh lokasi.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.orange[900],
+                          fontWeight: FontWeight.bold,
+                          fontStyle: FontStyle.italic,
                           fontSize: 11,
                         ),
                       ),

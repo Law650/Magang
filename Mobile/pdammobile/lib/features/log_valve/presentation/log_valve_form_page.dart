@@ -675,7 +675,7 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
                                 children: [
                                   const Icon(Icons.location_on, color: AppColors.primary, size: 20),
                                   const SizedBox(width: 8),
-                                  Flexible(child: Text('Cek (Update Koordinat & Foto)', style: TextStyle(color: AppColors.textPrimary), overflow: TextOverflow.ellipsis)),
+                                  Flexible(child: Text('Cek (Update Foto / isi koordinat jika kosong)', style: TextStyle(color: AppColors.textPrimary), overflow: TextOverflow.ellipsis)),
                                 ],
                               ),
                             ),
@@ -745,7 +745,10 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
                       const SizedBox(height: 20),
                     ],
 
-                    if (_aksiKerjaIndex == 2) ...[
+                    if (_aksiKerjaIndex == 2 && 
+                        (_selectedAset == null ||
+                         _selectedAset!.latitude == null || _selectedAset!.latitude == 0 ||
+                         _selectedAset!.longitude == null || _selectedAset!.longitude == 0)) ...[
                       _buildSectionLabel('Titik Koordinat (Latitude & Longitude)'),
                       const SizedBox(height: 8),
                       Row(
@@ -773,17 +776,8 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
                         child: OutlinedButton.icon(
                           onPressed: () {
                             if (gpsState is GpsSuccess) {
-                              if (gpsState.accuracy > 2.5) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Akurasi GPS > 2.5 meter. Tidak dapat menggunakan lokasi saat ini.'),
-                                    backgroundColor: AppColors.statusKritis,
-                                  ),
-                                );
-                              } else {
-                                _latController.text = gpsState.latitude.toString();
-                                _lngController.text = gpsState.longitude.toString();
-                              }
+                              _latController.text = gpsState.latitude.toString();
+                              _lngController.text = gpsState.longitude.toString();
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text('Sinyal GPS belum stabil atau aktif.')),
@@ -865,7 +859,7 @@ class _LogValveFormPageState extends ConsumerState<LogValveFormPage> {
                               });
                             },
                             icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
-                            label: const Text('Reset', style: TextStyle(color: AppColors.textSecondary)),
+                            label: const FittedBox(fit: BoxFit.scaleDown, child: Text('Reset', style: TextStyle(color: AppColors.textSecondary))),
                             style: OutlinedButton.styleFrom(side: const BorderSide(color: AppColors.cardBorder)),
                           ),
                         ),
